@@ -15,7 +15,7 @@ issued for missing/extra instances, respectively.
 
 Additionally, Health Manager collects and exposes statistics and
 health status for individual applications, as well as aggregates for
-frameworks, runtimes, etc. (WIP at this time)
+frameworks, runtimes, etc.
 
 ## AppState
 
