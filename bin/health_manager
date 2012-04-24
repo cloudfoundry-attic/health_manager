@@ -1,14 +1,55 @@
 #!/usr/bin/env ruby
 home = File.join(File.dirname(__FILE__),'..')
 
-ENV['BUNDLE_GEMFILE'] = "#{home}/Gemfile"
+ENV['BUNDLE_GEMFILE'] ||= "#{home}/Gemfile"
 require 'bundler/setup'
 
 require File.join(home, 'lib','health_manager')
 
-hm = HealthManager::Manager.new()
+def read_config_from_file(config_file)
+  config_path = ENV['CLOUD_FOUNDRY_CONFIG_PATH'] || File.join(File.dirname(__FILE__),'../config')
+  config_file ||= File.join(config_path, 'health_manager.yml')
+  begin
+    config = YAML.load_file(config_file)
+  rescue => e
+    $stderr.puts "Could not read configuration file #{config_file}: #{e}"
+    exit 1
+  end
+  config
+end
+
+def parse_args
+  results = {}
+  options = OptionParser.new do |opts|
+    opts.banner = "Usage: health_manager [OPTIONS]"
+    opts.on("-c", "--config [ARG]", "Configuration File") do |opt|
+      results[:config_file] = opt
+    end
+
+    opts.on("-h", "--help", "Help") do
+      puts opts
+      exit
+    end
+  end
+  options.parse!(ARGV.dup)
+  results
+end
+
+args = parse_args
+config = read_config_from_file(args[:config_file])
+
+logging_config = config['logging']
+logging_config = {'level' => ENV['LOG_LEVEL']} if ENV['LOG_LEVEL'] #ENV override
+logging_config ||= {'level' => 'info'} #fallback value
+
+
+#FIXIT: where did logger.debug { "..." } messages go?
+VCAP::Logging.setup_from_config(logging_config)
+
+hm = HealthManager::Manager.new(config)
 
 trap('INT') { hm.shutdown }
 trap('SIGTERM') { hm.shutdown }
 
 hm.start
+

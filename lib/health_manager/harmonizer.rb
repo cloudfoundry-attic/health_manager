@@ -1,10 +1,12 @@
-# This class describes in a declarative manner the policy that HealthManager is implementing.
-# It describes a set of rules that recognize certain conditions (e.g. missing instances, etc) and
+# This class describes in a declarative manner the policy that
+# HealthManager is implementing.  It describes a set of rules that
+# recognize certain conditions (e.g. missing instances, etc) and
 # initiates certain actions (e.g. restarting the missing instances)
 
 module HealthManager
   class Harmonizer
     include HealthManager::Common
+
     def initialize(config = {})
       @config = config
     end
@@ -21,12 +23,13 @@ module HealthManager
       #set system-wide configurations
       AppState.heartbeat_deadline = interval(:droplet_lost)
       AppState.flapping_timeout = interval(:flapping_timeout)
-
+      AppState.flapping_death = interval(:flapping_death)
 
       #set up listeners for anomalous events to respond with correcting actions
-      AppState.add_listener(:missing_instances) do |app_state|
+      AppState.add_listener(:missing_instances) do |app_state, missing_indices|
         logger.info { "harmonizer: missing_instances"}
-        nudger.start_missing_instances(app_state,NORMAL_PRIORITY)
+        nudger.start_instances(app_state, missing_indices, NORMAL_PRIORITY)
+        #TODO: flapping logic, too
       end
 
       AppState.add_listener(:extra_instances) do |app_state, extra_instances|
@@ -42,15 +45,25 @@ module HealthManager
       end
 
       AppState.add_listener(:exit_crashed) do |app_state, message|
-
-        index = message['index']
         logger.info { "harmonizer: exit_crashed" }
 
-        if flapping?(app_state, message['version'], message['index'])
-          # TODO: implement delayed restarts
+        index = message['index']
+        instance = app_state.get_instance(message['version'], message['index'])
+
+        if flapping?(instance)
+          unless restart_pending?(instance)
+            instance['last_action'] = now
+            if giveup_restarting?(instance)
+              # TODO: when refactoring this thing out, don't forget to
+              # mute for missing indices restarts
+              logger.info { "giving up on restarting: app_id=#{app_state.id} index=#{index}" }
+            else
+              delay = calculate_delay(instance)
+              schedule_delayed_restart(app_state, instance, index, delay)
+            end
+          end
         else
-          nudger.start_instance(app_state,index,LOW_PRIORITY)
-          # app_state.reset_missing_indices
+          nudger.start_instance(app_state, index, LOW_PRIORITY)
         end
       end
 
@@ -76,15 +89,66 @@ module HealthManager
           analyze_all_apps
         end
       end
+
+      if should_shadow?
+        scheduler.at_interval :check_shadowing do
+          shadower.check_shadowing
+        end
+      end
     end
 
-    def flapping?(droplet, version, index)
-      instance = droplet.get_instance(version, index)
-      if instance['crashes'] > interval(:flapping_death)
-        instance['state'] = FLAPPING
-      end
+
+    # ------------------------------------------------------------
+    # Flapping-related code STARTS TODO: consider refactoring. There
+    # are some unpleasant abstraction leaks, e.g. calculations
+    # involving number of crashes, predicate methods, etc.
+    # Consider making "instance" into a full-fledged object
+
+    def flapping?(instance)
       instance['state'] == FLAPPING
     end
+
+    # TODO: consider storing the pending restart information
+    # externally, to prevent it from being discarded with the missing
+    # instance. Also see comment for #flapping?
+    def restart_pending?(instance)
+      instance['restart_pending']
+    end
+
+    def giveup_restarting?(instance)
+      interval(:giveup_crash_number) > 0 && instance['crashes'] > interval(:giveup_crash_number)
+    end
+
+    def calculate_delay(instance)
+      # once the number of crashes exceeds the value of
+      # :flapping_death interval, delay starts with min_restart_delay
+      # interval value, and doubles for every additional crash.  the
+      # delay never exceeds :max_restart_delay though.  But wait,
+      # there's more: a +/-15% random noise is added to the delay, to
+      # avoid overwhelming number of simultaneous restarts. This is
+      # necessary because delayed restarts bypass nudger's queue --
+      # once delay period passes, the start message is published
+      # immediately.
+
+      delay = [interval(:max_restart_delay),
+               interval(:min_restart_delay) << (instance['crashes'] - interval(:flapping_death) - 1)
+              ].min.to_f
+      noise_amount = 2.0 * (rand - 0.5) * interval(:delay_time_percent_noise).to_f / 100.0
+      result = (delay * (1.0 + noise_amount)).to_i
+      logger.info("delay: #{delay} noise: #{noise_amount} result: #{result}")
+      result
+    end
+
+    def schedule_delayed_restart(app_state, instance, index, delay)
+      instance['restart_pending'] = true
+      scheduler.after(delay) do
+        instance.delete('restart_pending')
+        instance['last_action'] = now
+        nudger.start_flapping_instance_immediately(app_state, index)
+      end
+    end
+    # Flapping-related code ENDS
+    # ------------------------------------------------------------
 
     def analyze_all_apps
       if scheduler.task_running? :droplet_analysis

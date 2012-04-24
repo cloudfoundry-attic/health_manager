@@ -1,22 +1,20 @@
 module HealthManager::Common
 
   def interval(name)
-    get_interval_from_config_or_constant(name, @config)
+    get_interval_from_config_or_default(name, @config)
   end
 
-  def get_interval_from_config_or_constant(name, config)
+  def get_interval_from_config_or_default(name, config)
     intervals = config[:intervals] || config['intervals'] || {}
-    get_param_from_config_or_constant(name,intervals)
+    get_param_from_config_or_default(name,intervals)
   end
 
-  def get_param_from_config_or_constant(name, config)
-    value = config[name] || config[name.to_sym] || config[name.to_s]
-    unless value
-      const_name = name.to_s.upcase
-      if HealthManager.const_defined?( const_name )
-        value = HealthManager.const_get( const_name )
-      end
-    end
+  def get_param_from_config_or_default(name, config)
+    value = config[name] ||
+      config[name.to_sym] ||
+      config[name.to_s] ||
+      HealthManager::DEFAULTS[name.to_sym]
+
     raise ArgumentError, "undefined parameter #{name}" unless value
     logger.debug("config: #{name}: #{value}")
     value
@@ -29,10 +27,10 @@ module HealthManager::Common
   end
 
   def register_hm_components
-    HealthManager::COMPONENTS.each { |name|
+    HealthManager::COMPONENTS.each do |name|
       component = self.instance_variable_get("@#{name}")
       register_hm_component(name, component)
-    }
+    end
   end
 
   def register_hm_component(name, component)
@@ -50,40 +48,8 @@ module HealthManager::Common
     @config[:health_manager_component_registry] ||= {}
   end
 
-  def sanitized_config
-    config = @config.dup
-    config.delete(:health_manager_component_registry)
-    config
-  end
-
-  def parse_args
-    results = {}
-    options = OptionParser.new do |opts|
-      opts.banner = "Usage: health_manager [OPTIONS]"
-      opts.on("-c", "--config [ARG]", "Configuration File") do |opt|
-        results[:config_file] = opt
-      end
-
-      opts.on("-h", "--help", "Help") do
-        puts opts
-        exit
-      end
-    end
-    options.parse!(ARGV.dup)
-    results
-  end
-
-  def read_config_from_file(config_file)
-    config = {}
-    begin
-      config = File.open(config_file) do |f|
-        YAML.load(f)
-      end
-    rescue => e
-      puts "Could not read configuration file: #{e}"
-      exit
-    end
-    config
+  def should_shadow?
+    ENV[HealthManager::HM_SHADOW]!='false' #at this stage, shadowing should be disabled explicitly
   end
 
   def logger

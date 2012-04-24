@@ -2,7 +2,7 @@
 # perhaps a part of this should be lifted to common/component.
 
 module HealthManager
-  class Varz
+  class VarzCommon
     def initialize(config = {})
       @config = config
       @counters = {}

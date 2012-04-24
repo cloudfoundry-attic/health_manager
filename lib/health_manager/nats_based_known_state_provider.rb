@@ -29,8 +29,9 @@ module HealthManager
     end
 
     def process_droplet_exited(message)
-      logger.debug {"process_droplet_exited: #{message}"}
+      logger.debug { "process_droplet_exited: #{message}" }
       varz.inc(:droplet_exited_msgs_received)
+
       message = parse_json(message)
       droplet = get_droplet(message['droplet'])
 
@@ -46,7 +47,7 @@ module HealthManager
     end
 
     def process_heartbeat(message)
-      logger.debug {"known: #process_heartbeat: #{message}"}
+      logger.debug { "known: #process_heartbeat: #{message}" }
       varz.inc(:heartbeat_msgs_received)
 
       message = parse_json(message)
@@ -59,8 +60,9 @@ module HealthManager
     end
 
     def process_droplet_updated(message)
-      logger.debug {"known: #process_droplet_updated: #{message}" }
+      logger.debug { "known: #process_droplet_updated: #{message}" }
       varz.inc(:droplet_updated_msgs_received)
+
       message = parse_json(message)
       get_droplet(message['droplet']).process_droplet_updated(message)
     end

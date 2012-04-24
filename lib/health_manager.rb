@@ -24,25 +24,18 @@ require 'health_manager/harmonizer'
 require 'health_manager/varz_common'
 require 'health_manager/varz'
 require 'health_manager/reporter'
+require 'health_manager/shadower'
 
 module HealthManager
   class Manager
     include HealthManager::Common
-    #primarily for testing
+
     attr_reader :scheduler
     attr_reader :known_state_provider
     attr_reader :expected_state_provider
 
     def initialize(config={})
-      args = parse_args
-      @config = read_config_from_file(args[:config_file]).merge(config)
-
-      @logging_config = @config['logging']
-      @logging_config = {'level' => ENV['LOG_LEVEL']} if ENV['LOG_LEVEL'] #ENV override
-      @logging_config ||= {'level' => 'info'} #fallback value
-
-      VCAP::Logging.setup_from_config(@logging_config)
-
+      @config = config
       logger.info("HealthManager: initializing")
 
       @varz = Varz.new(@config)
@@ -53,11 +46,16 @@ module HealthManager
       @nudger = Nudger.new(@config)
       @harmonizer = Harmonizer.new(@config)
 
+      if should_shadow?
+        @publisher = @shadower = Shadower.new(@config)
+      else
+        @publisher = NATS
+      end
+
       register_hm_components
     end
 
     def register_as_vcap_component
-
       logger.info("registering VCAP component")
       logger.debug("config: #{sanitized_config}")
 
@@ -69,18 +67,11 @@ module HealthManager
                                :port => status_config['port'],
                                :user => status_config['user'],
                                :password => status_config['password'])
-
     end
 
     def create_pid_file
       @pid_file = @config['pid']
-      begin
-        FileUtils.mkdir_p(File.dirname(@pid_file))
-      rescue => e
-        logger.fatal("Can't create pid directory, exiting: #{e}")
-      end
-      File.open(@pid_file, 'wb') { |f| f.puts "#{Process.pid}" }
-      logger.debug("pid file written: #{@pid_file}")
+      VCAP::PidFile.new(@pid_file) if @pid_file
     end
 
     def start
@@ -94,9 +85,8 @@ module HealthManager
         @expected_state_provider.start
         @known_state_provider.start
 
-        unless ENV[HM_SHADOW]=='false'
-          logger.info("creating Shadower")
-          @shadower = Shadower.new(@config)
+        if should_shadow?
+          logger.info("starting Shadower")
           @shadower.subscribe
         end
 
@@ -107,22 +97,16 @@ module HealthManager
       end
     end
 
+    def sanitized_config
+      config = @config.dup
+      config.delete(:health_manager_component_registry)
+      config
+    end
+
     def shutdown
       logger.info("shutting down...")
       NATS.stop { EM.stop }
       logger.info("...good bye.")
-    end
-
-    def read_config_from_file(config_file)
-      config_path = ENV['CLOUD_FOUNDRY_CONFIG_PATH'] || File.join(File.dirname(__FILE__),'../config')
-      config_file ||= File.join(config_path, 'health_manager.yml')
-      begin
-        config = YAML.load_file(config_file)
-      rescue => e
-        $stderr.puts "Could not read configuration file #{config_file}: #{e}"
-        exit 1
-      end
-      config
     end
 
     def get_nats_uri

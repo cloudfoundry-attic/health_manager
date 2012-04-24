@@ -9,9 +9,7 @@ require File.join(home, 'lib','health_manager')
 trap('INT') { NATS.stop { EM.stop }}
 trap('SIGTERM') { NATS.stop { EM.stop }}
 
-
-EM::run {
-
+EM::run do
   NATS.start :uri => ENV['NATS_URI'] || 'nats://nats:nats@192.168.24.128:4222' do
     config = {
       'bulk' => {'host'=> ENV['BULK_URL'] || 'api.vcap.me', 'batch_size' => '2'},
@@ -25,4 +23,4 @@ EM::run {
     end
     EM.add_timer(5) { EM.stop { NATS.stop } }
   end
-}
+end

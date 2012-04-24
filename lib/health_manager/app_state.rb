@@ -5,16 +5,17 @@ module HealthManager
   class AppState
     include HealthManager::Common
     class << self
+      attr_accessor :heartbeat_deadline
+      attr_accessor :flapping_timeout
+      attr_accessor :flapping_death
 
       def known_event_types
-        [
-         :missing_instances,
+        [:missing_instances,
          :extra_instances,
          :exit_crashed,
          :exit_stopped,
          :exit_dea,
-         :droplet_updated,
-        ]
+         :droplet_updated]
       end
 
       def add_listener(event_type, &block)
@@ -39,9 +40,15 @@ module HealthManager
       def remove_all_listeners
         @listeners = {}
       end
-      attr_accessor :heartbeat_deadline
-      attr_accessor :flapping_timeout
     end
+
+    attr_reader   :id
+    attr_accessor :state
+    attr_accessor :live_version
+    attr_accessor :num_instances
+    attr_accessor :framework, :runtime
+    attr_accessor :last_updated
+    attr_accessor :versions, :crashes
 
     def initialize(id)
       @id = id
@@ -50,13 +57,6 @@ module HealthManager
       @crashes = {}
       reset_missing_indices
     end
-    attr_reader :id
-    attr_accessor :state
-    attr_accessor :live_version
-    attr_accessor :num_instances
-    attr_accessor :framework, :runtime
-    attr_accessor :last_updated
-    attr_accessor :versions, :crashes
 
     def notify(event_type, *args)
       self.class.notify_listener(event_type, self, *args)
@@ -79,13 +79,11 @@ module HealthManager
       %w(instance state_timestamp state).each { |key|
         instance[key] = beat[key]
       }
-
-      events.each { |event| notify(*event) }
     end
 
     def check_for_missing_indices
       unless reset_recently? or missing_indices.empty?
-        notify :missing_instances,  missing_indices
+        notify(:missing_instances,  missing_indices)
         reset_missing_indices
       end
     end
@@ -93,7 +91,8 @@ module HealthManager
     def check_and_prune_extra_indices
       extra_instances = []
 
-      @versions.delete_if do |version, version_entry |
+      # first, go through each version and prune indices
+      @versions.each do |version, version_entry |
         version_entry['instances'].delete_if do |index, instance|  # deleting extra instances
 
           if RUNNING_STATES.include?(instance['state']) &&
@@ -103,29 +102,30 @@ module HealthManager
             instance['state_timestamp'] = now
           end
 
-          extra = [[@state == STOPPED, 'Droplet state is STOPPED'],
+          prune_reason = [[@state == STOPPED, 'Droplet state is STOPPED'],
                    [index >= @num_instances, 'Extra instance'],
                    [version != @live_version, 'Live version mismatch']
                   ].find { |condition, _| condition }
 
-          if extra
+          if prune_reason
             if RUNNING_STATES.include?(instance['state'])
-              reason = extra.last
+              reason = prune_reason.last
               extra_instances << [instance['instance'], reason]
             end
-            true
-          else
-            false
           end
+          prune_reason #prune when non-nil
         end
+      end
 
+      # now, prune versions
+      @versions.delete_if do |version, version_entry|
         if version_entry['instances'].empty?
-          @state == STOPPED || version != @live_version  #for delete_if
+          @state == STOPPED || version != @live_version
         end
       end
 
       unless extra_instances.empty?
-        notify :extra_instances, extra_instances
+        notify(:extra_instances, extra_instances)
       end
     end
 
@@ -136,7 +136,7 @@ module HealthManager
     def missing_indices
       return [] unless @state == STARTED
 
-      (0...num_instances).find_all { |i|
+      (0...num_instances).find_all do |i|
         instance = get_instance(live_version, i)
         lhb = instance['last_heartbeat']
         [
@@ -144,7 +144,7 @@ module HealthManager
          lhb.nil?,
          lhb && timestamp_older_than?(lhb, AppState.heartbeat_deadline)
         ].any?
-      }
+      end
     end
 
     def prune_crashes
@@ -189,16 +189,20 @@ module HealthManager
       instance['crashes'] += 1
       instance['crash_timestamp'] = message['crash_timestamp']
 
+      if instance['crashes'] > AppState.flapping_death
+        instance['state'] = FLAPPING
+      end
+
       @crashes[instance['instance']] = {
         'timestamp' => now,
         'crash_timestamp' => message['crash_timestamp']
       }
-      notify :exit_crashed, message
+      notify(:exit_crashed, message)
     end
 
     def process_droplet_updated(message)
       reset_missing_indices
-      notify :droplet_updated, message
+      notify(:droplet_updated, message)
     end
 
     def get_version(version)

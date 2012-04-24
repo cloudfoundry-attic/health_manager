@@ -22,6 +22,7 @@ module HealthManager
     end
 
     private
+
     def process_next_batch(bulk_token,&block)
       with_credentials do |user, password|
         options = {
@@ -32,11 +33,10 @@ module HealthManager
           },
         }
         http = EM::HttpRequest.new(app_url).get(options)
-        http.callback {
+        http.callback do
           if http.response_header.status != 200
             logger.error("bulk: request problem. Response: #{http.response_header} #{http.response}")
-            varz.reset_expected_stats
-            varz.publish_expected_stats
+            release_varz
             next
           end
 
@@ -57,14 +57,19 @@ module HealthManager
             block.call(app_id, droplet)
           end
           process_next_batch(bulk_token, &block)
-        }
-        http.errback {
+        end
+
+        http.errback do
           logger.error("problem talking to bulk API at #{app_url}")
-          varz.reset_expected_stats
-          varz.publish_expected_stats
+          release_varz
           @user = @password = nil #ensure re-acquisition of credentials
-        }
+        end
       end
+    end
+
+    def release_varz
+      varz.reset_expected_stats
+      varz.publish_expected_stats
     end
 
     def host
@@ -95,8 +100,9 @@ module HealthManager
         end
 
         NATS.timeout(sid,
-                     get_param_from_config_or_constant(:nats_request_timeout,@config)) do
+                     get_param_from_config_or_default(:nats_request_timeout,@config)) do
           logger.error("bulk: NATS timeout getting bulk api credentials. Request ignored.")
+          release_varz
         end
       end
     end

@@ -80,6 +80,20 @@ AppState. That object receives updates of the application state,
 stores them and notifies registered listeners about events, such as
 `instances_missing`, etc.
 
+### Shadower
+
+The Shadower component exists only to smoothen the transition from the
+original HealthManager to this new HealthManager 2.0
+
+The Shadower implements shadow-mode for HM-2, where it quietly and
+passively observes the state of the world and comes up with
+harmonization decisions, but rather than publishing harmonization
+messages on the NATS bus, it keeps track of them. It also listens for
+harmonization messages (most likely coming from the original
+HealthManager) and compares those messages with the ones HM-2 has
+produced. Ideally, these two sets of messages should perfectly
+overlap. When they don't, shadower issues warnings.
+
 ## Harmonization Policy in Detail
 
 Note: at the time of the writing, the details of harmonization

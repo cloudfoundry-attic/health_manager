@@ -10,6 +10,8 @@ module HealthManager
                 :nudger,
                 :varz,
                 :reporter,
+                :publisher,
+                :shadower
                ]
 
   #restart priorities
@@ -17,21 +19,27 @@ module HealthManager
   NORMAL_PRIORITY        = 1000
   HIGH_PRIORITY          = 1_000_000
 
-  MAX_HEARTBEATS_SAVED   = 5
-  QUEUE_BATCH_SIZE       = 40
+  DEFAULTS = {
+    :queue_batch_size         => 40,
 
-  #intervals
-  EXPECTED_STATE_UPDATE  = 10
-  ANALYSIS_DELAY         = 5
-  DROPLET_ANALYSIS       = 10
-  DROPLET_LOST           = 30
-  POSTPONE               = 2
-  REQUEST_QUEUE          = 1
-  NATS_REQUEST_TIMEOUT   = 5
-  RUN_LOOP_INTERVAL      = 2
-  FLAPPING_TIMEOUT       = 60
-  FLAPPING_DEATH         = 1
-
+    #intervals
+    :expected_state_update    => 10,
+    :analysis_delay           => 5,
+    :droplet_analysis         => 10,
+    :droplet_lost             => 30,
+    :postpone                 => 2,
+    :request_queue            => 1,
+    :nats_request_timeout     => 5,
+    :run_loop_interval        => 2,
+    :flapping_timeout         => 500,
+    :flapping_death           => 1,
+    :giveup_crash_number      => 4,
+    :min_restart_delay        => 60,
+    :max_restart_delay        => 480,
+    :max_shadowing_delay      => 10,
+    :check_shadowing          => 20,
+    :delay_time_percent_noise => 15,
+  }
 
   #app states
   DOWN              = 'DOWN'

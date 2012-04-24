@@ -9,7 +9,7 @@
 mbus: nats://nats:nats@192.168.24.128:4222/
 logging:
   level: warn
-pid: /var/vcap/sys/run/healthmanager.pid
+pid: /var/vcap/sys/run/healthmanager2.pid
 
 queue_batch_size: 10
 
@@ -26,7 +26,7 @@ intervals:
   # state (after a restart following every crash) for more than "flapping_death"
   # number of times in an interval that is "flapping_timeout" long.
   flapping_death:        2
-  flapping_timeout:    180
+  flapping_timeout:    500
   # Time to wait before trying to restart an application after a crash is
   # detected
   restart_timeout:      20

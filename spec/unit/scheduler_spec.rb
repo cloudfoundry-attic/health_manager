@@ -25,8 +25,8 @@ describe HealthManager do
 
       it 'should return default interval values' do
         s = Scheduler.new
-        s.interval(:analysis_delay).should == ::HealthManager::ANALYSIS_DELAY
-        s.interval('analysis_delay').should == ::HealthManager::ANALYSIS_DELAY
+        s.interval(:analysis_delay).should == ::HealthManager::DEFAULTS[:analysis_delay]
+        s.interval('analysis_delay').should == ::HealthManager::DEFAULTS[:analysis_delay]
       end
 
       it 'should raise ArgumentError for invalid intervals' do
