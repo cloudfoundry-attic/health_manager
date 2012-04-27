@@ -54,27 +54,27 @@ module HealthManager
 
     def declare_node(*path)
       check_var_exists(*path[0...-1])
-      h,k = get_last_hash_and_key(get_varz, *path)
+      h, k = get_last_hash_and_key(get_varz, *path)
       h[k] ||= {}
     end
 
     def declare_collection(*path)
       check_var_exists(*path[0...-1])
-      h,k = get_last_hash_and_key(get_varz, *path)
+      h, k = get_last_hash_and_key(get_varz, *path)
       h[k] ||= []
     end
 
     def declare_counter(*path)
       check_var_exists(*path[0...-1])
 
-      h,k = get_last_hash_and_key(get_varz, *path)
+      h, k = get_last_hash_and_key(get_varz, *path)
       raise ArgumentError.new("Counter #{path} already declared") if h[k]
       h[k] = 0
     end
 
     def reset(*path)
       check_var_exists(*path)
-      h,k = get_last_hash_and_key(get_varz, *path)
+      h, k = get_last_hash_and_key(get_varz, *path)
 
       if h[k].kind_of? Hash
         h[k].keys.each { |key| reset(*path, key) }
@@ -89,7 +89,7 @@ module HealthManager
 
     def push(*path, value)
       check_var_exists(*path)
-      h,k= get_last_hash_and_key(get_varz, *path)
+      h, k = get_last_hash_and_key(get_varz, *path)
       raise ArgumentError.new("Varz #{path} is not an Array, can't push") unless h[k].kind_of?(Array)
       h[k] << value
       sync(*path)
@@ -98,7 +98,7 @@ module HealthManager
 
     def add(*path, value)
       check_var_exists(*path)
-      h,k= get_last_hash_and_key(get_varz, *path)
+      h, k = get_last_hash_and_key(get_varz, *path)
       h[k] += value
       sync(*path)
       h[k]
@@ -110,13 +110,13 @@ module HealthManager
 
     def get(*path)
       check_var_exists(*path)
-      h,k = get_last_hash_and_key(get_varz, *path)
+      h, k = get_last_hash_and_key(get_varz, *path)
       h[k]
     end
 
     def set(*path, value)
       check_var_exists(*path)
-      h,k = get_last_hash_and_key(get_varz, *path)
+      h, k = get_last_hash_and_key(get_varz, *path)
       h[k] = value
     end
 

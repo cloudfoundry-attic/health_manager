@@ -64,7 +64,7 @@ module HealthManager
 
     def to_json(*a)
       { "json_class" => self.class.name,
-      }.merge(self.instance_variables.inject({}) {|h,v|
+      }.merge(self.instance_variables.inject({}) {|h, v|
                 h[v] = self.instance_variable_get(v); h
               }).to_json(*a)
     end
@@ -181,7 +181,7 @@ module HealthManager
     end
 
     def process_exit_crash(message)
-      instance = get_instance(message['version'],message['index'])
+      instance = get_instance(message['version'], message['index'])
       instance['state'] = CRASHED
 
       instance['crashes'] = 0 if timestamp_older_than?(instance['crash_timestamp'], AppState.flapping_timeout)
@@ -206,7 +206,7 @@ module HealthManager
     end
 
     def get_version(version)
-      @versions[version] ||= {'instances'=>{}}
+      @versions[version] ||= {'instances' => {}}
     end
 
     def get_instances(version)

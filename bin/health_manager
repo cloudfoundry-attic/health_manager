@@ -42,14 +42,16 @@ logging_config = config['logging']
 logging_config = {'level' => ENV['LOG_LEVEL']} if ENV['LOG_LEVEL'] #ENV override
 logging_config ||= {'level' => 'info'} #fallback value
 
-
-#FIXIT: where did logger.debug { "..." } messages go?
 VCAP::Logging.setup_from_config(logging_config)
 
 hm = HealthManager::Manager.new(config)
+
+pid_file = config['pid']
+VCAP::PidFile.new(pid_file) if pid_file
 
 trap('INT') { hm.shutdown }
 trap('SIGTERM') { hm.shutdown }
 
 hm.start
+
 

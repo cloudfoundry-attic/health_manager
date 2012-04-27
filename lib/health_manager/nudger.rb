@@ -2,7 +2,7 @@ module HealthManager
   class Nudger
     include HealthManager::Common
 
-    def initialize(config={})
+    def initialize(config = {})
       @config = config
       @queue = VCAP::PrioritySet.new
       @queue_batch_size = get_param_from_config_or_default(:queue_batch_size, @config)
@@ -41,7 +41,7 @@ module HealthManager
 
     def stop_instance(app, instance, priority)
       logger.debug { "nudger: stopping instance: app: #{app.id} instance: #{instance}" }
-      queue(make_stop_message(app,instance),priority)
+      queue(make_stop_message(app, instance), priority)
     end
 
     def make_start_message(app, indices, flapping = false)

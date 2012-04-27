@@ -7,7 +7,7 @@ module HealthManager
   class BulkBasedExpectedStateProvider < ExpectedStateProvider
 
     def each_droplet(&block)
-      process_next_batch({},&block)
+      process_next_batch({}, &block)
     end
 
     def set_expected_state(known, expected)
@@ -23,10 +23,10 @@ module HealthManager
 
     private
 
-    def process_next_batch(bulk_token,&block)
+    def process_next_batch(bulk_token, &block)
       with_credentials do |user, password|
         options = {
-          :head => { 'authorization' => [user,password] },
+          :head => { 'authorization' => [user, password] },
           :query => {
             'batch_size' => batch_size,
             'bulk_token' => bulk_token.to_json
@@ -100,7 +100,7 @@ module HealthManager
         end
 
         NATS.timeout(sid,
-                     get_param_from_config_or_default(:nats_request_timeout,@config)) do
+                     get_param_from_config_or_default(:nats_request_timeout, @config)) do
           logger.error("bulk: NATS timeout getting bulk api credentials. Request ignored.")
           release_varz
         end

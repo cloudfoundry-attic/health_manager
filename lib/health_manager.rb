@@ -34,7 +34,7 @@ module HealthManager
     attr_reader :known_state_provider
     attr_reader :expected_state_provider
 
-    def initialize(config={})
+    def initialize(config = {})
       @config = config
       logger.info("HealthManager: initializing")
 
@@ -69,11 +69,6 @@ module HealthManager
                                :password => status_config['password'])
     end
 
-    def create_pid_file
-      @pid_file = @config['pid']
-      VCAP::PidFile.new(@pid_file) if @pid_file
-    end
-
     def start
       logger.info("starting...")
 
@@ -91,8 +86,6 @@ module HealthManager
         end
 
         register_as_vcap_component
-        create_pid_file if @config['pid']
-
         @scheduler.start #blocking call
       end
     end

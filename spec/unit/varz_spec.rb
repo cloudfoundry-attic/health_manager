@@ -55,7 +55,7 @@ describe HealthManager do
       v.held?(:n, :c2).should be_false
 
       v.release(:n, :c1)
-      v.hold(:n,:c2)
+      v.hold(:n, :c2)
 
       v.held?(:n).should be_false
       v.held?(:n, :c1).should be_false
@@ -100,7 +100,7 @@ describe HealthManager do
       res[:node1][:node2][:counter3].should == 1
 
       #after release and republish, value is again available
-      v.release(:node1,:counter2)
+      v.release(:node1, :counter2)
       v.publish_not_held_recursively(res, v.get_varz)
 
       res[:node1][:counter2].should == 1
@@ -124,7 +124,7 @@ describe HealthManager do
 
       #now holding third-level entry
 
-      v.hold(:node1,:node2,:counter3)
+      v.hold(:node1, :node2, :counter3)
 
       v.inc(:counter1)
       v.inc(:node1, :counter2)
@@ -136,7 +136,7 @@ describe HealthManager do
       res[:node1][:counter2].should == 3
       res[:node1][:node2][:counter3].should == 2
 
-      v.release(:node1,:node2,:counter3)
+      v.release(:node1, :node2, :counter3)
       v.publish_not_held_recursively(res, v.get_varz)
 
       res[:node1][:node2][:counter3].should == 3

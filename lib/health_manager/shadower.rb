@@ -19,7 +19,7 @@ module HealthManager
       logger.info("shadower: subscribing: #{subj}")
 
       NATS.subscribe(subj) do |message|
-        process_message(subj,message)
+        process_message(subj, message)
       end
     end
 

@@ -4,7 +4,7 @@ module HealthManager
   #this implementation maintains the known state by listening to the
   #DEA heartbeat messages
   class NatsBasedKnownStateProvider < KnownStateProvider
-    def initialize(config={})
+    def initialize(config = {})
       @config = config
       super
     end

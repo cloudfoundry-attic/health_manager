@@ -1,10 +1,10 @@
-require File.join(File.dirname(__FILE__), '..','spec_helper')
+require File.join(File.dirname(__FILE__), '..', 'spec_helper')
 
 VCAP::Logging.setup_from_config({'level' => ENV['LOG_LEVEL'] || 'warn'})
 
 module HealthManager::Common
 
-  def in_em(timeout=2)
+  def in_em(timeout = 2)
     EM.run do
       EM.add_timer(timeout) do
         EM.stop
@@ -27,6 +27,6 @@ module HealthManager::Common
         }
       }
     end
-    {'droplets' => hb, 'dea'=>'123456789abcdefgh'}
+    {'droplets' => hb, 'dea' => '123456789abcdefgh'}
   end
 end

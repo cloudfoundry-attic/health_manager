@@ -9,11 +9,11 @@ module HealthManager
     include HealthManager::Common
 
     class << self
-      def get_known_state_provider(config={})
+      def get_known_state_provider(config = {})
         new_configured_class(config, 'known_state_provider', NatsBasedKnownStateProvider)
       end
 
-      def get_expected_state_provider(config={})
+      def get_expected_state_provider(config = {})
         new_configured_class(config, 'expected_state_provider', BulkBasedExpectedStateProvider)
       end
 
@@ -25,7 +25,7 @@ module HealthManager
       end
     end
 
-    def initialize(config={})
+    def initialize(config = {})
       @config = config
       @droplets = {} #hashes droplet_id => AppState instance
       @cur_droplet_index = 0

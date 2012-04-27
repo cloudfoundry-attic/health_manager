@@ -53,7 +53,7 @@ describe HealthManager do
     end
   end
 
-  def make_app(options={})
+  def make_app(options = {})
     @app_id ||= 0
     @app_id += 1
     @version = '123456'
@@ -66,13 +66,13 @@ describe HealthManager do
       'state' => ::HealthManager::STARTED,
       'last_updated' => now
 
-    }.merge(options).each { |k,v|
+    }.merge(options).each { |k, v|
       app.send "#{k}=", v
     }
     app
   end
 
-  def build_valid_config(config={})
+  def build_valid_config(config = {})
     @config = config
     varz = Varz.new(@config)
     varz.prepare

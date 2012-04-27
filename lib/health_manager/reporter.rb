@@ -4,16 +4,16 @@ module HealthManager
   class Reporter
     include HealthManager::Common
 
-    def initialize(config={})
+    def initialize(config = {})
       @config = config
     end
 
     def prepare
       NATS.subscribe('healthmanager.status') { |msg, reply_to|
-        process_status_message(msg,reply_to)
+        process_status_message(msg, reply_to)
       }
       NATS.subscribe('healthmanager.health') { |msg, reply_to|
-        process_health_message(msg,reply_to)
+        process_health_message(msg, reply_to)
       }
     end
 

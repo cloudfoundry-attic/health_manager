@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__),'spec_helper')
+require File.join(File.dirname(__FILE__), 'spec_helper')
 
 describe HealthManager do
 
@@ -23,14 +23,14 @@ describe HealthManager do
     end
 
     it 'should invoke missing_instances event handler' do
-      future_answer = [1,3]
+      future_answer = [1, 3]
       event_handler_invoked = false
       app = AppState.new(1)
       app.state = 'STARTED'
-      app.num_instances=4
+      app.num_instances = 4
 
       #no heartbeats arrived yet, so all instances are assumed missing
-      app.missing_indices.should == [0,1,2,3]
+      app.missing_indices.should == [0, 1, 2, 3]
 
       AppState.add_listener :missing_instances do |a, indices|
         a.should == app
@@ -62,13 +62,13 @@ describe HealthManager do
     end
 
     it 'should invoke extra_instances event handler' do
-      future_answer = [["12345-0","Extra instance"]]
+      future_answer = [["12345-0", "Extra instance"]]
 
       event_handler_invoked = false
       app = AppState.new(1)
       app.live_version = '12345'
       app.state = 'STARTED'
-      app.num_instances=4
+      app.num_instances = 4
 
       #no heartbeats arrived yet, so all instances are assumed missing
 

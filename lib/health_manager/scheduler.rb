@@ -2,7 +2,7 @@ module HealthManager
   class Scheduler
     include HealthManager::Common
 
-    def initialize( config={} )
+    def initialize(config = {})
       @config = config
       @schedule = []
       @last_receipt = 0
@@ -11,7 +11,7 @@ module HealthManager
       @run_loop_interval = get_param_from_config_or_default(:run_loop_interval, @config)
     end
 
-    def schedule( options, &block)
+    def schedule(options, &block)
       raise ArgumentError unless options.length == 1
       raise ArgumentError, 'block required' unless block_given?
       arg = options.first
@@ -20,7 +20,7 @@ module HealthManager
         :timer => [:add_timer],
       }[arg.first]
 
-      raise ArgumentError,"Unknown scheduling keyword, please use :immediate, :periodic or :timer" unless sendee
+      raise ArgumentError, "Unknown scheduling keyword, please use :immediate, :periodic or :timer" unless sendee
       sendee << arg[1]
       receipt = get_receipt
       @schedule << [block, sendee, receipt]
@@ -60,7 +60,7 @@ module HealthManager
       if @receipt_to_timer.has_key?(receipt)
         EM.cancel_timer(@receipt_to_timer.delete(receipt))
       else
-        @schedule.reject! { |_,_,r|  (r == receipt) }
+        @schedule.reject! { |_, _, r|  (r == receipt) }
       end
     end
 

@@ -6,7 +6,7 @@ module HealthManager::Common
 
   def get_interval_from_config_or_default(name, config)
     intervals = config[:intervals] || config['intervals'] || {}
-    get_param_from_config_or_default(name,intervals)
+    get_param_from_config_or_default(name, intervals)
   end
 
   def get_param_from_config_or_default(name, config)
@@ -49,7 +49,7 @@ module HealthManager::Common
   end
 
   def should_shadow?
-    ENV[HealthManager::HM_SHADOW]!='false' #at this stage, shadowing should be disabled explicitly
+    ENV[HealthManager::HM_SHADOW] != 'false' #at this stage, shadowing should be disabled explicitly
   end
 
   def logger
@@ -60,11 +60,11 @@ module HealthManager::Common
     VCAP::Logging.logger('healthmanager')
   end
 
-  def encode_json(obj={})
+  def encode_json(obj = {})
     Yajl::Encoder.encode(obj)
   end
 
-  def parse_json(string='{}')
+  def parse_json(string = '{}')
     Yajl::Parser.parse(string)
   end
 
