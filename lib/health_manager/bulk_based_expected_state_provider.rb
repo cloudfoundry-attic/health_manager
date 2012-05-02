@@ -13,12 +13,13 @@ module HealthManager
     def set_expected_state(known, expected)
       logger.debug { "bulk: #set_expected_state: known: #{known.inspect} expected: #{expected.inspect}" }
 
-      known.num_instances = expected['instances']
-      known.state = expected['state']
-      known.live_version = "#{expected['staged_package_hash']}-#{expected['run_count']}"
-      known.framework = expected['framework']
-      known.runtime = expected['runtime']
-      known.last_updated = parse_utc(expected['updated_at'])
+      known.set_expected_state(
+                               expected['instances'],
+                               expected['state'],
+                               "#{expected['staged_package_hash']}-#{expected['run_count']}",
+                               expected['framework'],
+                               expected['runtime'],
+                               parse_utc(expected['updated_at']))
     end
 
     private

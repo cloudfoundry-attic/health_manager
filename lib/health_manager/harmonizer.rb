@@ -139,6 +139,9 @@ module HealthManager
       result
     end
 
+
+    #FIXIT: abandon all pending/queued restarts for an app that has been updated.
+
     def schedule_delayed_restart(app_state, instance, index, delay)
       instance['restart_pending'] = true
       scheduler.after(delay) do

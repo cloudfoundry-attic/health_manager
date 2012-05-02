@@ -42,13 +42,13 @@ module HealthManager
       end
     end
 
-    attr_reader   :id
-    attr_accessor :state
-    attr_accessor :live_version
-    attr_accessor :num_instances
-    attr_accessor :framework, :runtime
-    attr_accessor :last_updated
-    attr_accessor :versions, :crashes
+    attr_reader :id
+    attr_reader :state
+    attr_reader :live_version
+    attr_reader :num_instances
+    attr_reader :framework, :runtime
+    attr_reader :last_updated
+    attr_reader :versions, :crashes
 
     def initialize(id)
       @id = id
@@ -56,6 +56,15 @@ module HealthManager
       @versions = {}
       @crashes = {}
       reset_missing_indices
+    end
+
+    def set_expected_state(num_instances, state, live_version, framework, runtime, last_updated)
+      @num_instances = num_instances
+      @state = state
+      @live_version = live_version
+      @framework = framework
+      @runtime = runtime
+      @last_updated = last_updated
     end
 
     def notify(event_type, *args)

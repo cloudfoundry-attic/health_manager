@@ -12,12 +12,6 @@ describe HealthManager do
 
   describe AppState do
     before(:each) do
-      @id = 1
-      @live_version = '123456abcdef'
-      @num_instances = 4
-      @droplet = AppState.new(@id)
-      @droplet.live_version = @live_version
-      @droplet.num_instances = @num_instances
       AppState.remove_all_listeners
       AppState.heartbeat_deadline = @heartbeat_dealing = 10
     end
@@ -25,9 +19,7 @@ describe HealthManager do
     it 'should invoke missing_instances event handler' do
       future_answer = [1, 3]
       event_handler_invoked = false
-      app = AppState.new(1)
-      app.state = 'STARTED'
-      app.num_instances = 4
+      app, expected = make_app
 
       #no heartbeats arrived yet, so all instances are assumed missing
       app.missing_indices.should == [0, 1, 2, 3]
@@ -62,13 +54,11 @@ describe HealthManager do
     end
 
     it 'should invoke extra_instances event handler' do
-      future_answer = [["12345-0", "Extra instance"]]
+      app, expected = make_app
+      extra_instance_id = expected[2]+"-0"
 
+      future_answer = [[extra_instance_id, "Extra instance"]]
       event_handler_invoked = false
-      app = AppState.new(1)
-      app.live_version = '12345'
-      app.state = 'STARTED'
-      app.num_instances = 4
 
       #no heartbeats arrived yet, so all instances are assumed missing
 
@@ -88,7 +78,6 @@ describe HealthManager do
       event_handler_invoked.should be_false
       app.analyze
       event_handler_invoked.should be_true
-
     end
   end
 end

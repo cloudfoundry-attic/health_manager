@@ -13,6 +13,21 @@ module HealthManager::Common
     end
   end
 
+  def make_app(id=1)
+    app = AppState.new(id)
+    expected = [
+                4,
+                'STARTED',
+                '12345abcded',
+                'sinatra',
+                'ruby19',
+                Time.now.to_i - 60*60*24
+               ]
+
+    app.set_expected_state(*expected)
+    return app, expected
+  end
+
   def make_heartbeat(apps)
     hb = []
     apps.each do |app|

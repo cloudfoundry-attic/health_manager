@@ -26,50 +26,30 @@ describe HealthManager do
 
       it 'should forward heartbeats' do
 
-        app = make_app({'num_instances' => 4 })
+        app, expected = make_app
 
         app1 = @nb.get_droplet(app.id)
 
-        #setting the expected state, as an expected_state_provider would
-        app1.live_version  = app.live_version
-        app1.state         = app.state
-        app1.num_instances = app.num_instances
-        app1.framework     = app.framework
-        app1.runtime       = app.runtime
-        app1.last_updated  = app.last_updated
+        app1.set_expected_state(
+                                app.num_instances,
+                                app.state,
+                                app.live_version,
+                                app.framework,
+                                app.runtime,
+                                app.last_updated)
 
-        instance = app1.get_instance(@version, 0)
+        instance = app1.get_instance(app.live_version, 0)
         instance['state'].should == 'DOWN'
         instance['last_heartbeat'].should be_nil
 
         hb = make_heartbeat([app])
         @nb.process_heartbeat(hb.to_json)
 
-        instance = app1.get_instance(@version, 0)
+        instance = app1.get_instance(app.live_version, 0)
         instance['state'].should == 'RUNNING'
         instance['last_heartbeat'].should_not be_nil
-
       end
     end
-  end
-
-  def make_app(options = {})
-    @app_id ||= 0
-    @app_id += 1
-    @version = '123456'
-    app = AppState.new(@app_id)
-    {
-      'num_instances' => 2,
-      'framework' => 'sinatra',
-      'runtime' => 'ruby18',
-      'live_version' => @version,
-      'state' => ::HealthManager::STARTED,
-      'last_updated' => now
-
-    }.merge(options).each { |k, v|
-      app.send "#{k}=", v
-    }
-    app
   end
 
   def build_valid_config(config = {})
