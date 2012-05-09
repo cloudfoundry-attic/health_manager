@@ -14,12 +14,12 @@ module HealthManager
       logger.debug { "bulk: #set_expected_state: known: #{known.inspect} expected: #{expected.inspect}" }
 
       known.set_expected_state(
-                               expected['instances'],
-                               expected['state'],
-                               "#{expected['staged_package_hash']}-#{expected['run_count']}",
-                               expected['framework'],
-                               expected['runtime'],
-                               parse_utc(expected['updated_at']))
+                               :num_instances => expected['instances'],
+                               :state         => expected['state'],
+                               :live_version  => "#{expected['staged_package_hash']}-#{expected['run_count']}",
+                               :framework     => expected['framework'],
+                               :runtime       => expected['runtime'],
+                               :last_updated  => parse_utc(expected['updated_at']))
     end
 
     private

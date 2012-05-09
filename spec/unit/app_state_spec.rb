@@ -19,7 +19,7 @@ describe HealthManager do
     it 'should invoke missing_instances event handler' do
       future_answer = [1, 3]
       event_handler_invoked = false
-      app, expected = make_app
+      app, _ = make_app
 
       #no heartbeats arrived yet, so all instances are assumed missing
       app.missing_indices.should == [0, 1, 2, 3]
@@ -55,7 +55,7 @@ describe HealthManager do
 
     it 'should invoke extra_instances event handler' do
       app, expected = make_app
-      extra_instance_id = expected[2]+"-0"
+      extra_instance_id = expected[:live_version]+"-0"
 
       future_answer = [[extra_instance_id, "Extra instance"]]
       event_handler_invoked = false

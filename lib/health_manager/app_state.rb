@@ -58,13 +58,20 @@ module HealthManager
       reset_missing_indices
     end
 
-    def set_expected_state(num_instances, state, live_version, framework, runtime, last_updated)
-      @num_instances = num_instances
-      @state = state
-      @live_version = live_version
-      @framework = framework
-      @runtime = runtime
-      @last_updated = last_updated
+    def set_expected_state(values)
+      values = values.dup #preserve the original
+      [:state,
+       :num_instances,
+       :live_version,
+       :framework,
+       :runtime,
+       :last_updated].each do |k|
+
+        v = values.delete(k)
+        raise ArgumentError.new("Value #{k} is required") unless v
+        self.instance_variable_set("@#{k.to_s}",v)
+      end
+      raise ArgumentError.new("unsupported keys: #{values.keys}") unless values.empty?
     end
 
     def notify(event_type, *args)

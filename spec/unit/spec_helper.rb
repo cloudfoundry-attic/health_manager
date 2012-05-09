@@ -15,16 +15,16 @@ module HealthManager::Common
 
   def make_app(id=1)
     app = AppState.new(id)
-    expected = [
-                4,
-                'STARTED',
-                '12345abcded',
-                'sinatra',
-                'ruby19',
-                Time.now.to_i - 60*60*24
-               ]
+    expected = {
+      :num_instances => 4,
+      :state         => 'STARTED',
+      :live_version  => '12345abcded',
+      :framework     => 'sinatra',
+      :runtime       => 'ruby19',
+      :last_updated  => Time.now.to_i - 60*60*24
+    }
 
-    app.set_expected_state(*expected)
+    app.set_expected_state(expected)
     return app, expected
   end
 
