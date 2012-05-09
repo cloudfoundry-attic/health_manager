@@ -58,13 +58,11 @@ module HealthManager
       reset_missing_indices
     end
 
-    def set_expected_state(num_instances, state, live_version, framework, runtime, last_updated)
-      @num_instances = num_instances
-      @state = state
-      @live_version = live_version
-      @framework = framework
-      @runtime = runtime
-      @last_updated = last_updated
+    def set_expected_state(options)
+      #TODO: evaluate how much "type-checking" is desirable
+      options.each { |k,v|
+        self.instance_variable_set("@#{k.to_s}",v)
+      }
     end
 
     def notify(event_type, *args)

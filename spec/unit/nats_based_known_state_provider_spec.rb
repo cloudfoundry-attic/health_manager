@@ -27,16 +27,8 @@ describe HealthManager do
       it 'should forward heartbeats' do
 
         app, expected = make_app
-
         app1 = @nb.get_droplet(app.id)
-
-        app1.set_expected_state(
-                                app.num_instances,
-                                app.state,
-                                app.live_version,
-                                app.framework,
-                                app.runtime,
-                                app.last_updated)
+        app1.set_expected_state(expected)
 
         instance = app1.get_instance(app.live_version, 0)
         instance['state'].should == 'DOWN'

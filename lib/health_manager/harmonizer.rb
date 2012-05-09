@@ -171,7 +171,7 @@ module HealthManager
           varz.update_realtime_stats_for_droplet(known_droplet)
           true
         else
-          # TODO: remove
+          # TODO: remove once ready for production
           varz.set(:droplets, known_state_provider.droplets)
           varz.publish_realtime_stats
 
