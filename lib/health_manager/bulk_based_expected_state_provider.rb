@@ -74,11 +74,11 @@ module HealthManager
     end
 
     def host
-      (@config['bulk'] && @config['bulk']['host']) || "api.vcap.me"
+      (@config['bulk_api'] && @config['bulk_api']['host']) || "api.vcap.me"
     end
 
     def batch_size
-      (@config['bulk'] && @config['bulk']['batch_size']) || "50"
+      (@config['bulk_api'] && @config['bulk_api']['batch_size']) || "50"
     end
 
     def app_url
