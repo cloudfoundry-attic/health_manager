@@ -37,8 +37,8 @@ module HealthManager
     :min_restart_delay        => 60,
     :max_restart_delay        => 480,
     :max_shadowing_delay      => 10,
-    :check_shadowing          => 20,
-    :delay_time_percent_noise => 15,
+    :check_shadowing          => 30,
+    :delay_time_noise         => 5,
   }
 
   #app states
