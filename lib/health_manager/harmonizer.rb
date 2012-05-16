@@ -124,17 +124,18 @@ module HealthManager
       # :flapping_death interval, delay starts with min_restart_delay
       # interval value, and doubles for every additional crash.  the
       # delay never exceeds :max_restart_delay though.  But wait,
-      # there's more: a +/-15% random noise is added to the delay, to
-      # avoid overwhelming number of simultaneous restarts. This is
-      # necessary because delayed restarts bypass nudger's queue --
-      # once delay period passes, the start message is published
-      # immediately.
+      # there's more: random noise is added to the delay, to avoid a
+      # storm of simultaneous restarts. This is necessary because
+      # delayed restarts bypass nudger's queue -- once delay period
+      # passes, the start message is published immediately.
 
       delay = [interval(:max_restart_delay),
                interval(:min_restart_delay) << (instance['crashes'] - interval(:flapping_death) - 1)
               ].min.to_f
-      noise_amount = 2.0 * (rand - 0.5) * interval(:delay_time_percent_noise).to_f / 100.0
-      result = (delay * (1.0 + noise_amount)).to_i
+      noise_amount = 2.0 * (rand - 0.5) * interval(:delay_time_noise).to_f
+
+      result = delay + noise_amount
+
       logger.info("delay: #{delay} noise: #{noise_amount} result: #{result}")
       result
     end
