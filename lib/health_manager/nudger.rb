@@ -5,7 +5,7 @@ module HealthManager
     def initialize(config = {})
       @config = config
       @queue = VCAP::PrioritySet.new
-      @queue_batch_size = get_param_from_config_or_default(:queue_batch_size, @config)
+      @queue_batch_size = get_interval_from_config_or_default(:queue_batch_size, @config)
     end
 
     def deque_batch_of_requests

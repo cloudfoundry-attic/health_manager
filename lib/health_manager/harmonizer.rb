@@ -140,7 +140,6 @@ module HealthManager
       result
     end
 
-
     #FIXIT: abandon all pending/queued restarts for an app that has been updated.
 
     def schedule_delayed_restart(app_state, instance, index, delay)
@@ -204,7 +203,7 @@ module HealthManager
         logger.info("harmonizer: update_expected_state is currently running, and a postponed one is already scheduled.  Ignoring.")
       else
         logger.info("harmonizer: postponing expected_state_update")
-        @postponed = scheduler.after_interval :postpone do
+        @postponed = scheduler.after_interval :postpone_update do
           logger.info("harmonizer: starting postponed expected_state_update")
           @postponed = nil
           update_expected_state

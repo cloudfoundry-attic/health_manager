@@ -182,6 +182,8 @@ module HealthManager
       prune_crashes
     end
 
+    # TODO: evaluate adequacy of this mechanism in replacing 'quiscent' and 'restart_timeout'
+    # mechanisms in the original hm
     def reset_recently?
       timestamp_fresher_than?(@reset_timestamp, AppState.heartbeat_deadline || 0)
     end
