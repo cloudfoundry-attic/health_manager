@@ -20,15 +20,16 @@ module HealthManager
   HIGH_PRIORITY          = 1_000_000
 
   DEFAULTS = {
-    :queue_batch_size         => 40,
+
 
     #intervals
     :expected_state_update    => 10,
     :analysis_delay           => 5,
     :droplet_analysis         => 10,
     :droplet_lost             => 30,
-    :postpone                 => 2,
+    :postpone_update          => 2,
     :request_queue            => 1,
+    :queue_batch_size         => 40,
     :nats_request_timeout     => 5,
     :run_loop_interval        => 2,
     :flapping_timeout         => 500,
@@ -39,6 +40,7 @@ module HealthManager
     :max_shadowing_delay      => 10,
     :check_shadowing          => 30,
     :delay_time_noise         => 5,
+
   }
 
   #app states

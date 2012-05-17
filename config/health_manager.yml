@@ -5,50 +5,68 @@
 # value of nil, should work in most cases.
 # local_route: 127.0.0.1
 
-# NATS message bus URI
+# NATS message bus URI, adjust as needed.
+# Can be overriden with NATS_URI env variable.
 mbus: nats://nats:nats@192.168.24.128:4222/
+
 logging:
-  level: warn
+  level: info
+
 pid: /var/vcap/sys/run/healthmanager2.pid
 
-# set this to your dev instance api url if you care to.
-bulk_api:
-  host: http://api.appcloud27.dev.mozycloud.com
-
-queue_batch_size: 10
+# set this to your dev instance api url
+# the default for the bulk_api host is http://api.vcap.me
+# bulk_api:
+#   host: http://api.vcap.me
 
 intervals:
-  # Interval for collecting statistics about this cloudfoundry instance.
-  # Amongst other things, data collected includes number of users, number of
-  # applications and memory usage.
+
+  # expected state updated every database_scan seconds
   database_scan:        60
-  # Time to wait before starting analysis for stopped applications.
+
+  # when a database update is requested but one is in progress,
+  # the new update is postponed this many seconds
+  postpone_update:       2
+
+  # droplet is assumed lost after that many seconds of missing heartbeats
   droplet_lost:         30
-  # Interval between scans for analysis of applications.
+
+  # droplets enumerated and analyzed every droplet_analysis seconds
   droplets_analysis:    20
-  # An application is deemed to be flapping if it is found to be in a crashed
-  # state (after a restart following every crash) for more than "flapping_death"
-  # number of times in an interval that is "flapping_timeout" long.
+
+  # when number of recent instance crashes exceeds flapping_death,
+  # the instance is declared flapping
   flapping_death:        1
-  flapping_timeout:    500
-  # Time to wait before trying to restart an application after a crash is
-  # detected
-  restart_timeout:      20
-  # Time to wait before analyzing the state of an application that has been
-  # started/restarted
-  stable_state:         60
 
-  min_restart_delay:    60
-  max_restart_delay:   480
+  # crashes are deemed recent for the purposes of flapping
+  # determination if they happened within this timeout
+  flapping_timeout:     500
 
-#number of start requests send each second (subject to EM timer limitations)
-#default value is 50.
-dequeueing_rate: 50
+  # for flapping apps, this is starting value of exponentially increasing
+  # delays before a restart attempt
+  min_restart_delay:     60
+
+  # for flapping apps, this is the maximum, capping value of the capped
+  # exponentially increasing delays before a restart attempt
+  max_restart_delay:     480
+
+  # delay time is randomized with noise not exceeding this value
+  delay_time_noise:       10
+
+  # stop attempting to restart flapping apps after this number of crashes.
+  # use negative value to never give up!
+  giveup_crash_number:     4
+
+  # a batch of start/stop requests is dequed every request_queue seconds
+  request_queue:           1
+
+  # start/stop requests are dequeued in batches of this size
+  queue_batch_size:       40
 
 # Used for /healthz and /vars endpoints. If not provided random
 # values will be generated on component start. Uncomment to use
 # static values.
-status:
-  port: 54321
-  user: thin
-  password: thin
+# status:
+#   port: 54321
+#   user: thin
+#   password: thin
