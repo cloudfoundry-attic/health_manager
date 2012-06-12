@@ -1,14 +1,6 @@
-require 'spec_helper.rb'
+require 'spec_helper'
 
 describe HealthManager do
-
-  Manager = HealthManager::Manager
-  Harmonizer = HealthManager::Harmonizer
-  KnownStateProvider = HealthManager::KnownStateProvider
-  ExpectedStateProvider = HealthManager::ExpectedStateProvider
-  Reporter = HealthManager::Reporter
-  Nudger = HealthManager::Nudger
-  Varz = HealthManager::Varz
 
   before(:all) do
     EM.error_handler do |e|
@@ -26,7 +18,7 @@ describe HealthManager do
     @m.varz.prepare
   end
 
-  describe Manager do
+  describe "Manager" do
     it 'should have all componets registered and available' do
 
       @m.harmonizer.should be_a_kind_of Harmonizer
@@ -42,7 +34,7 @@ describe HealthManager do
     end
   end
 
-  describe Harmonizer do
+  describe "Harmonizer" do
     it 'should be able to describe a policy of bringing a known state to expected state'
   end
 end

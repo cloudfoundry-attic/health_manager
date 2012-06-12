@@ -10,3 +10,8 @@ require 'bundler/setup'
 
 require 'health_manager'
 
+RSpec.configure do |config|
+ config.include(HealthManager)
+end
+
+Dir["#{home}/spec/support/**/*.rb"].each { |f| require f }

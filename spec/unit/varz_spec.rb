@@ -2,9 +2,7 @@ require 'spec_helper'
 
 describe HealthManager do
 
-  Varz = HealthManager::Varz
-
-  describe Varz do
+  describe "Varz" do
     before :each do
       @v = Varz.new
     end

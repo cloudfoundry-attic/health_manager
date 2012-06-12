@@ -1,15 +1,13 @@
-require 'spec_helper.rb'
+require 'spec_helper'
 
 describe HealthManager do
-  Manager = HealthManager::Manager
-  Nudger = HealthManager::Nudger
 
   before(:each) do
     @m = Manager.new
     @m.varz.prepare
   end
 
-  describe Nudger do
+  describe "Nudger" do
     it 'should be able to start app instance' do
       n = @m.nudger
       @m.publisher.should_receive(:publish).with('cloudcontrollers.hm.requests', match(/"op":"START"/)).once

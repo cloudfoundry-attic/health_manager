@@ -1,8 +1,6 @@
-require File.join(File.dirname(__FILE__), 'spec_helper')
+require 'spec_helper'
 
 describe HealthManager do
-
-  AppState = HealthManager::AppState
 
   include HealthManager::Common
 
@@ -10,10 +8,16 @@ describe HealthManager do
     AppState.remove_all_listeners
   end
 
-  describe AppState do
+  describe "AppState" do
     before(:each) do
       AppState.remove_all_listeners
       AppState.heartbeat_deadline = @heartbeat_dealing = 10
+    end
+
+
+    it 'should not invoke missing_instances for non-staged states' do
+      app, _ = make_app(:package_state => 'PENDING')
+      app.missing_indices.should == []
     end
 
     it 'should invoke missing_instances event handler' do
