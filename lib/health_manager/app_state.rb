@@ -47,6 +47,7 @@ module HealthManager
     attr_reader :live_version
     attr_reader :num_instances
     attr_reader :framework, :runtime
+    attr_reader :package_state
     attr_reader :last_updated
     attr_reader :versions, :crashes
 
@@ -65,6 +66,7 @@ module HealthManager
        :live_version,
        :framework,
        :runtime,
+       :package_state,
        :last_updated].each do |k|
 
         v = values.delete(k)
@@ -150,7 +152,13 @@ module HealthManager
     end
 
     def missing_indices
-      return [] unless @state == STARTED
+      return [] unless [
+                        @state == STARTED,
+                        @package_state == STAGED
+                        # possibly add other sanity checks here to ensure valid running state,
+                        # e.g. valid version, etc.
+                        ].all?
+
 
       (0...num_instances).find_all do |i|
         instance = get_instance(live_version, i)

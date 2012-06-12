@@ -43,6 +43,11 @@ module HealthManager
 
   }
 
+  #package states
+  STAGED            = 'STAGED'
+  PENDING           = 'PENDING'
+  FAILED            = 'FAILED'
+
   #app states
   DOWN              = 'DOWN'
   STARTED           = 'STARTED'
