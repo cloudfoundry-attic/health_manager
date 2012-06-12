@@ -16,6 +16,12 @@ describe HealthManager do
       AppState.heartbeat_deadline = @heartbeat_dealing = 10
     end
 
+
+    it 'should not invoke missing_instances for non-staged states' do
+      app, _ = make_app(:package_state => 'PENDING')
+      app.missing_indices.should == []
+    end
+
     it 'should invoke missing_instances event handler' do
       future_answer = [1, 3]
       event_handler_invoked = false

@@ -13,16 +13,18 @@ module HealthManager::Common
     end
   end
 
-  def make_app(id=1)
-    app = AppState.new(id)
+  def make_app(options = {})
+
+    app = AppState.new(options[:id] || 1)
     expected = {
       :num_instances => 4,
       :state         => 'STARTED',
       :live_version  => '12345abcded',
       :framework     => 'sinatra',
       :runtime       => 'ruby19',
+      :package_state => 'STAGED',
       :last_updated  => Time.now.to_i - 60*60*24
-    }
+    }.merge(options)
 
     app.set_expected_state(expected)
     return app, expected
