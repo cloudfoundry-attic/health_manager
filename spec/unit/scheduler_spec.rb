@@ -2,11 +2,9 @@ require 'spec_helper'
 
 describe HealthManager do
 
-  Scheduler = HealthManager::Scheduler
-
   include HealthManager::Common
 
-  describe Scheduler do
+  describe "Scheduler" do
 
     before(:each) do
       @s = Scheduler.new
