@@ -2,16 +2,14 @@ require 'spec_helper'
 
 describe HealthManager do
 
-  NatsBasedKnownStateProvider = HealthManager::NatsBasedKnownStateProvider
-
   include HealthManager::Common
 
   after :each do
     AppState.remove_all_listeners
   end
 
-  describe AppStateProvider do
-    describe NatsBasedKnownStateProvider do
+  describe "AppStateProvider" do
+    describe "NatsBasedKnownStateProvider" do
 
       before(:each) do
         @nb = NatsBasedKnownStateProvider.new(build_valid_config)
