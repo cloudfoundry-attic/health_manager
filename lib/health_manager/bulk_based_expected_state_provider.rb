@@ -19,6 +19,7 @@ module HealthManager
                                :live_version  => "#{expected['staged_package_hash']}-#{expected['run_count']}",
                                :framework     => expected['framework'],
                                :runtime       => expected['runtime'],
+                               :package_state => expected['package_state'],
                                :last_updated  => parse_utc(expected['updated_at']))
     end
 
