@@ -1,8 +1,9 @@
-require 'spec_helper.rb'
+require File.join(File.dirname(__FILE__), 'spec_helper')
 
 describe HealthManager do
   Manager = HealthManager::Manager
   Nudger = HealthManager::Nudger
+  AppState = HealthManager::AppState
 
   before(:each) do
     @m = Manager.new

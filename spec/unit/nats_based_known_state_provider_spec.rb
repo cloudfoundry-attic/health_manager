@@ -1,8 +1,12 @@
-require 'spec_helper'
+require File.join(File.dirname(__FILE__), 'spec_helper')
 
 describe HealthManager do
 
   NatsBasedKnownStateProvider = HealthManager::NatsBasedKnownStateProvider
+  AppStateProvider = HealthManager::AppStateProvider
+  Scheduler = HealthManager::Scheduler
+  Varz = HealthManager::Varz
+  AppState = HealthManager::AppState
 
   include HealthManager::Common
 

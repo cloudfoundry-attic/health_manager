@@ -7,6 +7,7 @@ describe HealthManager do
   KnownStateProvider = HealthManager::KnownStateProvider
   ExpectedStateProvider = HealthManager::ExpectedStateProvider
   Reporter = HealthManager::Reporter
+  Scheduler = HealthManager::Scheduler
   Nudger = HealthManager::Nudger
   Varz = HealthManager::Varz
 

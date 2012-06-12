@@ -5,6 +5,7 @@ describe HealthManager do
   AppState = HealthManager::AppState
   AppStateProvider = HealthManager::AppStateProvider
   BulkBasedExpectedStateProvider = HealthManager::BulkBasedExpectedStateProvider
+  NatsBasedKnownStateProvider = HealthManager::NatsBasedKnownStateProvider
 
   describe AppStateProvider do
     describe '#get_known_state_provider' do
