@@ -7,15 +7,15 @@ module HealthManager
       @requests = {}
     end
 
-    def subscribe
+    def subscribe_to_all
       ['healthmanager.start',
        'cloudcontrollers.hm.requests',
        'healthmanager.status',
        'healthmanager.health'
-      ].each { |subj| subscribe_on(subj) }
+      ].each { |subj| subscribe(subj) }
     end
 
-    def subscribe_on(subj)
+    def subscribe(subj)
       logger.info("shadower: subscribing: #{subj}")
 
       NATS.subscribe(subj) do |message|

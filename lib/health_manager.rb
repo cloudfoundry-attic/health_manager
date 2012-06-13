@@ -64,6 +64,7 @@ module HealthManager
                                :host => VCAP.local_ip(@config['local_route']),
                                :index => @config['index'],
                                :config => sanitized_config,
+                               :nats => @publisher,
                                :port => status_config['port'],
                                :user => status_config['user'],
                                :password => status_config['password'])
@@ -73,7 +74,7 @@ module HealthManager
       logger.info("starting...")
 
       EM.epoll
-      NATS.start :uri => get_nats_uri do
+      NATS.start(:uri => get_nats_uri) do
         @varz.prepare
         @reporter.prepare
         @harmonizer.prepare
@@ -82,7 +83,7 @@ module HealthManager
 
         if should_shadow?
           logger.info("starting Shadower")
-          @shadower.subscribe
+          @shadower.subscribe_to_all
         end
 
         register_as_vcap_component
