@@ -4,7 +4,7 @@ describe HealthManager do
 
   before(:all) do
     EM.error_handler do |e|
-      fail "EM error: #{e.message}"
+      fail "EM error: #{e.message}\n#{e.backtrace}"
     end
   end
 
@@ -19,8 +19,15 @@ describe HealthManager do
   end
 
   describe "Manager" do
-    it 'should have all componets registered and available' do
+    it 'should not publish to NATS when registering as vcap_component' do
+      in_em do
+        NATS.should_receive(:subscribe).once
+        NATS.should_not_receive(:publish)
+        @m.register_as_vcap_component
+      end
+    end
 
+    it 'should have all componets registered and available' do
       @m.harmonizer.should be_a_kind_of Harmonizer
 
       # chaining components should also work.
