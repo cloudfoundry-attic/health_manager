@@ -23,6 +23,33 @@ module HealthManager
                                :last_updated  => parse_utc(expected['updated_at']))
     end
 
+    def update_user_counts
+      with_credentials do |user, password|
+        options = {
+          :head => { 'authorization' => [user, password] },
+          :query => { 'model' => 'user' }
+        }
+        http = EM::HttpRequest.new(counts_url).get(options)
+        http.callback do
+          if http.response_header.status != 200
+            logger.error("bulk: request problem. Response: #{http.response_header} #{http.response}")
+            next
+          end
+
+          response = parse_json(http.response) || {}
+          logger.debug { "bulk: counts for #{model} received: #{response}" }
+
+          counts = response['counts'] || {}
+          varz.set(:total_users, (counts['user'] || 0).to_i)
+        end
+
+        http.errback do
+          logger.error("bulk: error: talking to bulk API at #{counts_url}")
+          @user = @password = nil #ensure re-acquisition of credentials
+        end
+      end
+    end
+
     private
 
     def process_next_batch(bulk_token, &block)
@@ -82,10 +109,18 @@ module HealthManager
       (@config['bulk_api'] && @config['bulk_api']['batch_size']) || "50"
     end
 
-    def app_url
-      url = "#{host}/bulk/apps"
+    def bulk_url
+      url = "#{host}/bulk"
       url = "http://"+url unless url.start_with?("http://")
       url
+    end
+
+    def app_url
+      "#{bulk_url}/apps"
+    end
+
+    def counts_url
+      "#{bulk_url}/counts"
     end
 
     def with_credentials

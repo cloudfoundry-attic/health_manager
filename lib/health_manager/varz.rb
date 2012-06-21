@@ -13,7 +13,6 @@ module HealthManager
                       :running]
 
     EXPECTED_STATS = [:total,
-                      :total_users,
                       :users,
                       :apps]
 

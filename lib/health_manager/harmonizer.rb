@@ -191,6 +191,7 @@ module HealthManager
         return
       end
 
+      expected_state_provider.update_user_counts
       varz.reset_expected_stats
       expected_state_provider.each_droplet do |app_id, expected|
         known = known_state_provider.get_droplet(app_id)
