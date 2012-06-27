@@ -37,7 +37,7 @@ module HealthManager
           end
 
           response = parse_json(http.response) || {}
-          logger.debug { "bulk: counts for #{model} received: #{response}" }
+          logger.debug { "bulk: user counts received: #{response}" }
 
           counts = response['counts'] || {}
           varz.set(:total_users, (counts['user'] || 0).to_i)

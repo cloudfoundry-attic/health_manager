@@ -27,12 +27,25 @@ module HealthManager
 
       #set up listeners for anomalous events to respond with correcting actions
       AppState.add_listener(:missing_instances) do |app_state, missing_indices|
+        if app_state.stale?
+          logger.info { "harmonizer: stale: missing_instances ignored app_id=#{app_state.id} indices=#{missing_indices}" }
+          next
+        end
+
         logger.debug { "harmonizer: missing_instances"}
+        missing_indices.delete_if { |i|
+          restart_pending?(app_state.get_instance(i))
+        }
         nudger.start_instances(app_state, missing_indices, NORMAL_PRIORITY)
         #TODO: flapping logic, too
       end
 
       AppState.add_listener(:extra_instances) do |app_state, extra_instances|
+        if app_state.stale?
+          logger.info { "harmonizer: stale: extra_instances ignored: #{extra_instances}" }
+          next
+        end
+
         logger.debug { "harmonizer: extra_instances"}
         nudger.stop_instances_immediately(app_state, extra_instances)
       end
@@ -67,8 +80,9 @@ module HealthManager
         end
       end
 
-      AppState.add_listener(:droplet_updated) do |*args|
-        logger.debug { "harmonizer: droplet_updated" }
+      AppState.add_listener(:droplet_updated) do |app_state, message|
+        logger.info { "harmonizer: droplet_updated: #{message}" }
+        app_state.mark_stale
         update_expected_state
       end
 

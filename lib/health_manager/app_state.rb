@@ -56,11 +56,12 @@ module HealthManager
       @num_instances = 0
       @versions = {}
       @crashes = {}
+      @stale = true # start out as stale until expected state is set
       reset_missing_indices
     end
 
     def set_expected_state(values)
-      values = values.dup #preserve the original
+      values = values.dup # preserve the original
       [:state,
        :num_instances,
        :live_version,
@@ -74,6 +75,7 @@ module HealthManager
         self.instance_variable_set("@#{k.to_s}",v)
       end
       raise ArgumentError.new("unsupported keys: #{values.keys}") unless values.empty?
+      @stale = false
     end
 
     def notify(event_type, *args)
@@ -88,15 +90,25 @@ module HealthManager
     end
 
     def process_heartbeat(beat)
-      events = []
-
       instance = get_instance(beat['version'], beat['index'])
-      instance['last_heartbeat'] = now
 
-      instance['timestamp'] = now
-      %w(instance state_timestamp state).each { |key|
-        instance[key] = beat[key]
-      }
+      if running_state?(beat)
+        if  instance['state'] == RUNNING &&
+            instance['instance'] != beat['instance']
+          notify(:extra_instances, [[beat['instance'],'Instance mismatch']] )
+        else
+          instance['last_heartbeat'] = now
+          instance['timestamp'] = now
+          %w(instance state_timestamp state).each { |key|
+            instance[key] = beat[key]
+          }
+        end
+      elsif beat['state'] == CRASHED
+        @crashes[beat['instance']] = {
+          'timestamp' => now,
+          'crash_timestamp' => beat['state_timestamp']
+        }
+      end
     end
 
     def check_for_missing_indices
@@ -113,7 +125,7 @@ module HealthManager
       @versions.each do |version, version_entry |
         version_entry['instances'].delete_if do |index, instance|  # deleting extra instances
 
-          if RUNNING_STATES.include?(instance['state']) &&
+          if running_state?(instance) &&
               timestamp_older_than?(instance['timestamp'],
                                     AppState.heartbeat_deadline)
             instance['state'] = DOWN
@@ -121,12 +133,12 @@ module HealthManager
           end
 
           prune_reason = [[@state == STOPPED, 'Droplet state is STOPPED'],
-                   [index >= @num_instances, 'Extra instance'],
-                   [version != @live_version, 'Live version mismatch']
-                  ].find { |condition, _| condition }
+                          [index >= @num_instances, 'Extra instance'],
+                          [version != @live_version, 'Live version mismatch']
+                         ].find { |condition, _| condition }
 
           if prune_reason
-            if RUNNING_STATES.include?(instance['state'])
+            if running_state?(instance)
               reason = prune_reason.last
               extra_instances << [instance['instance'], reason]
             end
@@ -157,7 +169,7 @@ module HealthManager
                         @package_state == STAGED
                         # possibly add other sanity checks here to ensure valid running state,
                         # e.g. valid version, etc.
-                        ].all?
+                       ].all?
 
 
       (0...num_instances).find_all do |i|
@@ -190,8 +202,20 @@ module HealthManager
       prune_crashes
     end
 
+    def running_state?(instance)
+      instance && instance['state'] && RUNNING_STATES.include?(instance['state'])
+    end
+
     def reset_recently?
       timestamp_fresher_than?(@reset_timestamp, AppState.heartbeat_deadline || 0)
+    end
+
+    def mark_stale
+      @stale = true
+    end
+
+    def stale?
+      @stale
     end
 
     def process_exit_dea(message)
@@ -229,15 +253,15 @@ module HealthManager
       notify(:droplet_updated, message)
     end
 
-    def get_version(version)
+    def get_version(version = @live_version)
       @versions[version] ||= {'instances' => {}}
     end
 
-    def get_instances(version)
+    def get_instances(version = @live_version)
       get_version(version)['instances']
     end
 
-    def get_instance(version, index)
+    def get_instance(version = @live_version, index)
       get_instances(version)[index] ||= {
         'state' => DOWN,
         'crashes' => 0,
