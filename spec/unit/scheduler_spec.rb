@@ -12,13 +12,13 @@ describe HealthManager do
 
     describe '#interval' do
       it 'should return configured interval values' do
-        s1 = Scheduler.new( :intervals => {:droplet_analysis =>7 } )
-        s2 = Scheduler.new( 'intervals' => {'droplet_analysis' =>6 } )
+        s1 = Scheduler.new( :intervals => {:droplets_analysis =>7 } )
+        s2 = Scheduler.new( 'intervals' => {'droplets_analysis' =>6 } )
 
-        s1.interval(:droplet_analysis).should == 7
-        s1.interval('droplet_analysis').should == 7
-        s2.interval(:droplet_analysis).should == 6
-        s2.interval('droplet_analysis').should == 6
+        s1.interval(:droplets_analysis).should == 7
+        s1.interval('droplets_analysis').should == 7
+        s2.interval(:droplets_analysis).should == 6
+        s2.interval('droplets_analysis').should == 6
       end
 
       it 'should return default interval values' do
