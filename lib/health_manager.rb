@@ -62,7 +62,7 @@ module HealthManager
       status_config = @config['status'] || {}
       VCAP::Component.register(:type => 'HealthManager',
                                :host => VCAP.local_ip(@config['local_route']),
-                               :index => @config['index'],
+                               :index => @config['index'] || 0,
                                :config => sanitized_config,
                                :nats => @publisher,
                                :port => status_config['port'],

@@ -25,7 +25,7 @@ module HealthManager
     #intervals
     :expected_state_update    => 10,
     :analysis_delay           => 5,
-    :droplet_analysis         => 10,
+    :droplets_analysis         => 20,
     :droplet_lost             => 30,
     :postpone_update          => 2,
     :request_queue            => 1,

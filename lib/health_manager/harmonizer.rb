@@ -99,7 +99,7 @@ module HealthManager
       end
 
       scheduler.after_interval :droplet_lost do
-        scheduler.at_interval :droplet_analysis do
+        scheduler.at_interval :droplets_analysis do
           analyze_all_apps
         end
       end
@@ -168,17 +168,17 @@ module HealthManager
     # ------------------------------------------------------------
 
     def analyze_all_apps
-      if scheduler.task_running? :droplet_analysis
-        logger.warn("Droplet analysis still in progress.  Consider increasing droplet_analysis interval.")
+      if scheduler.task_running? :droplets_analysis
+        logger.warn("Droplet analysis still in progress.  Consider increasing droplets_analysis interval.")
         return
       end
 
-      logger.debug { "harmonizer: droplet_analysis" }
+      logger.debug { "harmonizer: droplets_analysis" }
 
       varz.reset_realtime_stats
       known_state_provider.rewind
 
-      scheduler.start_task :droplet_analysis do
+      scheduler.start_task :droplets_analysis do
         known_droplet = known_state_provider.next_droplet
         if known_droplet
           known_droplet.analyze
@@ -192,7 +192,7 @@ module HealthManager
           # TODO: add elapsed time
           logger.info ["harmonizer: Analyzed #{varz.get(:running_instances)} running ",
                        "#{varz.get(:down_instances)} down instances"].join
-          false #signal :droplet_analysis task completion to the scheduler
+          false #signal :droplets_analysis task completion to the scheduler
         end
       end
     end
