@@ -83,6 +83,7 @@ module HealthManager
       AppState.add_listener(:droplet_updated) do |app_state, message|
         logger.info { "harmonizer: droplet_updated: #{message}" }
         app_state.mark_stale
+        abort_all_pending_delayed_restarts(app_state)
         update_expected_state
       end
 
@@ -154,16 +155,21 @@ module HealthManager
       result
     end
 
-    #FIXIT: abandon all pending/queued restarts for an app that has been updated.
-
     def schedule_delayed_restart(app_state, instance, index, delay)
-      instance['restart_pending'] = true
-      scheduler.after(delay) do
+      instance['restart_pending'] = scheduler.after(delay) do
         instance.delete('restart_pending')
         instance['last_action'] = now
         nudger.start_flapping_instance_immediately(app_state, index)
       end
     end
+
+    def abort_all_pending_delayed_restarts(app_state)
+      app_state.get_instances.select {|i| restart_pending?(i)}.each do |instance|
+        scheduler.cancel(instance['restart_pending'])
+        instance.delete('restart_pending')
+      end
+    end
+
     # Flapping-related code ENDS
     # ------------------------------------------------------------
 

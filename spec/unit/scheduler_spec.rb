@@ -105,7 +105,7 @@ describe HealthManager do
         cancelled_flag = true
       end
 
-      cancelled_timer2 = @s.schedule(:timer => 0.3) do
+      cancelled_timer2 = @s.after 0.3 do
         cancelled_flag = true
       end
 
