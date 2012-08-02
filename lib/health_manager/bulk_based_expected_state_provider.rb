@@ -128,7 +128,7 @@ module HealthManager
         yield @user, @password
       else
         logger.info("bulk: requesting API credentials over NATS...")
-        sid = NATS.request('cloudcontroller.bulk.credentials', nil, :max => 1) do |response|
+        sid = NATS.request("cloudcontroller.bulk.credentials.#{cc_partition}", nil, :max => 1) do |response|
           logger.info("bulk: API credentials received.")
           auth =  parse_json(response)
           @user = auth[:user] || auth['user']

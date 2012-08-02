@@ -34,7 +34,8 @@ def make_heartbeat(apps)
         'instance' => "#{app.live_version}-#{index}",
         'index' => index,
         'state' => ::HealthManager::RUNNING,
-        'state_timestamp' => now
+        'state_timestamp' => now,
+        'cc_partition' => 'default'
       }
     }
   end
