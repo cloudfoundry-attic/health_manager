@@ -9,6 +9,10 @@ module HealthManager
       super
     end
 
+    def cc_partition_match?(message)
+      cc_partition == message['cc_partition']
+    end
+
     def start
       logger.info("subscribing to heartbeats")
       NATS.subscribe('dea.heartbeat') do |message|
@@ -28,11 +32,13 @@ module HealthManager
       super
     end
 
-    def process_droplet_exited(message)
-      logger.debug { "process_droplet_exited: #{message}" }
+    def process_droplet_exited(message_str)
+      message = parse_json(message_str)
+      return unless cc_partition_match?(message)
+
+      logger.debug { "process_droplet_exited: #{message_str}" }
       varz.inc(:droplet_exited_msgs_received)
 
-      message = parse_json(message)
       droplet = get_droplet(message['droplet'])
 
       case message['reason']
@@ -46,24 +52,27 @@ module HealthManager
       end
     end
 
-    def process_heartbeat(message)
-      logger.debug { "known: #process_heartbeat: #{message}" }
+    def process_heartbeat(message_str)
+      message = parse_json(message_str)
+
+      logger.debug { "known: #process_heartbeat: #{message_str}" }
       varz.inc(:heartbeat_msgs_received)
 
-      message = parse_json(message)
       dea_uuid = message['dea']
 
       message['droplets'].each do |beat|
+        next unless cc_partition_match?(beat)
         id = beat['droplet']
         get_droplet(id).process_heartbeat(beat)
       end
     end
 
-    def process_droplet_updated(message)
-      logger.debug { "known: #process_droplet_updated: #{message}" }
-      varz.inc(:droplet_updated_msgs_received)
+    def process_droplet_updated(message_str)
+      message = parse_json(message_str)
+      return unless cc_partition_match?(message)
 
-      message = parse_json(message)
+      logger.debug { "known: #process_droplet_updated: #{message_str}" }
+      varz.inc(:droplet_updated_msgs_received)
       get_droplet(message['droplet']).process_droplet_updated(message)
     end
   end
