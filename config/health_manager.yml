@@ -17,15 +17,18 @@ pid: /var/vcap/sys/run/healthmanager2.pid
 # set this to your dev instance api url
 # the default for the bulk_api host is http://api.vcap.me
 bulk_api:
-  #host: http://api.vcap.me
-  #host: http://api.cf88.dev.las01.vcsops.com
+  host: http://api.vcap.me
 
+
+# hm services only the CCs of the specified partition and their apps.
+# heartbeats and other signals from apps of other paritions are ignored.
+cc_partition: default
 
 # use value "disable" to stop shadowing and start using hm_next for
 # real any other value, as well as default, will result in hm_next
 # working in shadow mode.
 # WARNING: remove legacy health_manager if disabling shadow mode for hm_next
-shadow_mode: disable
+# shadow_mode: disable
 
 intervals:
 
@@ -74,7 +77,7 @@ intervals:
 # Used for /healthz and /vars endpoints. If not provided random
 # values will be generated on component start. Uncomment to use
 # static values.
-# status:
-#   port: 54321
-#   user: thin
-#   password: thin
+#status:
+#  port: 54321
+#  user: thin
+#  password: thin

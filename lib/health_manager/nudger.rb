@@ -18,7 +18,7 @@ module HealthManager
 
     def publish_request_message(message)
       logger.info("nudger: publish: cloudcontrollers.hm.requests: #{message}")
-      publisher.publish('cloudcontrollers.hm.requests', message)
+      publisher.publish("cloudcontrollers.hm.requests.#{cc_partition}", message)
     end
 
     def start_flapping_instance_immediately(app, index)
