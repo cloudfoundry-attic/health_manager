@@ -11,7 +11,7 @@ module HealthManager
     end
 
     def set_expected_state(known, expected)
-      logger.debug { "bulk: #set_expected_state: known: #{known.inspect} expected: #{expected.inspect}" }
+      logger.debug2 { "bulk: #set_expected_state: known: #{known.inspect} expected: #{expected.inspect}" }
 
       known.set_expected_state(
                                :num_instances => expected['instances'],
