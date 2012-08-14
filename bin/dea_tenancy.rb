@@ -46,7 +46,7 @@ NATS.start :uri => ENV['NATS_URI'] do
       deas[dea] = msg['droplets'].map { |d|
         #puts d
 
-        "#{d['state'][0]}:#{d['droplet']}:#{d['index']}" # @#{d['cc_partition']}"
+        "#{d['state'][0]}:#{d['droplet']}:#{d['index']}@#{d['cc_partition']}"
       }
     end
 
