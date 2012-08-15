@@ -55,7 +55,7 @@ module HealthManager
     def process_heartbeat(message_str)
       message = parse_json(message_str)
 
-      logger.debug { "known: #process_heartbeat: #{message_str}" }
+      logger.debug2 { "known: #process_heartbeat: #{message_str}" }
       varz.inc(:heartbeat_msgs_received)
 
       dea_uuid = message['dea']
