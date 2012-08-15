@@ -11,7 +11,7 @@ describe HealthManager do
   describe "AppState" do
     before(:each) do
       AppState.remove_all_listeners
-      AppState.heartbeat_deadline = @heartbeat_dealing = 10
+      AppState.heartbeat_deadline = 10
     end
 
 
