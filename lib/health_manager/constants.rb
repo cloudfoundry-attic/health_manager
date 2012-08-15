@@ -20,8 +20,7 @@ module HealthManager
   HIGH_PRIORITY          = 1_000_000
 
   DEFAULTS = {
-
-
+    :cc_partition => "default",
     #intervals
     :expected_state_update    => 10,
     :analysis_delay           => 5,

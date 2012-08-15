@@ -4,6 +4,10 @@ module HealthManager::Common
     get_interval_from_config_or_default(name, @config)
   end
 
+  def cc_partition
+    @cc_partition ||= get_param_from_config_or_default(:cc_partition, @config)
+  end
+
   def get_interval_from_config_or_default(name, config)
     intervals = config[:intervals] || config['intervals'] || {}
     get_param_from_config_or_default(name, intervals)
