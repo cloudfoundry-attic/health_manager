@@ -109,6 +109,7 @@ module HealthManager
           'crash_timestamp' => beat['state_timestamp']
         }
       end
+      force_missing_indices_recalculation
     end
 
     def check_for_missing_indices
@@ -138,11 +139,13 @@ module HealthManager
                          ].find { |condition, _| condition }
 
           if prune_reason
+            logger.debug1 { "pruning: #{prune_reason.last}" }
             if running_state?(instance)
               reason = prune_reason.last
               extra_instances << [instance['instance'], reason]
             end
           end
+
           prune_reason #prune when non-nil
         end
       end
@@ -160,10 +163,19 @@ module HealthManager
     end
 
     def reset_missing_indices
+      force_missing_indices_recalculation
       @reset_timestamp = now
     end
 
     def missing_indices
+      @missing_indices ||= calculate_missing_indices
+    end
+
+    def force_missing_indices_recalculation
+      @missing_indices = nil
+    end
+
+    def calculate_missing_indices
       return [] unless [
                         @state == STARTED,
                         @package_state == STAGED
@@ -174,6 +186,7 @@ module HealthManager
 
       (0...num_instances).find_all do |i|
         instance = get_instance(live_version, i)
+        logger.debug1 { "looking at instance #{@id}:#{i}: #{instance}" }
         lhb = instance['last_heartbeat']
         [
          instance['state'] == CRASHED,
