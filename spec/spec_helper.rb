@@ -14,7 +14,10 @@ RSpec.configure do |config|
   config.include(HealthManager)
 
   config.before :all do
-    VCAP::Logging.setup_from_config({'level' => ENV['LOG_LEVEL'] || 'warn'})
+    logging_config = {'level' => ENV['LOG_LEVEL'] || 'warn'}
+    steno_config = Steno::Config.to_config_hash(logging_config)
+    steno_config[:context] = Steno::Context::ThreadLocal.new
+    Steno.init(Steno::Config.new(steno_config))
   end
 end
 

@@ -63,7 +63,7 @@ module HealthManager::Common
   end
 
   def get_logger
-    VCAP::Logging.logger('healthmanager')
+    Steno.logger("hm")
   end
 
   def encode_json(obj = {})
