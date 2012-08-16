@@ -6,10 +6,10 @@ require 'yajl'
 require 'optparse'
 require 'time'
 require 'nats/client'
+require 'steno'
 
 require 'vcap/common'
 require 'vcap/component'
-require 'vcap/logging'
 require 'vcap/priority_queue'
 
 require 'health_manager/constants'
