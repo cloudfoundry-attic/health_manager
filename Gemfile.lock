@@ -5,6 +5,14 @@ GIT
   specs:
     eventmachine (0.12.11.cloudfoundry.3)
 
+GIT
+  remote: git://github.com/cloudfoundry/steno.git
+  revision: e71a658f05b7cbf54006c3cc29db752cdfb192df
+  specs:
+    steno (0.0.15)
+      grape
+      yajl-ruby
+
 GEM
   remote: http://rubygems.org/
   specs:
@@ -47,9 +55,6 @@ GEM
     rspec-expectations (2.9.1)
       diff-lcs (~> 1.1.3)
     rspec-mocks (2.9.0)
-    steno (0.0.12)
-      grape
-      yajl-ruby
     thin (1.3.1)
       daemons (>= 1.0.9)
       eventmachine (>= 0.12.6)
@@ -71,6 +76,6 @@ DEPENDENCIES
   rake
   rest-client
   rspec
-  steno (~> 0.0.12)
+  steno!
   vcap_common (~> 1.0.10)
   yajl-ruby
