@@ -23,7 +23,6 @@ describe HealthManager do
       end
 
       it 'should forward heartbeats' do
-
         app, expected = make_app
         app1 = @nb.get_droplet(app.id)
         app1.set_expected_state(expected)
