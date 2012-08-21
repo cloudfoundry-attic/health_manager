@@ -16,7 +16,7 @@ module HealthManager
       known.set_expected_state(
                                :num_instances => expected['instances'],
                                :state         => expected['state'],
-                               :live_version  => "#{expected['staged_package_hash']}-#{expected['run_count']}",
+                               :live_version  => expected['version'],
                                :framework     => expected['framework'],
                                :runtime       => expected['runtime'],
                                :package_state => expected['package_state'],
