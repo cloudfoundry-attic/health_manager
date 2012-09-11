@@ -48,10 +48,11 @@ module HealthManager
     end
 
     def has_droplet?(id)
-      @droplets.has_key?(id)
+      @droplets.has_key?(id.to_s)
     end
 
     def get_droplet(id)
+      id = id.to_s
       @droplets[id] ||= AppState.new(id)
     end
 
