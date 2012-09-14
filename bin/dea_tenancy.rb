@@ -45,8 +45,8 @@ NATS.start :uri => ENV['NATS_URI'] do
     else
       deas[dea] = msg['droplets'].map { |d|
         #puts d
-
-        "#{d['state'][0]}:#{d['droplet']}:#{d['index']}@#{d['cc_partition']}"
+        klass_letter = d['droplet'].class.to_s[0].downcase
+        "#{d['state'][0]}:#{d['droplet']}#{klass_letter}:#{d['index']}@#{d['cc_partition']}"
       }
     end
 
