@@ -50,6 +50,7 @@ module HealthManager
     attr_reader :package_state
     attr_reader :last_updated
     attr_reader :versions, :crashes
+    attr_reader :pending_restarts
 
     def initialize(id)
       @id = id
@@ -57,6 +58,7 @@ module HealthManager
       @versions = {}
       @crashes = {}
       @stale = true # start out as stale until expected state is set
+      @pending_restarts = {}
       reset_missing_indices
     end
 
@@ -87,6 +89,18 @@ module HealthManager
       }.merge(self.instance_variables.inject({}) {|h, v|
                 h[v] = self.instance_variable_get(v); h
               }).to_json(*a)
+    end
+
+    def restart_pending?(index)
+      @pending_restarts.has_key?(index)
+    end
+
+    def add_pending_restart(index, receipt)
+      @pending_restarts[index] = receipt
+    end
+
+    def remove_pending_restart(index)
+      @pending_restarts.delete(index)
     end
 
     def process_heartbeat(beat)

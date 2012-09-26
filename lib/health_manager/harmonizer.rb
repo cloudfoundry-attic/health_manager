@@ -34,7 +34,7 @@ module HealthManager
 
         logger.debug { "harmonizer: missing_instances"}
         missing_indices.delete_if { |i|
-          restart_pending?(app_state.get_instance(i))
+          app_state.restart_pending?(i)
         }
         nudger.start_instances(app_state, missing_indices, NORMAL_PRIORITY)
         #TODO: flapping logic, too
@@ -64,7 +64,7 @@ module HealthManager
         instance = app_state.get_instance(message['version'], message['index'])
 
         if flapping?(instance)
-          unless restart_pending?(instance)
+          unless app_state.restart_pending?(index)
             instance['last_action'] = now
             if giveup_restarting?(instance)
               # TODO: when refactoring this thing out, don't forget to
@@ -78,6 +78,11 @@ module HealthManager
         else
           nudger.start_instance(app_state, index, LOW_PRIORITY)
         end
+      end
+
+      AppState.add_listener(:exit_stopped) do |app_state, message|
+        logger.info { "harmonizer: exit_stopped: #{message}" }
+        abort_all_pending_delayed_restarts(app_state)
       end
 
       AppState.add_listener(:droplet_updated) do |app_state, message|
@@ -123,13 +128,6 @@ module HealthManager
       instance['state'] == FLAPPING
     end
 
-    # TODO: consider storing the pending restart information
-    # externally, to prevent it from being discarded with the missing
-    # instance. Also see comment for #flapping?
-    def restart_pending?(instance)
-      instance['restart_pending']
-    end
-
     def giveup_restarting?(instance)
       interval(:giveup_crash_number) > 0 && instance['crashes'] > interval(:giveup_crash_number)
     end
@@ -156,18 +154,17 @@ module HealthManager
     end
 
     def schedule_delayed_restart(app_state, instance, index, delay)
-      instance['restart_pending'] = scheduler.after(delay) do
-        instance.delete('restart_pending')
+      receipt = scheduler.after(delay) do
+        app_state.remove_pending_restart(index)
         instance['last_action'] = now
         nudger.start_flapping_instance_immediately(app_state, index)
       end
+      app_state.add_pending_restart(index, receipt)
     end
 
     def abort_all_pending_delayed_restarts(app_state)
-      app_state.get_instances.select {|i| restart_pending?(i)}.each do |instance|
-        scheduler.cancel(instance['restart_pending'])
-        instance.delete('restart_pending')
-      end
+      app_state.pending_restarts.each { |_, receipt| scheduler.cancel(receipt) }
+      app_state.pending_restarts.clear
     end
 
     # Flapping-related code ENDS
