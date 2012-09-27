@@ -22,7 +22,7 @@ module HealthManager
   DEFAULTS = {
     :cc_partition => "default",
     #intervals
-    :expected_state_update    => 10,
+    :expected_state_update    => 60,
     :analysis_delay           => 5,
     :droplets_analysis         => 20,
     :droplet_lost             => 30,
