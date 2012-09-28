@@ -82,7 +82,7 @@ module HealthManager
 
       AppState.add_listener(:exit_stopped) do |app_state, message|
         logger.info { "harmonizer: exit_stopped: #{message}" }
-        abort_all_pending_delayed_restarts(app_state)
+        # NOOP
       end
 
       AppState.add_listener(:droplet_updated) do |app_state, message|
@@ -163,7 +163,9 @@ module HealthManager
     end
 
     def abort_all_pending_delayed_restarts(app_state)
-      app_state.pending_restarts.each { |_, receipt| scheduler.cancel(receipt) }
+      app_state.pending_restarts.each do |_, receipt|
+        scheduler.cancel(receipt)
+      end
       app_state.pending_restarts.clear
     end
 
