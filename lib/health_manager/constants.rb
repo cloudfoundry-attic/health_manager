@@ -40,7 +40,7 @@ module HealthManager
     :max_shadowing_delay      => 10,
     :check_shadowing          => 30,
     :delay_time_noise         => 5,
-
+    :max_droplets_in_varz     => 0,
   }
 
   #package states
