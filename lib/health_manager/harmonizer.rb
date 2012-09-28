@@ -190,8 +190,9 @@ module HealthManager
           varz.update_realtime_stats_for_droplet(known_droplet)
           true
         else
-          # TODO: remove once ready for production
-          varz.set(:droplets, known_state_provider.droplets)
+          if known_state_provider.droplets.size <= MAX_DROPLETS_IN_VARZ
+            varz.set(:droplets, known_state_provider.droplets)
+          end
           varz.publish_realtime_stats
 
           # TODO: add elapsed time
