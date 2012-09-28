@@ -83,7 +83,7 @@ module HealthManager
 
           batch.each do |app_id, droplet|
             varz.update_expected_stats_for_droplet(droplet)
-            block.call(app_id, droplet)
+            block.call(app_id.to_s, droplet)
           end
           process_next_batch(bulk_token, &block)
         end

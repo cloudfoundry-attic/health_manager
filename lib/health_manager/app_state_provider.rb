@@ -57,7 +57,7 @@ module HealthManager
     end
 
     def get_state(id)
-      get_droplet(id).state
+      get_droplet(id.to_s).state
     end
   end
 

@@ -21,7 +21,7 @@ module HealthManager
       varz.inc(:healthmanager_status_msgs_received)
       message = parse_json(message)
       logger.debug { "reporter: status: message: #{message}" }
-      droplet_id = message['droplet']
+      droplet_id = message['droplet'].to_s
 
       return unless known_state_provider.has_droplet?(droplet_id)
       known_droplet = known_state_provider.get_droplet(droplet_id)
@@ -48,7 +48,7 @@ module HealthManager
       varz.inc(:healthmanager_health_request_msgs_received)
       message = parse_json(message)
       message['droplets'].each do |droplet|
-        droplet_id = droplet['droplet']
+        droplet_id = droplet['droplet'].to_s
 
         next unless known_state_provider.has_droplet?(droplet_id)
 

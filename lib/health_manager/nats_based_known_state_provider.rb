@@ -39,7 +39,7 @@ module HealthManager
       logger.debug { "process_droplet_exited: #{message_str}" }
       varz.inc(:droplet_exited_msgs_received)
 
-      droplet = get_droplet(message['droplet'])
+      droplet = get_droplet(message['droplet'].to_s)
 
       case message['reason']
       when CRASHED
@@ -62,7 +62,7 @@ module HealthManager
 
       message['droplets'].each do |beat|
         next unless cc_partition_match?(beat)
-        id = beat['droplet']
+        id = beat['droplet'].to_s
         get_droplet(id).process_heartbeat(beat)
       end
     end
@@ -73,7 +73,7 @@ module HealthManager
 
       logger.debug { "known: #process_droplet_updated: #{message_str}" }
       varz.inc(:droplet_updated_msgs_received)
-      get_droplet(message['droplet']).process_droplet_updated(message)
+      get_droplet(message['droplet'].to_s).process_droplet_updated(message)
     end
   end
 end
