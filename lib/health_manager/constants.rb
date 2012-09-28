@@ -19,6 +19,8 @@ module HealthManager
   NORMAL_PRIORITY        = 1000
   HIGH_PRIORITY          = 1_000_000
 
+  MAX_DROPLETS_IN_VARZ = 100
+
   DEFAULTS = {
     :cc_partition => "default",
     #intervals
