@@ -21,6 +21,7 @@ module HealthManager
 
   DEFAULTS = {
     :cc_partition => "default",
+    :shadow_mode => "disable",
     #intervals
     :expected_state_update    => 60,
     :analysis_delay           => 5,

@@ -9,7 +9,9 @@ describe HealthManager do
   end
 
   before(:each) do
-    @config = {:intervals =>
+    @config = {
+      :shadow_mode => 'enable',
+      :intervals =>
       {
         :expected_state_update => 1.5,
       }
@@ -19,7 +21,7 @@ describe HealthManager do
   end
 
   describe "Manager" do
-    it 'should not publish to NATS when registering as vcap_component' do
+    it 'should not publish to NATS when registering as vcap_component in shadow mode' do
       in_em do
         NATS.should_receive(:subscribe).once
         NATS.should_not_receive(:publish)
