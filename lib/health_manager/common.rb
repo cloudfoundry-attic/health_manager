@@ -53,9 +53,9 @@ module HealthManager::Common
   end
 
   def should_shadow?
-    #at this stage, shadowing should be disabled explicitly
-    ENV[HealthManager::HM_SHADOW] != 'false' &&
-      @config['shadow_mode'] != 'disable'
+    #do NOT shadow by default
+    ENV[HealthManager::HM_SHADOW] == 'true' ||
+      @config['shadow_mode'] == 'enable'
   end
 
   def logger
