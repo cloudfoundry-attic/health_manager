@@ -8,6 +8,7 @@ module HealthManager
       attr_accessor :heartbeat_deadline
       attr_accessor :flapping_timeout
       attr_accessor :flapping_death
+      attr_accessor :droplet_gc_grace_period
 
       def known_event_types
         [:missing_instances,
@@ -52,6 +53,8 @@ module HealthManager
     attr_reader :versions, :crashes
     attr_reader :pending_restarts
 
+    attr_reader :existence_justified_at
+
     def initialize(id)
       @id = id
       @num_instances = 0
@@ -60,6 +63,15 @@ module HealthManager
       @stale = true # start out as stale until expected state is set
       @pending_restarts = {}
       reset_missing_indices
+      justify_existence_for_now
+    end
+
+    def justify_existence_for_now
+      @existence_justified_at = now
+    end
+
+    def ripe_for_gc?
+      timestamp_older_than?(@existence_justified_at, AppState.droplet_gc_grace_period)
     end
 
     def set_expected_state(values)
@@ -78,6 +90,7 @@ module HealthManager
       end
       raise ArgumentError.new("unsupported keys: #{values.keys}") unless values.empty?
       @stale = false
+      justify_existence_for_now
     end
 
     def notify(event_type, *args)
@@ -124,6 +137,7 @@ module HealthManager
         }
       end
       force_missing_indices_recalculation
+      justify_existence_for_now
     end
 
     def check_for_missing_indices

@@ -24,6 +24,7 @@ module HealthManager
       AppState.heartbeat_deadline = interval(:droplet_lost)
       AppState.flapping_timeout = interval(:flapping_timeout)
       AppState.flapping_death = interval(:flapping_death)
+      AppState.droplet_gc_grace_period = interval(:droplet_gc_grace_period)
 
       #set up listeners for anomalous events to respond with correcting actions
       AppState.add_listener(:missing_instances) do |app_state, missing_indices|
@@ -110,6 +111,10 @@ module HealthManager
         end
       end
 
+      scheduler.at_interval :droplet_gc do
+        gc_droplets
+      end
+
       if should_shadow?
         scheduler.at_interval :check_shadowing do
           shadower.check_shadowing
@@ -171,6 +176,13 @@ module HealthManager
 
     # Flapping-related code ENDS
     # ------------------------------------------------------------
+
+    def gc_droplets
+      before = known_state_provider.droplets.size
+      known_state_provider.droplets.delete_if { |_,d| d.ripe_for_gc? }
+      after = known_state_provider.droplets.size
+      logger.info("harmonizer: droplet GC ran. Number of droplets before: #{before}, after: #{after}. #{before-after} droplets removed")
+    end
 
     def analyze_all_apps
       if scheduler.task_running? :droplets_analysis
