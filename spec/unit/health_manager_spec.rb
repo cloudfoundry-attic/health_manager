@@ -1,6 +1,7 @@
 require 'spec_helper'
 
 describe HealthManager do
+  include HealthManager::Common
 
   before(:all) do
     EM.error_handler do |e|
@@ -43,7 +44,53 @@ describe HealthManager do
     end
   end
 
-  describe "Harmonizer" do
-    it 'should be able to describe a policy of bringing a known state to expected state'
+  describe "Garbage collection of droplets" do
+
+    GRACE_PERIOD = 60
+
+    before :each do
+      app,@expected = make_app
+      @hb = make_heartbeat([app])
+
+      @ksp = @m.known_state_provider
+      @ksp.droplets.size.should == 0
+      @h = @m.harmonizer
+
+      AppState.droplet_gc_grace_period = GRACE_PERIOD
+
+      freeze_time
+    end
+
+    after :each do
+      unfreeze_time
+    end
+
+    it 'should not GC when a recent h/b arrives' do
+      @ksp.process_heartbeat(@hb.to_json)
+      @ksp.droplets.size.should == 1
+      droplet = @ksp.droplets.values.first
+
+      droplet.ripe_for_gc?.should be_false
+      @h.gc_droplets
+
+      @ksp.droplets.size.should == 1
+
+      move_time(GRACE_PERIOD + 10)
+
+      droplet.ripe_for_gc?.should be_true
+
+      @h.gc_droplets
+      @ksp.droplets.size.should == 0
+    end
+
+    it 'should not GC after expected state is set' do
+      @ksp.process_heartbeat(@hb.to_json)
+      droplet = @ksp.droplets.values.first
+      move_time(GRACE_PERIOD + 10)
+      droplet.ripe_for_gc?.should be_true
+
+      droplet.set_expected_state(@expected)
+      droplet.ripe_for_gc?.should be_false
+    end
   end
 end

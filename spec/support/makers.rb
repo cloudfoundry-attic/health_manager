@@ -8,7 +8,6 @@ def in_em(timeout = 2)
 end
 
 def make_app(options = {})
-
   app = AppState.new(options[:id] || 1)
   expected = {
     :num_instances => 4,

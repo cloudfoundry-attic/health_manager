@@ -42,7 +42,8 @@ module HealthManager
     :max_shadowing_delay      => 10,
     :check_shadowing          => 30,
     :delay_time_noise         => 5,
-
+    :droplet_gc_grace_period  => 240,
+    :droplet_gc               => 300,
   }
 
   #package states
