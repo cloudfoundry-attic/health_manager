@@ -12,8 +12,20 @@ describe HealthManager do
     before(:each) do
       AppState.remove_all_listeners
       AppState.heartbeat_deadline = 10
+      AppState.droplet_gc_grace_period = 60
+      freeze_time
     end
 
+    after(:each) do
+      unfreeze_time
+    end
+
+    it 'should become ripe for GC after inactivity' do
+      app, _ = make_app
+      app.ripe_for_gc?.should be_false
+      move_time(AppState.droplet_gc_grace_period + 10)
+      app.ripe_for_gc?.should be_true
+    end
 
     it 'should not invoke missing_instances for non-staged states' do
       app, _ = make_app(:package_state => 'PENDING')

@@ -29,8 +29,7 @@ shadow_mode: disable
 
 intervals:
 
-  # expected state updated every database_scan seconds
-  database_scan:        60
+  expected_state_update: 60
 
   # when a database update is requested but one is in progress,
   # the new update is postponed this many seconds
@@ -69,7 +68,13 @@ intervals:
   request_queue:           1
 
   # start/stop requests are dequeued in batches of this size
-  queue_batch_size:       40
+  queue_batch_size:        40
+
+  # period of inactivity after which a droplet is garbage-collected
+  droplet_gc_grace_period: 240
+
+  # how often should the gc loop for droplets run
+  droplet_gc:              300
 
   # number of droplets objects to be published under varz[:droplets]
   # use non-positive value to disable
