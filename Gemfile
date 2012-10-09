@@ -10,3 +10,4 @@ gem 'eventmachine', :git => 'git://github.com/cloudfoundry/eventmachine.git', :b
 gem "yajl-ruby"
 gem "rest-client"
 gem "em-http-request"
+gem "timecop"

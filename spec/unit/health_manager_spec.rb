@@ -57,12 +57,6 @@ describe HealthManager do
       @h = @m.harmonizer
 
       AppState.droplet_gc_grace_period = GRACE_PERIOD
-
-      freeze_time
-    end
-
-    after :each do
-      unfreeze_time
     end
 
     it 'should not GC when a recent h/b arrives' do
@@ -70,14 +64,14 @@ describe HealthManager do
       @ksp.droplets.size.should == 1
       droplet = @ksp.droplets.values.first
 
-      droplet.ripe_for_gc?.should be_false
+      droplet.should_not be_ripe_for_gc
       @h.gc_droplets
 
       @ksp.droplets.size.should == 1
 
-      move_time(GRACE_PERIOD + 10)
+      Timecop.travel(Time.now + GRACE_PERIOD + 10)
 
-      droplet.ripe_for_gc?.should be_true
+      droplet.should be_ripe_for_gc
 
       @h.gc_droplets
       @ksp.droplets.size.should == 0
@@ -86,11 +80,13 @@ describe HealthManager do
     it 'should not GC after expected state is set' do
       @ksp.process_heartbeat(@hb.to_json)
       droplet = @ksp.droplets.values.first
-      move_time(GRACE_PERIOD + 10)
-      droplet.ripe_for_gc?.should be_true
+
+      Timecop.travel(Time.now + GRACE_PERIOD + 10)
+
+      droplet.should be_ripe_for_gc
 
       droplet.set_expected_state(@expected)
-      droplet.ripe_for_gc?.should be_false
+      droplet.should_not be_ripe_for_gc
     end
   end
 end
