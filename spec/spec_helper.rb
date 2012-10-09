@@ -6,6 +6,7 @@ require 'rspec'
 require 'bundler/setup'
 
 require 'health_manager'
+require 'timecop'
 
 support_dir = File.join(File.dirname(__FILE__),"support")
 Dir["#{support_dir}/**/*.rb"].each { |f| require f }
