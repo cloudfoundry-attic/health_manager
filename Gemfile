@@ -1,7 +1,6 @@
 source "http://rubygems.org"
 
 gem "rake"
-gem "rspec"
 
 gem "vcap_common", "~> 1.0.10"
 gem "steno", :git => 'git://github.com/cloudfoundry/steno.git'
@@ -10,3 +9,8 @@ gem 'eventmachine', :git => 'git://github.com/cloudfoundry/eventmachine.git', :b
 gem "yajl-ruby"
 gem "rest-client"
 gem "em-http-request"
+
+group :test do
+  gem "rspec"
+  gem "timecop"
+end

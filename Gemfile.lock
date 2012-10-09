@@ -59,6 +59,7 @@ GEM
       daemons (>= 1.0.9)
       eventmachine (>= 0.12.6)
       rack (>= 1.0.0)
+    timecop (0.5.2)
     vcap_common (1.0.10)
       eventmachine (~> 0.12.11.cloudfoundry.3)
       nats (~> 0.4.22.beta.8)
@@ -77,5 +78,6 @@ DEPENDENCIES
   rest-client
   rspec
   steno!
+  timecop
   vcap_common (~> 1.0.10)
   yajl-ruby
