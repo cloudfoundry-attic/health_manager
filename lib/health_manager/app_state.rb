@@ -74,8 +74,8 @@ module HealthManager
       timestamp_older_than?(@existence_justified_at, AppState.droplet_gc_grace_period)
     end
 
-    def set_expected_state(values)
-      values = values.dup # preserve the original
+    def set_expected_state(original_values)
+      values = original_values.dup # preserve the original
       [:state,
        :num_instances,
        :live_version,
@@ -85,7 +85,7 @@ module HealthManager
        :last_updated].each do |k|
 
         v = values.delete(k)
-        raise ArgumentError.new("Value #{k} is required") unless v
+        raise ArgumentError.new("Value #{k} is required, missing from #{original_values}") unless v
         self.instance_variable_set("@#{k.to_s}",v)
       end
       raise ArgumentError.new("unsupported keys: #{values.keys}") unless values.empty?
@@ -110,6 +110,7 @@ module HealthManager
 
     def add_pending_restart(index, receipt)
       @pending_restarts[index] = receipt
+      force_missing_indices_recalculation
     end
 
     def remove_pending_restart(index)
@@ -220,7 +221,7 @@ module HealthManager
          instance['state'] == CRASHED,
          lhb.nil?,
          lhb && timestamp_older_than?(lhb, AppState.heartbeat_deadline)
-        ].any?
+        ].any? && !restart_pending?(i)
       end
     end
 

@@ -28,6 +28,14 @@ describe HealthManager do
       app.missing_indices.should == []
     end
 
+    it 'should not invoke missing_instances for instances with pending restarts' do
+      app, _ = make_app
+      app.add_pending_restart(1,nil)
+      app.add_pending_restart(3,nil)
+
+      app.missing_indices.should == [0,2]
+    end
+
     it 'should invoke missing_instances event handler' do
       future_answer = [1, 3]
       event_handler_invoked = false

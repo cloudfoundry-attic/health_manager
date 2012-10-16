@@ -34,11 +34,7 @@ module HealthManager
         end
 
         logger.debug { "harmonizer: missing_instances"}
-        missing_indices.delete_if { |i|
-          app_state.restart_pending?(i)
-        }
         nudger.start_instances(app_state, missing_indices, NORMAL_PRIORITY)
-        #TODO: flapping logic, too
       end
 
       AppState.add_listener(:extra_instances) do |app_state, extra_instances|
