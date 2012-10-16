@@ -27,11 +27,12 @@ EOL
 HEARTBEAT_INTERVAL = 10
 
 @config = {
-  :apps_number => 10000,
+  :apps_number => 2,
   :instance_per_app => 2,
-  :dea_number => 200,
-  :crashing_apps_number => 200,
-  :crash_ratio => 120, #every app designated as crashing crashes with at random period with expectation X seconds
+  :dea_number => 1,
+  :crashing_apps_number => 1,
+  :crash_ratio => 5, #every app designated as crashing crashes with at random period with expectation X seconds
+  :disappearing_ratio => 100000, #every app designated as crashing has an instance quetly going away at random period with expectation X seconds
   :activity_rate => 10, # a random app is randomly updated at random period with expectation X seconds
 }
 
@@ -39,7 +40,7 @@ HEARTBEAT_INTERVAL = 10
 
 @world = {
   :config => @config,
-  :apps => Array.new(@config[:apps_number]),
+  :apps => Hash.new(@config[:apps_number]),
   :deas => [],
 }
 
@@ -78,7 +79,7 @@ def create_app(app_id, config)
     # "expected state" stuff
     'instances' => expect_positive_integer_at(config[:instance_per_app]),
     'state' => 'STARTED',
-    'staged_package_hash' => make_hash,
+    'version' => make_hash,
     'run_count' => 1,
     'framework' => 'sinatra',
     'runtime' => 'ruby19',
@@ -91,7 +92,7 @@ def create_instance(app, index, dea_id)
   {
     :droplet => app[:id],
     :index => index,
-    :version => "#{app['staged_package_hash']}-#{app['run_count']}",
+    :version => app['version'],
     :instance => make_hash,
     :state => 'RUNNING',
     :state_timestamp => Time.now.to_i - 3600,
@@ -103,7 +104,7 @@ end
 def place_instance_into_dea(app, index, dea)
   instance = create_instance(app, index, dea[:id])
   dea[:instances] << instance
-  app[:instances] << instance
+  app[:instances][index] = instance
 end
 
 def populate_world(config, world)
@@ -119,6 +120,7 @@ def populate_world(config, world)
   app_number = config[:apps_number]
   say "creating #{app_number} apps"
   app_number.times do |app_id|
+    app_id = app_id.to_s
     world[:apps][app_id] = create_app(app_id, config)
   end
 
@@ -126,17 +128,17 @@ def populate_world(config, world)
   say "marking #{crashing_num} apps as crashing"
   crasher_ids = world[:crasher_ids] = (0...app_number).to_a.shuffle[0...crashing_num]
   crasher_ids.each do |crasher_id|
-    world[:apps][crasher_id][:crasher] = true
+    world[:apps][crasher_id.to_s][:crasher] = true
   end
 
   dea_cycle = world[:deas].cycle
 
-  world[:apps].each do |app|
+  world[:apps].each do |app_id, app|
     app['instances'].times {|index|
       place_instance_into_dea(app, index, dea_cycle.next)
     }
   end
-  say world.to_yaml
+  # say world.to_yaml
 end
 
 def bail
@@ -207,7 +209,7 @@ class BulkApi < BaseResponder
 
     max_id = min_id + batch_size
     max_id = @apps.size if max_id > @apps.size
-    (min_id...max_id).map { |i| @apps[i] }
+    (min_id...max_id).map { |i| @apps[i.to_s] }
   end
 
   def call(env)
@@ -285,9 +287,42 @@ def setup_crash_for_app(world, crasher_id, expected_time_to_crash)
   end
 end
 
+def setup_disappearance_for_app(world, crasher_id, expected_time_to_disappear)
+
+  EM.add_timer(2*expected_time_to_disappear*rand) do
+    app = world[:apps][crasher_id]
+    running = app[:instances].select {|instance|
+      next unless instance
+      instance[:state] == 'RUNNING'
+    }
+
+    if running.empty?
+      say "no more running instances for #{crasher_id}"
+    else
+      to_disappear = running[rand(running.size)]
+      say "disappearing instance #{to_disappear[:droplet]}:#{to_disappear[:index]}"
+
+      unless app[:instances][to_disappear[:index]]
+        say "failed to disappear #{to_disappear} from app"
+      end
+
+      app[:instances][to_disappear[:index]] = nil
+
+      unless @world[:deas].any? { |dea| dea[:instances].delete(to_disappear) }
+        say "failed to disappear #{to_disappear} from deas"
+      end
+    end
+
+    #setup next disappearance
+    setup_disappearance_for_app(world, crasher_id, expected_time_to_disappear)
+  end
+end
+
+
 def setup_crashes(world)
   world[:crasher_ids].each { |crasher_id|
-    setup_crash_for_app(world, crasher_id, world[:config][:crash_ratio])
+    setup_crash_for_app(world, crasher_id.to_s, world[:config][:crash_ratio])
+    setup_disappearance_for_app(world, crasher_id.to_s, world[:config][:disappearing_ratio])
   }
 end
 
@@ -299,12 +334,22 @@ def listen_to_hm(world, cc_partition = 'default')
       indices = message['indices']
       say "Restarting #{app[:id]}:#{indices}"
       indices.each { |i|
-        instance = app[:instances][i]
+        dea = @world[:deas].min { |d1, d2| d1[:instances].size <=> d2[:instances].size }
+        place_instance_into_dea(app, i, dea)
+      }
+    elsif message['op'] == 'STOP'
+      app = world[:apps][message['droplet']]
+      instances = message['instances']
+      say "Stopping #{app[:id]}:#{instances}"
+      instances.each { |inst_id|
+
+        instance = app[:instances].find { |inst|
+          inst[:instance] == inst_id
+        }
         if instance
-          instance[:state] = 'RUNNING'
-          instance[:instance] = make_hash
+          instance[:state] = 'STOPPED'
         else
-          say "Missing instance for index: #{i}"
+          say "Missing instance for instance_id: #{inst_id} for app #{app}"
         end
       }
     else
@@ -322,7 +367,7 @@ say "connecting to NATS"
 
 EM.epoll
 
-NATS.start :uri => ENV['NATS_URI'] || "nats://nats:nats@192.168.24.128:4223" do
+NATS.start :uri => ENV['NATS_URI'] || "nats://nats:nats@192.168.24.128:4222" do
 
   setup_bulk_api_server(@world)
   setup_heartbeats(@world)
