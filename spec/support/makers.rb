@@ -41,3 +41,15 @@ def make_heartbeat(apps)
   {'droplets' => hb, 'dea' => '123456789abcdefgh'}
 end
 
+def make_crash_message(app, options={})
+  index = options['index'] || 0
+  {
+    'droplet' => app.id,
+    'version' => app.live_version,
+    'instance' => app.get_instance(index)['instance'] || "instance_id_#{index}",
+    'index' => index,
+    'reason' => 'CRASHED',
+    'crash_timestamp' => now,
+    'cc_partition' => 'default'
+  }.merge(options)
+end
