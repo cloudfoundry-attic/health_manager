@@ -273,6 +273,12 @@ module HealthManager
       instance = get_instance(message['version'], message['index'])
       instance['state'] = CRASHED
 
+      if instance['instance'] && instance['instance'] != message['instance']
+        logger.warn { "unexpected instance_id: #{message['instance']}, expected: #{instance['instance']}" }
+      end
+
+      instance['instance'] = message['instance']
+
       instance['crashes'] = 0 if timestamp_older_than?(instance['crash_timestamp'], AppState.flapping_timeout)
 
       instance['crashes'] += 1

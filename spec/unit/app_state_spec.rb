@@ -12,6 +12,7 @@ describe HealthManager do
     before(:each) do
       AppState.remove_all_listeners
       AppState.heartbeat_deadline = 10
+      AppState.flapping_death = 1
       AppState.droplet_gc_grace_period = 60
     end
 
@@ -26,6 +27,20 @@ describe HealthManager do
     it 'should not invoke missing_instances for non-staged states' do
       app, _ = make_app(:package_state => 'PENDING')
       app.missing_indices.should == []
+    end
+
+    it 'should process crash message' do
+      app, _ = make_app
+      invoked = false
+
+      AppState.add_listener :exit_crashed do
+        invoked = true
+      end
+      message = make_crash_message(app)
+      app.process_exit_crash(message)
+      invoked.should be_true
+
+      app.crashes.should have_key(message['instance'])
     end
 
     it 'should invoke missing_instances event handler' do
