@@ -27,7 +27,7 @@ module HealthManager
     :analysis_delay           => 5,
     :droplets_analysis         => 20,
     :droplet_lost             => 30,
-    :postpone_update          => 2,
+    :postpone_update          => 30,
     :request_queue            => 1,
     :queue_batch_size         => 40,
     :nats_request_timeout     => 5,

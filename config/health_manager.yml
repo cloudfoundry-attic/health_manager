@@ -33,7 +33,7 @@ intervals:
 
   # when a database update is requested but one is in progress,
   # the new update is postponed this many seconds
-  postpone_update:       2
+  postpone_update:       30
 
   # droplet is assumed lost after that many seconds of missing heartbeats
   droplet_lost:         30
