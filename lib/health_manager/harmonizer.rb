@@ -186,6 +186,7 @@ module HealthManager
         return
       end
 
+      start_at = Time.now
       logger.debug { "harmonizer: droplets_analysis" }
 
       varz.reset_realtime_stats
@@ -205,9 +206,13 @@ module HealthManager
           end
           varz.publish_realtime_stats
 
-          # TODO: add elapsed time
+          elapsed = Time.now - start_at
+          varz.set(:analysis_loop_duration, elapsed)
+
           logger.info ["harmonizer: Analyzed #{varz.get(:running_instances)} running ",
-                       "#{varz.get(:down_instances)} down instances"].join
+                       "#{varz.get(:down_instances)} down instances. ",
+                       "Elapsed time: #{elapsed}"
+                      ].join
           false #signal :droplets_analysis task completion to the scheduler
         end
       end
@@ -221,12 +226,18 @@ module HealthManager
         return
       end
 
+      start_at = Time.now
+
       expected_state_provider.update_user_counts
       varz.reset_expected_stats
       expected_state_provider.each_droplet do |app_id, expected|
         known = known_state_provider.get_droplet(app_id)
         expected_state_provider.set_expected_state(known, expected)
       end
+
+      elapsed = Time.now - start_at
+      varz.set(:bulk_update_loop_duration, elapsed)
+      logger.info { "harmonizer: Expected State Update complete. Elapsed time: #{elapsed}" }
     end
 
     def postpone_expected_state_update
