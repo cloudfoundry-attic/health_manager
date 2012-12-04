@@ -1,10 +1,10 @@
 require 'set'
 
 module HealthManager
-  #base class for providing states of applications.  Concrete
-  #implementations will use different data sources to obtain and/or
-  #persists the state of apps.  This class serves as data holder and
-  #interface provider for its users (i.e. HealthManager).
+  # Base class for providing states of applications.  Concrete
+  # implementations will use different data sources to obtain and/or
+  # persists the state of apps.  This class serves as data holder and
+  # interface provider for its users (i.e. HealthManager).
   class AppStateProvider
     include HealthManager::Common
 
@@ -27,22 +27,35 @@ module HealthManager
 
     def initialize(config = {})
       @config = config
-      @droplets = {} #hashes droplet_id => AppState instance
+      @droplets = {} # hashes droplet_id => AppState instance
       @cur_droplet_index = 0
+      @ids = []
     end
 
     attr_reader :droplets
 
     def start; end
 
-    #these methods have to do with threading and quantization
+    # these methods have to do with threading and quantization
     def rewind
       @cur_droplet_index = 0
+      @ids = @droplets.keys
     end
 
     def next_droplet
-      return nil unless @cur_droplet_index < @droplets.size
-      droplet =  @droplets[@droplets.keys[@cur_droplet_index]]
+      # The @droplets hash may have undergone modifications while
+      # we're iterating. New items that are added will not be seen
+      # until #rewind is called again. Deleted droplets will be
+      # skipped over.
+
+      droplet = nil # nil value indicates the end of the collection
+
+      # skip over garbage-collected droplets
+      while (droplet = @droplets[@ids[@cur_droplet_index]]).nil? &&
+          @cur_droplet_index < @ids.size &&
+        @cur_droplet_index += 1
+      end
+
       @cur_droplet_index += 1
       return droplet
     end
@@ -64,7 +77,7 @@ module HealthManager
   # "abstract" provider of expected state. Primarily for documenting the API
   class ExpectedStateProvider < AppStateProvider
     def set_expected_state(known, expected)
-      raise 'Not Implemented' #should be implemented by the concrete class
+      raise 'Not Implemented' # should be implemented by the concrete class
     end
   end
 
