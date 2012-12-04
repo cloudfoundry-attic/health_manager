@@ -65,11 +65,14 @@ module HealthManager
     end
 
     def quantize_task(task, &block)
-      if yield
-        EM.next_tick { quantize_task( task, &block) }
-      else
-        mark_task_stopped(task)
+      ITERATIONS_PER_QUANTUM.times do
+        if !yield
+          mark_task_stopped(task)
+          return
+        end
       end
+
+      EM.next_tick { quantize_task( task, &block) }
     end
 
     def start_task(task, &block)

@@ -19,6 +19,8 @@ module HealthManager
   NORMAL_PRIORITY        = 1000
   HIGH_PRIORITY          = 1_000_000
 
+  ITERATIONS_PER_QUANTUM = 20
+
   DEFAULTS = {
     :cc_partition => "default",
     :shadow_mode => "disable",
