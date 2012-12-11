@@ -187,6 +187,7 @@ module HealthManager
       end
 
       unless extra_instances.empty?
+        logger.info("extra instances: #{extra_instances.inspect}")
         notify(:extra_instances, extra_instances)
       end
     end
@@ -266,7 +267,6 @@ module HealthManager
 
     def process_exit_stopped(message)
       reset_missing_indices
-      @state = STOPPED
       notify(:exit_stopped, message)
     end
 
