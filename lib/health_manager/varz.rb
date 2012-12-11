@@ -104,7 +104,7 @@ module HealthManager
 
     def update_expected_stats_for_droplet(droplet_hash)
       ['framework', 'runtime'].each do |metric|
-        path = [:total, "#{metric}s".to_sym, droplet_hash["#{metric}"]]
+        path = [:total, "#{metric}s".to_sym, droplet_hash[metric]]
 
         create_db_metrics(*path)
 
