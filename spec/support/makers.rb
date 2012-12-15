@@ -43,7 +43,7 @@ end
 
 def make_crash_message(app, options={})
   index = options['index'] || 0
-  {
+  msg = {
     'droplet' => app.id,
     'version' => app.live_version,
     'instance' => app.get_instance(index)['instance'] || "instance_id_#{index}",
@@ -52,4 +52,5 @@ def make_crash_message(app, options={})
     'crash_timestamp' => now,
     'cc_partition' => 'default'
   }.merge(options)
+  Schemata::DEA::ExitMessage::V1.new(msg)
 end

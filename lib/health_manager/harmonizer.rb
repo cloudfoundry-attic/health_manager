@@ -55,7 +55,7 @@ module HealthManager
       end
 
       AppState.add_listener(:exit_dea) do |app_state, message|
-        index = message['index']
+        index = message.index
 
         logger.info { "harmonizer: exit_dea: app_id=#{app_state.id} index=#{index}" }
         nudger.start_instance(app_state, index, HIGH_PRIORITY)
@@ -64,8 +64,8 @@ module HealthManager
       AppState.add_listener(:exit_crashed) do |app_state, message|
         logger.debug { "harmonizer: exit_crashed" }
 
-        index = message['index']
-        instance = app_state.get_instance(message['version'], message['index'])
+        index = message.index
+        instance = app_state.get_instance(message.version, message.index)
 
         if flapping?(instance)
           execute_flapping_policy(app_state, index, instance)
@@ -75,7 +75,7 @@ module HealthManager
       end
 
       AppState.add_listener(:exit_stopped) do |app_state, message|
-        logger.info { "harmonizer: exit_stopped: #{message}" }
+        logger.info { "harmonizer: exit_stopped: #{message.contents}" }
         # NOOP
       end
 

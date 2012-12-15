@@ -271,17 +271,17 @@ module HealthManager
     end
 
     def process_exit_crash(message)
-      instance = get_instance(message['version'], message['index'])
+      instance = get_instance(message.version, message.index)
       instance['state'] = CRASHED
 
-      instance['instance'] ||= message['instance']
-      if instance['instance'] != message['instance']
-        logger.warn { "unexpected instance_id: #{message['instance']}, expected: #{instance['instance']}" }
+      instance['instance'] ||= message.instance
+      if instance['instance'] != message.instance
+        logger.warn { "unexpected instance_id: #{message.instance}, expected: #{instance['instance']}" }
       end
 
       instance['crashes'] = 0 if timestamp_older_than?(instance['crash_timestamp'], AppState.flapping_timeout)
       instance['crashes'] += 1
-      instance['crash_timestamp'] = message['crash_timestamp']
+      instance['crash_timestamp'] = message.crash_timestamp
 
       if instance['crashes'] > AppState.flapping_death
         instance['state'] = FLAPPING
@@ -289,7 +289,7 @@ module HealthManager
 
       @crashes[instance['instance']] = {
         'timestamp' => now,
-        'crash_timestamp' => message['crash_timestamp']
+        'crash_timestamp' => message.crash_timestamp
       }
       notify(:exit_crashed, message)
     end

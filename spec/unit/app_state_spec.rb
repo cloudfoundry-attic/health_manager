@@ -48,7 +48,7 @@ describe HealthManager do
       app.process_exit_crash(message)
       invoked.should be_true
 
-      app.crashes.should have_key(message['instance'])
+      app.crashes.should have_key(message.instance)
     end
 
     it 'should invoke missing_instances event handler' do

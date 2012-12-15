@@ -11,7 +11,9 @@ module HealthManager
     end
 
     def cc_partition_match?(message)
-      cc_partition == message['cc_partition']
+      msg_partition = message.kind_of?(Hash) ?
+        message['cc_partition'] : message.cc_partition
+      cc_partition == msg_partition
     end
 
     def start
@@ -23,6 +25,7 @@ module HealthManager
 
       logger.info("subscribing to droplet.exited")
       NATS.subscribe('droplet.exited') do |message|
+        message = Schemata::DEA::ExitMessage.decode(message)
         process_droplet_exited(message)
       end
 
@@ -34,16 +37,15 @@ module HealthManager
       super
     end
 
-    def process_droplet_exited(message_str)
-      message = parse_json(message_str)
+    def process_droplet_exited(message)
       return unless cc_partition_match?(message)
 
-      logger.debug { "process_droplet_exited: #{message_str}" }
+      logger.debug { "process_droplet_exited: #{message.contents}" }
       varz.inc(:droplet_exited_msgs_received)
 
-      droplet = get_droplet(message['droplet'].to_s)
+      droplet = get_droplet(message.droplet.to_s)
 
-      case message['reason']
+      case message.reason
       when CRASHED
         varz.inc(:crashed_instances)
         droplet.process_exit_crash(message)
