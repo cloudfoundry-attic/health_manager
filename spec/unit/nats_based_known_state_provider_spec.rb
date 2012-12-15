@@ -32,7 +32,8 @@ describe HealthManager do
         instance['last_heartbeat'].should be_nil
 
         hb = make_heartbeat([app])
-        @nb.process_heartbeat(encode_json(hb))
+        message = Schemata::DEA::HeartbeatResponse.decode(encode_json(hb))
+        @nb.process_heartbeat(message)
 
         instance = app1.get_instance(app.live_version, 0)
         instance['state'].should == 'RUNNING'

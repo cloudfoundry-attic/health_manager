@@ -49,7 +49,9 @@ describe HealthManager do
 
     before :each do
       app,@expected = make_app
-      @hb = make_heartbeat([app])
+      json = encode_json(make_heartbeat([app]))
+
+      @hb = Schemata::DEA::HeartbeatResponse.decode(json)
 
       @ksp = @m.known_state_provider
       @ksp.droplets.size.should == 0
@@ -59,7 +61,7 @@ describe HealthManager do
     end
 
     it 'should not GC when a recent h/b arrives' do
-      @ksp.process_heartbeat(encode_json(@hb))
+      @ksp.process_heartbeat(@hb)
       @ksp.droplets.size.should == 1
       droplet = @ksp.droplets.values.first
 
@@ -77,7 +79,7 @@ describe HealthManager do
     end
 
     it 'should not GC after expected state is set' do
-      @ksp.process_heartbeat(encode_json(@hb))
+      @ksp.process_heartbeat(@hb)
       droplet = @ksp.droplets.values.first
 
       Timecop.travel(Time.now + GRACE_PERIOD + 10)

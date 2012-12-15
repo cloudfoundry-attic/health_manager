@@ -10,6 +10,8 @@ gem "yajl-ruby"
 gem "rest-client"
 gem "em-http-request"
 
+gem "schemata-dea"
+
 group :test do
   gem "rspec"
   gem "timecop"

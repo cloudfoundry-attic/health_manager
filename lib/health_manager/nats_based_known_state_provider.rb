@@ -1,3 +1,4 @@
+require 'schemata/dea'
 
 module HealthManager
 
@@ -16,6 +17,7 @@ module HealthManager
     def start
       logger.info("subscribing to heartbeats")
       NATS.subscribe('dea.heartbeat') do |message|
+        message = Schemata::DEA::HeartbeatResponse.decode(message)
         process_heartbeat(message)
       end
 
@@ -52,15 +54,13 @@ module HealthManager
       end
     end
 
-    def process_heartbeat(message_str)
-      message = parse_json(message_str)
-
-      logger.debug2 { "known: #process_heartbeat: #{message_str}" }
+    def process_heartbeat(message)
+      logger.debug2 { "known: #process_heartbeat: #{message.contents}" }
       varz.inc(:heartbeat_msgs_received)
 
-      dea_uuid = message['dea']
+      dea_uuid = message.dea
 
-      message['droplets'].each do |beat|
+      message.droplets.each do |beat|
         next unless cc_partition_match?(beat)
         id = beat['droplet'].to_s
         get_droplet(id).process_heartbeat(beat)
