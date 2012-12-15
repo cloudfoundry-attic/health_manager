@@ -1,4 +1,5 @@
 require 'schemata/dea'
+require 'schemata/cloud_controller'
 
 module HealthManager
 
@@ -31,6 +32,8 @@ module HealthManager
 
       logger.info("subscribing to droplet.updated")
       NATS.subscribe('droplet.updated') do |message|
+        message =
+          Schemata::CloudController::DropletUpdatedMessage.decode(message)
         process_droplet_updated(message)
       end
 
@@ -69,13 +72,12 @@ module HealthManager
       end
     end
 
-    def process_droplet_updated(message_str)
-      message = parse_json(message_str)
+    def process_droplet_updated(message)
       return unless cc_partition_match?(message)
 
-      logger.debug { "known: #process_droplet_updated: #{message_str}" }
+      logger.debug { "known: #process_droplet_updated: #{message.contents}" }
       varz.inc(:droplet_updated_msgs_received)
-      get_droplet(message['droplet'].to_s).process_droplet_updated(message)
+      get_droplet(message.droplet.to_s).process_droplet_updated(message)
     end
   end
 end

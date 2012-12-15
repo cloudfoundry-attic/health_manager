@@ -88,6 +88,9 @@ GEM
     rspec-expectations (2.9.1)
       diff-lcs (~> 1.1.3)
     rspec-mocks (2.9.0)
+    schemata-cloud_controller (0.0.1.beta4)
+      membrane
+      yajl-ruby
     schemata-dea (0.0.1.beta13)
       membrane
       vcap_common
@@ -111,6 +114,7 @@ DEPENDENCIES
   rake
   rest-client
   rspec
+  schemata-cloud_controller
   schemata-dea
   steno!
   timecop

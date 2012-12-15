@@ -11,6 +11,7 @@ gem "rest-client"
 gem "em-http-request"
 
 gem "schemata-dea"
+gem "schemata-cloud_controller"
 
 group :test do
   gem "rspec"
