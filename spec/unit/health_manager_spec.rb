@@ -45,7 +45,6 @@ describe HealthManager do
   end
 
   describe "Garbage collection of droplets" do
-
     GRACE_PERIOD = 60
 
     before :each do
@@ -60,7 +59,7 @@ describe HealthManager do
     end
 
     it 'should not GC when a recent h/b arrives' do
-      @ksp.process_heartbeat(@hb.to_json)
+      @ksp.process_heartbeat(encode_json(@hb))
       @ksp.droplets.size.should == 1
       droplet = @ksp.droplets.values.first
 
@@ -78,7 +77,7 @@ describe HealthManager do
     end
 
     it 'should not GC after expected state is set' do
-      @ksp.process_heartbeat(@hb.to_json)
+      @ksp.process_heartbeat(encode_json(@hb))
       droplet = @ksp.droplets.values.first
 
       Timecop.travel(Time.now + GRACE_PERIOD + 10)

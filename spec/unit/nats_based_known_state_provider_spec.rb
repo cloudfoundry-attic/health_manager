@@ -32,7 +32,7 @@ describe HealthManager do
         instance['last_heartbeat'].should be_nil
 
         hb = make_heartbeat([app])
-        @nb.process_heartbeat(hb.to_json)
+        @nb.process_heartbeat(encode_json(hb))
 
         instance = app1.get_instance(app.live_version, 0)
         instance['state'].should == 'RUNNING'

@@ -58,7 +58,7 @@ module HealthManager
           :head => { 'authorization' => [user, password] },
           :query => {
             'batch_size' => batch_size,
-            'bulk_token' => bulk_token.to_json
+            'bulk_token' => encode_json(bulk_token)
           },
         }
         http = EM::HttpRequest.new(app_url).get(options)
