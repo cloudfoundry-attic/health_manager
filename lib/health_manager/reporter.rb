@@ -15,6 +15,7 @@ module HealthManager
         process_status_message(msg, reply_to)
       }
       NATS.subscribe('healthmanager.health') { |msg, reply_to|
+        msg = Schemata::HealthManager::HealthRequest.decode(msg)
         process_health_message(msg, reply_to)
       }
     end
@@ -47,8 +48,7 @@ module HealthManager
 
     def process_health_message(message, reply_to)
       varz.inc(:healthmanager_health_request_msgs_received)
-      message = parse_json(message)
-      message['droplets'].each do |droplet|
+      message.droplets.each do |droplet|
         droplet_id = droplet['droplet'].to_s
 
         next unless known_state_provider.has_droplet?(droplet_id)
