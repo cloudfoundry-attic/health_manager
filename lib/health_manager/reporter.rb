@@ -36,13 +36,18 @@ module HealthManager
         result = known_droplet.get_instances(version)
           .select { |_, instance| FLAPPING == instance['state'] }
           .map { |i, instance| { :index => i, :since => instance['state_timestamp'] }}
-
-        publisher.publish(reply_to, encode_json({:indices => result}))
+        response = Schemata::HealthManager::StatusFlappingResponse::V1.new(
+          { :indices => result }
+        )
+        publisher.publish(reply_to, response.encode)
       when CRASHED
         result = known_droplet.crashes.map { |instance, crash|
           { :instance => instance, :since => crash['crash_timestamp'] }
         }
-        publisher.publish(reply_to, encode_json({:instances => result}))
+        response = Schemata::HealthManager::StatusCrashedResponse::V1.new(
+          { :instances => results }
+        )
+        publisher.publish(reply_to, response.encode)
       end
     end
 

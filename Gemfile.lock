@@ -95,7 +95,7 @@ GEM
       membrane
       vcap_common
       yajl-ruby
-    schemata-health_manager (0.0.1.beta1)
+    schemata-health_manager (0.0.1.beta4)
       membrane
       vcap_common
       yajl-ruby
@@ -120,7 +120,7 @@ DEPENDENCIES
   rspec
   schemata-cloud_controller
   schemata-dea
-  schemata-health_manager
+  schemata-health_manager (~> 0.0.1.beta4)
   steno!
   timecop
   vcap_common!
