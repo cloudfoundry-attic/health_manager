@@ -1,4 +1,5 @@
 # Responds to status and health messages
+require 'schemata/health_manager'
 
 module HealthManager
   class Reporter
@@ -10,6 +11,7 @@ module HealthManager
 
     def prepare
       NATS.subscribe('healthmanager.status') { |msg, reply_to|
+        msg = Schemata::HealthManager::StatusRequest.decode(msg)
         process_status_message(msg, reply_to)
       }
       NATS.subscribe('healthmanager.health') { |msg, reply_to|
@@ -19,18 +21,17 @@ module HealthManager
 
     def process_status_message(message, reply_to)
       varz.inc(:healthmanager_status_msgs_received)
-      message = parse_json(message)
-      logger.debug { "reporter: status: message: #{message}" }
-      droplet_id = message['droplet'].to_s
+      logger.debug { "reporter: status: message: #{message.contents}" }
+      droplet_id = message.droplet.to_s
 
       return unless known_state_provider.has_droplet?(droplet_id)
       known_droplet = known_state_provider.get_droplet(droplet_id)
-      state = message['state']
+      state = message.state
 
       result = nil
       case state
       when FLAPPING
-        version = message['version']
+        version = message.version
         result = known_droplet.get_instances(version)
           .select { |_, instance| FLAPPING == instance['state'] }
           .map { |i, instance| { :index => i, :since => instance['state_timestamp'] }}
