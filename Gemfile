@@ -11,8 +11,8 @@ gem "rest-client"
 gem "em-http-request"
 
 gem "schemata-dea"
-gem "schemata-health_manager", "~> 0.0.1.beta4"
-gem "schemata-cloud_controller"
+gem "schemata-health_manager", "~> 0.0.1.beta5"
+gem "schemata-cloud_controller", "~> 0.0.1.beta5"
 
 group :test do
   gem "rspec"
