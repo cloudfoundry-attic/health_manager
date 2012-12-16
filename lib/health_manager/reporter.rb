@@ -64,12 +64,12 @@ module HealthManager
         running = (0...known_droplet.num_instances).count { |i|
           RUNNING == known_droplet.get_instance(version, i)['state']
         }
-        response = {
+        response = Schemata::HealthManager::HealthResponse::V1.new({
           :droplet => droplet_id,
           :version => version,
           :healthy => running
-        }
-        publisher.publish(reply_to, encode_json(response))
+        })
+        publisher.publish(reply_to, response.encode)
       end
     end
   end
