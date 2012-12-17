@@ -34,7 +34,14 @@ module HealthManager
         end
 
         logger.debug { "harmonizer: missing_instances"}
-        nudger.start_instances(app_state, missing_indices, NORMAL_PRIORITY)
+        missing_indices.each do |index|
+          instance = app_state.get_instance(index)
+          if flapping?(instance)
+            execute_flapping_policy(app_state, index, instance)
+          else
+            nudger.start_instance(app_state, index, NORMAL_PRIORITY)
+          end
+        end
       end
 
       AppState.add_listener(:extra_instances) do |app_state, extra_instances|
@@ -61,17 +68,7 @@ module HealthManager
         instance = app_state.get_instance(message['version'], message['index'])
 
         if flapping?(instance)
-          unless app_state.restart_pending?(index)
-            instance['last_action'] = now
-            if giveup_restarting?(instance)
-              # TODO: when refactoring this thing out, don't forget to
-              # mute for missing indices restarts
-              logger.info { "giving up on restarting: app_id=#{app_state.id} index=#{index}" }
-            else
-              delay = calculate_delay(instance)
-              schedule_delayed_restart(app_state, instance, index, delay)
-            end
-          end
+          execute_flapping_policy(app_state, index, instance)
         else
           nudger.start_instance(app_state, index, LOW_PRIORITY)
         end
@@ -118,12 +115,25 @@ module HealthManager
       end
     end
 
-
     # ------------------------------------------------------------
-    # Flapping-related code STARTS TODO: consider refactoring. There
-    # are some unpleasant abstraction leaks, e.g. calculations
-    # involving number of crashes, predicate methods, etc.
-    # Consider making "instance" into a full-fledged object
+    # Flapping-related code STARTS
+
+    # TODO: consider refactoring. There are some unpleasant
+    # abstraction leaks, e.g. calculations involving number of
+    # crashes, predicate methods, etc.  Consider making "instance"
+    # into a full-fledged object
+
+    def execute_flapping_policy(app_state, index, instance)
+      unless app_state.restart_pending?(index)
+        instance['last_action'] = now
+        if giveup_restarting?(instance)
+          logger.info { "given up on restarting: app_id=#{app_state.id} index=#{index}" }
+        else
+          delay = calculate_delay(instance)
+          schedule_delayed_restart(app_state, instance, index, delay)
+        end
+      end
+    end
 
     def flapping?(instance)
       instance['state'] == FLAPPING
