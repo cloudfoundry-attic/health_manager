@@ -7,11 +7,11 @@ GIT
 
 GIT
   remote: git://github.com/cloudfoundry/steno.git
-  revision: e71a658f05b7cbf54006c3cc29db752cdfb192df
+  revision: 5c68aa048c50ee0cf56253a2700ec711aff8f762
   specs:
-    steno (0.0.15)
+    steno (1.0.2)
       grape
-      yajl-ruby
+      yajl-ruby (~> 1.0)
 
 GIT
   remote: git://github.com/cloudfoundry/vcap-common.git
@@ -32,8 +32,13 @@ GIT
 GEM
   remote: http://rubygems.org/
   specs:
+    activesupport (3.2.9)
+      i18n (~> 0.6)
+      multi_json (~> 1.0)
     addressable (2.3.2)
+    backports (2.6.5)
     daemons (1.1.9)
+    descendants_tracker (0.0.1)
     diff-lcs (1.1.3)
     em-http-request (1.0.0.beta.3)
       addressable (>= 2.2.3)
@@ -42,19 +47,23 @@ GEM
       http_parser.rb (>= 0.5.1)
     em-socksify (0.1.0)
       eventmachine
-    grape (0.2.1)
+    grape (0.2.2)
+      activesupport
       hashie (~> 1.2)
-      multi_json
+      multi_json (>= 1.3.2)
       multi_xml
       rack
+      rack-accept
       rack-mount
+      virtus
     hashie (1.2.0)
     http_parser.rb (0.5.3)
     httpclient (2.3.0.1)
+    i18n (0.6.1)
     json_pure (1.7.5)
     membrane (0.0.2)
     mime-types (1.18)
-    multi_json (1.3.6)
+    multi_json (1.5.0)
     multi_xml (0.5.1)
     multipart-post (1.1.5)
     nats (0.4.26)
@@ -64,6 +73,8 @@ GEM
       thin (>= 1.4.1)
     posix-spawn (0.3.6)
     rack (1.4.1)
+    rack-accept (0.4.5)
+      rack (>= 0.4)
     rack-mount (0.8.3)
       rack (>= 1.0.0)
     rake (0.9.2.2)
@@ -82,7 +93,10 @@ GEM
       eventmachine (>= 0.12.6)
       rack (>= 1.0.0)
     timecop (0.5.2)
-    yajl-ruby (0.8.3)
+    virtus (0.5.3)
+      backports (~> 2.6.1)
+      descendants_tracker (~> 0.0.1)
+    yajl-ruby (1.1.0)
 
 PLATFORMS
   ruby
