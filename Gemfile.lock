@@ -13,17 +13,35 @@ GIT
       grape
       yajl-ruby
 
+GIT
+  remote: git://github.com/cloudfoundry/vcap-common.git
+  revision: 45cd194dce44d590512d50d344f66cbe84b46732
+  specs:
+    vcap_common (2.0.10)
+      em-http-request (~> 1.0.0.beta3, < 1.0.0.beta4)
+      eventmachine
+      httpclient
+      membrane (~> 0.0.2)
+      mime-types
+      multipart-post
+      nats (~> 0.4.24)
+      posix-spawn (~> 0.3.6)
+      thin
+      yajl-ruby
+
 GEM
   remote: http://rubygems.org/
   specs:
-    addressable (2.2.7)
-    daemons (1.1.8)
+    addressable (2.3.2)
+    daemons (1.1.9)
     diff-lcs (1.1.3)
-    em-http-request (0.3.0)
-      addressable (>= 2.0.0)
-      escape_utils
-      eventmachine (>= 0.12.9)
-    escape_utils (0.2.4)
+    em-http-request (1.0.0.beta.3)
+      addressable (>= 2.2.3)
+      em-socksify
+      eventmachine
+      http_parser.rb (>= 0.5.1)
+    em-socksify (0.1.0)
+      eventmachine
     grape (0.2.1)
       hashie (~> 1.2)
       multi_json
@@ -31,15 +49,19 @@ GEM
       rack
       rack-mount
     hashie (1.2.0)
-    json_pure (1.6.6)
+    http_parser.rb (0.5.3)
+    httpclient (2.3.0.1)
+    json_pure (1.7.5)
+    membrane (0.0.2)
     mime-types (1.18)
     multi_json (1.3.6)
     multi_xml (0.5.1)
-    nats (0.4.22)
-      daemons (>= 1.1.4)
+    multipart-post (1.1.5)
+    nats (0.4.26)
+      daemons (>= 1.1.5)
       eventmachine (>= 0.12.10)
-      json_pure (>= 1.6.1)
-      thin (>= 1.3.1)
+      json_pure (>= 1.7.3)
+      thin (>= 1.4.1)
     posix-spawn (0.3.6)
     rack (1.4.1)
     rack-mount (0.8.3)
@@ -55,17 +77,11 @@ GEM
     rspec-expectations (2.9.1)
       diff-lcs (~> 1.1.3)
     rspec-mocks (2.9.0)
-    thin (1.3.1)
+    thin (1.5.0)
       daemons (>= 1.0.9)
       eventmachine (>= 0.12.6)
       rack (>= 1.0.0)
     timecop (0.5.2)
-    vcap_common (1.0.10)
-      eventmachine (~> 0.12.11.cloudfoundry.3)
-      nats (~> 0.4.22.beta.8)
-      posix-spawn (~> 0.3.6)
-      thin (~> 1.3.1)
-      yajl-ruby (~> 0.8.3)
     yajl-ruby (0.8.3)
 
 PLATFORMS
@@ -79,5 +95,5 @@ DEPENDENCIES
   rspec
   steno!
   timecop
-  vcap_common (~> 1.0.10)
+  vcap_common!
   yajl-ruby
