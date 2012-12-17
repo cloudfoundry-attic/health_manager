@@ -35,12 +35,12 @@ module HealthManager
           .select { |_, instance| FLAPPING == instance['state'] }
           .map { |i, instance| { :index => i, :since => instance['state_timestamp'] }}
 
-        publisher.publish(reply_to, {:indices => result}.to_json)
+        publisher.publish(reply_to, encode_json({:indices => result}))
       when CRASHED
         result = known_droplet.crashes.map { |instance, crash|
           { :instance => instance, :since => crash['crash_timestamp'] }
         }
-        publisher.publish(reply_to, {:instances => result}.to_json)
+        publisher.publish(reply_to, encode_json({:instances => result}))
       end
     end
 

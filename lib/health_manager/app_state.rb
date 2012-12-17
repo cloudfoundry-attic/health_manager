@@ -98,10 +98,10 @@ module HealthManager
     end
 
     def to_json(*a)
-      { "json_class" => self.class.name,
+      encode_json({ "json_class" => self.class.name,
       }.merge(self.instance_variables.inject({}) {|h, v|
                 h[v] = self.instance_variable_get(v); h
-              }).to_json(*a)
+              }))
     end
 
     def restart_pending?(index)
