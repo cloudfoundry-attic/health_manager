@@ -7,7 +7,7 @@ module HealthManager
     REALTIME_STATS = [:total_apps,
                       :total_instances,
                       :running_instances,
-                      :down_instances,
+                      :missing_instances,
                       :crashed_instances,
                       :flapping_instances,
                       :running]
@@ -20,7 +20,7 @@ module HealthManager
       declare_counter :total_apps
       declare_counter :total_instances
       declare_counter :running_instances
-      declare_counter :down_instances
+      declare_counter :missing_instances
       declare_counter :crashed_instances
       declare_counter :flapping_instances
 
@@ -76,7 +76,7 @@ module HealthManager
           #e.g., [:running, :frameworks, 'sinatra']
           #or,   [:running, :runtimes, 'ruby19' ]
 
-          create_runtime_metrics(*path)
+          create_realtime_metrics(*path)
 
           inc(*path, :apps)
           add(*path, :crashes, droplet.crashes.size)
@@ -95,7 +95,7 @@ module HealthManager
         when STARTING, RUNNING
           inc(*path, :running_instances)
         when DOWN
-          inc(*path, :down_instances)
+          inc(*path, :missing_instances)
         when FLAPPING
           inc(*path, :flapping_instances)
         end
@@ -131,13 +131,13 @@ module HealthManager
     end
 
     private
-    def create_runtime_metrics(*path)
+    def create_realtime_metrics(*path)
       declare_node(*path)
       set(*path, {
             :apps => 0,
             :crashes => 0,
             :running_instances => 0,
-            :down_instances => 0,
+            :missing_instances => 0,
             :flapping_instances => 0
           }) if get(*path).empty?
     end

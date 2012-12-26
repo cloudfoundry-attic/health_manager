@@ -172,18 +172,37 @@ describe HealthManager do
       v.get(:node, 'subnode', 'counter').should == 31
     end
 
-    it 'should return valid varz' do
-      v.declare_counter :total_apps
-      v.declare_node :frameworks
-      v.declare_node :frameworks, 'sinatra'
-      v.declare_counter :frameworks, 'sinatra', :apps
 
-      v.set :total_apps, 10
-      10.times { v.inc :frameworks, 'sinatra', :apps }
+    describe 'hm-specific metrics' do
+      before :each do
+        v.prepare
+      end
 
-      v.get_varz.should == {
-        :total_apps => 10,
-        :frameworks => { 'sinatra' => {:apps => 10 }}}
+      it 'should return valid hm varz' do
+        v.declare_node :running, :frameworks, 'sinatra'
+        v.declare_counter :running, :frameworks, 'sinatra', :apps
+
+        v.set :total_apps, 10
+        10.times { v.inc :running, :frameworks, 'sinatra', :apps }
+
+        v.get(:total_apps).should == 10
+        v.get(:running, :frameworks, 'sinatra', :apps).should == 10
+      end
+
+      it 'should have hm metrics once #prepare is called' do
+        v.get(:total_apps).should == 0
+        v.get(:missing_instances).should == 0
+
+        v.get(:running).should == { :frameworks => {}, :runtimes => {} }
+        v.get(:total).should == { :frameworks => {}, :runtimes => {} }
+      end
+
+      it 'should update realtime stats according to droplet data' do
+        app, _ = make_app({:num_instances => 2})
+        v.update_realtime_stats_for_droplet(app)
+        v.get(:total_apps).should == 1
+        v.get(:running, :frameworks, 'sinatra', :missing_instances) == 2
+      end
     end
   end
 end

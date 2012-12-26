@@ -220,7 +220,7 @@ module HealthManager
           varz.set(:analysis_loop_duration, elapsed)
 
           logger.info ["harmonizer: Analyzed #{varz.get(:running_instances)} running ",
-                       "#{varz.get(:down_instances)} down instances. ",
+                       "#{varz.get(:missing_instances)} missing instances. ",
                        "Elapsed time: #{elapsed}"
                       ].join
           false #signal :droplets_analysis task completion to the scheduler
