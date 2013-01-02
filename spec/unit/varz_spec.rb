@@ -203,6 +203,17 @@ describe HealthManager do
         v.get(:total_apps).should == 1
         v.get(:running, :frameworks, 'sinatra', :missing_instances) == 2
       end
+
+      describe 'expected stats' do
+        it 'should be resettable' do
+          v.set(:total, 10)
+          v.get(:total).should == 10
+          v.reset_expected_stats
+          v.held?(:total).should be_true
+          v.release_expected_stats
+          v.held?(:total).should be_false
+        end
+      end
     end
   end
 end

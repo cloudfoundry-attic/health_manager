@@ -60,6 +60,24 @@ module HealthManager
       EXPECTED_STATS.each { |s| hold(s); reset(s) }
     end
 
+    def release_realtime_stats
+      REALTIME_STATS.each { |s| release(s) }
+    end
+
+    def release_expected_stats
+      EXPECTED_STATS.each { |s| release(s) }
+    end
+
+    def publish_realtime_stats
+      release_realtime_stats
+      publish
+    end
+
+    def publish_expected_stats
+      release_expected_stats
+      publish
+    end
+
     def update_realtime_stats_for_droplet(droplet)
       inc(:total_apps)
       add(:total_instances, droplet.num_instances)
@@ -118,16 +136,6 @@ module HealthManager
           add(*path, :started_memory, droplet_hash['memory'] * droplet_hash['instances'])
         end
       end
-    end
-
-    def publish_realtime_stats
-      REALTIME_STATS.each { |s| varz.release(s) }
-      publish
-    end
-
-    def publish_expected_stats
-      EXPECTED_STATS.each { |s| varz.release(s) }
-      publish
     end
 
     private
