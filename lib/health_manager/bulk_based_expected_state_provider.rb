@@ -65,7 +65,7 @@ module HealthManager
         http.callback do
           if http.response_header.status != 200
             logger.error("bulk: request problem. Response: #{http.response_header} #{http.response}")
-            release_varz
+            varz.release_expected_stats
             next
           end
 
@@ -90,15 +90,10 @@ module HealthManager
 
         http.errback do
           logger.error("problem talking to bulk API at #{app_url}")
-          release_varz
+          varz.release_expected_stats
           @user = @password = nil #ensure re-acquisition of credentials
         end
       end
-    end
-
-    def release_varz
-      varz.reset_expected_stats
-      varz.publish_expected_stats
     end
 
     def host
@@ -139,7 +134,7 @@ module HealthManager
         NATS.timeout(sid,
                      get_param_from_config_or_default(:nats_request_timeout, @config)) do
           logger.error("bulk: NATS timeout getting bulk api credentials. Request ignored.")
-          release_varz
+          varz.release_expected_stats
         end
       end
     end
