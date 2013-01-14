@@ -28,7 +28,8 @@ module HealthManager
 
       def notify_listener(event_type, app_state, *args)
         check_event_type(event_type)
-        listeners = @listeners[event_type] || []
+        return unless @listeners && @listeners[event_type]
+        listeners = @listeners[event_type]
         listeners.each do |block|
           block.call(app_state, *args)
         end
@@ -262,6 +263,7 @@ module HealthManager
     end
 
     def process_exit_dea(message)
+      reset_missing_indices
       notify(:exit_dea, message)
     end
 
@@ -297,6 +299,18 @@ module HealthManager
     def process_droplet_updated(message)
       reset_missing_indices
       notify(:droplet_updated, message)
+    end
+
+    def mark_instance_as_down(version, index, instance_id)
+      instance = get_instance(version, index)
+      if instance['instance'] == instance_id
+        logger.debug("Marking as down: #{version}, #{index}, #{instance_id}")
+        instance['state'] = DOWN
+      elsif instance['instance']
+        logger.warn("instance mismatch. expected: #{instance['instance']}, got: #{instance_id}")
+      else
+        # NOOP for freshly created instance with nil instance_id
+      end
     end
 
     def get_version(version = @live_version)

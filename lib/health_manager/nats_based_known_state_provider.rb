@@ -41,6 +41,9 @@ module HealthManager
 
       droplet = get_droplet(message['droplet'].to_s)
 
+      droplet.mark_instance_as_down(message['version'],
+                                    message['index'],
+                                    message['instance'])
       case message['reason']
       when CRASHED
         varz.inc(:crashed_instances)
