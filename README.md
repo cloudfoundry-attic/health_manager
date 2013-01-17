@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/cloudfoundry/health_manager.png)](https://travis-ci.org/cloudfoundry/health_manager)
+
 # HealthManager 2.0
 
 Health Manager 2.0 (HM-2) is a complete re-write of the original Health
