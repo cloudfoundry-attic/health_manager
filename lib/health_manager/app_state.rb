@@ -124,7 +124,8 @@ module HealthManager
       if running_state?(beat)
         if  instance['state'] == RUNNING &&
             instance['instance'] != beat['instance']
-          notify(:extra_instances, [[beat['instance'],'Instance mismatch']] )
+          notify(:extra_instances, [[beat['instance'],
+                                     "Instance mismatch, heartbeat: #{beat['instance']}, expected: #{instance['instance']}"]])
         else
           instance['last_heartbeat'] = now
           instance['timestamp'] = now

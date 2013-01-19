@@ -35,7 +35,12 @@ module HealthManager
     end
 
     def stop_instances_immediately(app, instances_and_reasons)
-      instances = instances_and_reasons.map {|instance, _| instance }
+      instances_and_reasons.each do |instance, reason|
+        logger.info("nudger: stopping instance #{instance}. Reason: #{reason}")
+      end
+
+      instances = instances_and_reasons.map { |inst, _| inst }
+
       publish_request_message(encode_json(make_stop_message(app, instances)))
     end
 
