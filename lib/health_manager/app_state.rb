@@ -111,7 +111,6 @@ module HealthManager
 
     def add_pending_restart(index, receipt)
       @pending_restarts[index] = receipt
-      force_missing_indices_recalculation
     end
 
     def remove_pending_restart(index)
@@ -139,14 +138,16 @@ module HealthManager
           'crash_timestamp' => beat['state_timestamp']
         }
       end
-      force_missing_indices_recalculation
       justify_existence_for_now
     end
 
     def check_for_missing_indices
-      unless reset_recently? or missing_indices.empty?
-        notify(:missing_instances,  missing_indices)
-        reset_missing_indices
+      unless reset_recently?
+        indices = missing_indices
+        unless indices.empty?
+          notify(:missing_instances,  indices)
+          reset_missing_indices
+        end
       end
     end
 
@@ -195,19 +196,10 @@ module HealthManager
     end
 
     def reset_missing_indices
-      force_missing_indices_recalculation
       @reset_timestamp = now
     end
 
     def missing_indices
-      @missing_indices ||= calculate_missing_indices
-    end
-
-    def force_missing_indices_recalculation
-      @missing_indices = nil
-    end
-
-    def calculate_missing_indices
       return [] unless [
                         @state == STARTED,
                         @package_state == STAGED
