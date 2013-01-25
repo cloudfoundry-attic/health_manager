@@ -37,7 +37,7 @@ module HealthManager
         missing_indices.each do |index|
           instance = app_state.get_instance(index)
           if flapping?(instance)
-            execute_flapping_policy(app_state, index, instance)
+            execute_flapping_policy(app_state, index, instance, false)
           else
             nudger.start_instance(app_state, index, NORMAL_PRIORITY)
           end
@@ -68,7 +68,7 @@ module HealthManager
         instance = app_state.get_instance(message['version'], message['index'])
 
         if flapping?(instance)
-          execute_flapping_policy(app_state, index, instance)
+          execute_flapping_policy(app_state, index, instance, true)
         else
           nudger.start_instance(app_state, index, LOW_PRIORITY)
         end
@@ -123,11 +123,11 @@ module HealthManager
     # crashes, predicate methods, etc.  Consider making "instance"
     # into a full-fledged object
 
-    def execute_flapping_policy(app_state, index, instance)
+    def execute_flapping_policy(app_state, index, instance, chatty)
       unless app_state.restart_pending?(index)
         instance['last_action'] = now
         if giveup_restarting?(instance)
-          logger.info { "given up on restarting: app_id=#{app_state.id} index=#{index}" }
+          logger.info { "given up on restarting: app_id=#{app_state.id} index=#{index}" } if chatty
         else
           delay = calculate_delay(instance)
           schedule_delayed_restart(app_state, instance, index, delay)
