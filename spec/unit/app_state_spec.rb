@@ -2,25 +2,23 @@ require 'spec_helper'
 
 describe HealthManager do
 
-  include HealthManager::Common
-
   after :each do
-    AppState.remove_all_listeners
+    HealthManager::AppState.remove_all_listeners
   end
 
   describe "AppState" do
     before(:each) do
-      AppState.remove_all_listeners
-      AppState.heartbeat_deadline = 10
-      AppState.flapping_death = 1
-      AppState.droplet_gc_grace_period = 60
+      HealthManager::AppState.remove_all_listeners
+      HealthManager::AppState.heartbeat_deadline = 10
+      HealthManager::AppState.flapping_death = 1
+      HealthManager::AppState.droplet_gc_grace_period = 60
     end
 
     it 'should become ripe for GC after inactivity' do
       app, _ = make_app
       app.should_not be_ripe_for_gc
 
-      Timecop.travel(Time.now + AppState.droplet_gc_grace_period + 10)
+      Timecop.travel(Time.now + HealthManager::AppState.droplet_gc_grace_period + 10)
       app.should be_ripe_for_gc
     end
 
@@ -41,7 +39,7 @@ describe HealthManager do
       app, _ = make_app
       invoked = false
 
-      AppState.add_listener :exit_crashed do
+      HealthManager::AppState.add_listener :exit_crashed do
         invoked = true
       end
       message = make_crash_message(app)
@@ -59,7 +57,7 @@ describe HealthManager do
       #no heartbeats arrived yet, so all instances are assumed missing
       app.missing_indices.should == [0, 1, 2, 3]
 
-      AppState.add_listener :missing_instances do |a, indices|
+      HealthManager::AppState.add_listener :missing_instances do |a, indices|
         a.should == app
         indices.should == future_answer
         event_handler_invoked = true
@@ -82,7 +80,7 @@ describe HealthManager do
 
       event_handler_invoked.should be_false
 
-      AppState.heartbeat_deadline = 0
+      HealthManager::AppState.heartbeat_deadline = 0
       app.analyze
 
       event_handler_invoked.should be_true
@@ -97,7 +95,7 @@ describe HealthManager do
 
       #no heartbeats arrived yet, so all instances are assumed missing
 
-      AppState.add_listener :extra_instances do |a, indices|
+      HealthManager::AppState.add_listener :extra_instances do |a, indices|
         a.should == app
         indices.should == future_answer
         event_handler_invoked = true

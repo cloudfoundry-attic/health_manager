@@ -2,18 +2,14 @@ require 'spec_helper'
 
 describe HealthManager do
 
-  include HealthManager::Common
-
   describe "Scheduler" do
 
-    before(:each) do
-      @s = Scheduler.new
-    end
+    subject { HealthManager::Scheduler.new }
 
     describe '#interval' do
       it 'should return configured interval values' do
-        s1 = Scheduler.new( :intervals => {:droplets_analysis =>7 } )
-        s2 = Scheduler.new( 'intervals' => {'droplets_analysis' =>6 } )
+        s1 = HealthManager::Scheduler.new( :intervals => {:droplets_analysis =>7 } )
+        s2 = HealthManager::Scheduler.new( 'intervals' => {'droplets_analysis' =>6 } )
 
         s1.interval(:droplets_analysis).should == 7
         s1.interval('droplets_analysis').should == 7
@@ -22,49 +18,48 @@ describe HealthManager do
       end
 
       it 'should return default interval values' do
-        s = Scheduler.new
-        s.interval(:analysis_delay).should == ::HealthManager::DEFAULTS[:analysis_delay]
-        s.interval('analysis_delay').should == ::HealthManager::DEFAULTS[:analysis_delay]
+        subject.interval(:analysis_delay).should == HealthManager::DEFAULTS[:analysis_delay]
+        subject.interval('analysis_delay').should == HealthManager::DEFAULTS[:analysis_delay]
       end
 
       it 'should raise ArgumentError for invalid intervals' do
-        lambda { @s.interval(:bogus) }.should raise_error(ArgumentError, /undefined parameter/)
+        lambda { subject.interval(:bogus) }.should raise_error(ArgumentError, /undefined parameter/)
       end
     end
 
     it 'should be able to schedule own termination' do
-      @s.schedule :timer => 1 do
-        @s.stop
+      subject.schedule :timer => 1 do
+        subject.stop
       end
-      start_at = now
-      @s.start
-      stop_at = now
+      start_at = HealthManager::Manager.now
+      subject.start
+      stop_at = HealthManager::Manager.now
       stop_at.should > start_at #at least a second should have elapsed
     end
 
     it 'should be able to execute immediately' do
       done = false
-      @s.immediately do
+      subject.immediately do
         done = true
       end
-      @s.immediately do
-        @s.stop
+      subject.immediately do
+        subject.stop
       end
-      @s.start
+      subject.start
       done.should be_true
     end
 
     it 'should be able to schedule periodic' do
       count = 0
-      @s.schedule :timer => 1.1 do
-        @s.stop
+      subject.schedule :timer => 1.1 do
+        subject.stop
       end
 
-      @s.schedule :periodic => 0.3 do
+      subject.schedule :periodic => 0.3 do
         count += 1
       end
 
-      @s.start
+      subject.start
       count.should == 3
     end
 
@@ -72,13 +67,13 @@ describe HealthManager do
       #this shows running the scheduler within explicit EM.run
       EM.run do
         @counter = Hash.new(0)
-        @s.immediately do
+        subject.immediately do
           @counter[:immediate] += 1
         end
-        @s.every 0.3 do
+        subject.every 0.3 do
           @counter[:periodic] += 1
         end
-        @s.every 0.7 do
+        subject.every 0.7 do
           @counter[:timer] += 1
         end
         #set up expectations for two points in time:
@@ -93,7 +88,7 @@ describe HealthManager do
           @counter[:timer].should == 1
           EM.stop
         end
-        @s.run
+        subject.run
       end
     end
 
@@ -101,26 +96,26 @@ describe HealthManager do
       flag = false
       cancelled_flag = false
 
-      cancelled_timer1 = @s.schedule(:timer => 0.1) do
+      cancelled_timer1 = subject.schedule(:timer => 0.1) do
         cancelled_flag = true
       end
 
-      cancelled_timer2 = @s.after 0.3 do
+      cancelled_timer2 = subject.after 0.3 do
         cancelled_flag = true
       end
 
-      @s.after 0.2 do
+      subject.after 0.2 do
         flag = true
-        @s.cancel(cancelled_timer2)
+        subject.cancel(cancelled_timer2)
       end
 
-      @s.after 1 do
-        @s.stop
+      subject.after 1 do
+        subject.stop
       end
 
-      @s.cancel(cancelled_timer1)
+      subject.cancel(cancelled_timer1)
 
-      @s.start
+      subject.start
 
       cancelled_flag.should be_false
       flag.should be_true
@@ -129,22 +124,22 @@ describe HealthManager do
     it 'should be able to start/stop/quantize tasks' do
 
       iters = 0
-      @s.after 0.1 do
-        @s.start_task(:boo) do
+      subject.after 0.1 do
+        subject.start_task(:boo) do
           iters += 1
-          @s.task_running?(:boo).should be_true
+          subject.task_running?(:boo).should be_true
           iters < 5 #continuation condition
         end
       end
 
-      @s.after 0.2 do
-        @s.stop
+      subject.after 0.2 do
+        subject.stop
       end
 
-      @s.task_running?(:boo).should be_false
-      @s.start
+      subject.task_running?(:boo).should be_false
+      subject.start
       iters.should == 5
-      @s.task_running?(:boo).should be_false
+      subject.task_running?(:boo).should be_false
     end
   end
 end

@@ -8,7 +8,7 @@ def in_em(timeout = 2)
 end
 
 def make_app(options = {})
-  app = AppState.new(options[:id] || 1)
+  app = HealthManager::AppState.new(options[:id] || 1)
   expected = {
     :num_instances => 4,
     :state         => 'STARTED',
@@ -32,7 +32,7 @@ def make_heartbeat(apps)
         'version' => app.live_version,
         'instance' => "#{app.live_version}-#{index}",
         'index' => index,
-        'state' => ::HealthManager::RUNNING,
+        'state' => HealthManager::RUNNING,
         'state_timestamp' => now,
         'cc_partition' => 'default'
       }

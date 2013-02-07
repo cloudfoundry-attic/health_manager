@@ -4,7 +4,7 @@ describe HealthManager do
 
   describe "Varz" do
     before :each do
-      @v = Varz.new
+      @v = HealthManager::Varz.new
     end
 
     def v; @v; end
@@ -24,7 +24,7 @@ describe HealthManager do
     it 'should disallow double declarations' do
       v.declare_counter :foo
       v.declare_counter :bar
-      vv = Varz.new
+      vv = HealthManager::Varz.new
       vv.declare_counter :foo #ok to declare same counters for different Varz objects
       lambda { v.declare_counter(:foo).should raise_error ArgumentError }
     end

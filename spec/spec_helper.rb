@@ -12,7 +12,7 @@ support_dir = File.join(File.dirname(__FILE__),"support")
 Dir["#{support_dir}/**/*.rb"].each { |f| require f }
 
 RSpec.configure do |config|
-  config.include(HealthManager)
+  config.include(HealthManager::Common)
 
   config.before :all do
     logging_config = {'level' => ENV['LOG_LEVEL'] || 'warn'}
@@ -21,5 +21,3 @@ RSpec.configure do |config|
     Steno.init(Steno::Config.new(steno_config))
   end
 end
-
-

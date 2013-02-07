@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe HealthManager do
-  include HealthManager::Common
 
   before(:all) do
     EM.error_handler do |e|
@@ -17,7 +16,7 @@ describe HealthManager do
         :expected_state_update => 1.5,
       }
     }
-    @m = Manager.new(@config)
+    @m = HealthManager::Manager.new(@config)
     @m.varz.prepare
   end
 
@@ -31,16 +30,16 @@ describe HealthManager do
     end
 
     it 'should have all componets registered and available' do
-      @m.harmonizer.should be_a_kind_of Harmonizer
+      @m.harmonizer.should be_a_kind_of HealthManager::Harmonizer
 
       # chaining components should also work.
       # thus ensuring all components available from all components
-      @m.harmonizer.varz.should be_a_kind_of Varz
-      @m.varz.reporter.should be_a_kind_of Reporter
-      @m.reporter.known_state_provider.should be_a_kind_of KnownStateProvider
-      @m.known_state_provider.expected_state_provider.should be_a_kind_of ExpectedStateProvider
-      @m.expected_state_provider.nudger.should be_a_kind_of Nudger
-      @m.nudger.scheduler.should be_a_kind_of Scheduler
+      @m.harmonizer.varz.should be_a_kind_of HealthManager::Varz
+      @m.varz.reporter.should be_a_kind_of HealthManager::Reporter
+      @m.reporter.known_state_provider.should be_a_kind_of HealthManager::KnownStateProvider
+      @m.known_state_provider.expected_state_provider.should be_a_kind_of HealthManager::ExpectedStateProvider
+      @m.expected_state_provider.nudger.should be_a_kind_of HealthManager::Nudger
+      @m.nudger.scheduler.should be_a_kind_of HealthManager::Scheduler
     end
   end
 
@@ -55,7 +54,7 @@ describe HealthManager do
       @ksp.droplets.size.should == 0
       @h = @m.harmonizer
 
-      AppState.droplet_gc_grace_period = GRACE_PERIOD
+      HealthManager::AppState.droplet_gc_grace_period = GRACE_PERIOD
     end
 
     it 'should not GC when a recent h/b arrives' do

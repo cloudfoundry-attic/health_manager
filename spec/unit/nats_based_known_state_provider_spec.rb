@@ -2,21 +2,19 @@ require 'spec_helper'
 
 describe HealthManager do
 
-  include HealthManager::Common
-
   before(:each) do
-    AppState.flapping_death = 3
+    HealthManager::AppState.flapping_death = 3
   end
 
   after(:each) do
-    AppState.remove_all_listeners
+    HealthManager::AppState.remove_all_listeners
   end
 
   describe "AppStateProvider" do
     describe "NatsBasedKnownStateProvider" do
 
       before(:each) do
-        @nb = NatsBasedKnownStateProvider.new(build_valid_config)
+        @nb = HealthManager::NatsBasedKnownStateProvider.new(build_valid_config)
       end
 
       it 'should subscribe to heartbeat, droplet.exited/updated messages' do
@@ -85,11 +83,10 @@ describe HealthManager do
   end
 
   def build_valid_config(config = {})
-    @config = config
-    varz = Varz.new(@config)
+    varz = HealthManager::Varz.new(config)
     varz.prepare
-    register_hm_component(:varz, varz)
-    register_hm_component(:scheduler, @scheduler = Scheduler.new(@config))
-    @config
+    varz.register_hm_component(:varz, varz)
+    varz.register_hm_component(:scheduler, @scheduler = HealthManager::Scheduler.new(config))
+    config
   end
 end
