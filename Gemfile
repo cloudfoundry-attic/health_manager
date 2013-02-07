@@ -5,7 +5,7 @@ gem "rake"
 gem "vcap_common", :git => 'git://github.com/cloudfoundry/vcap-common.git'
 gem "steno", :git => 'git://github.com/cloudfoundry/steno.git'
 
-gem 'eventmachine', :git => 'git://github.com/cloudfoundry/eventmachine.git', :branch => 'release-0.12.11-cf'
+gem 'eventmachine', '~> 1.0.0'
 gem "yajl-ruby"
 gem "rest-client"
 gem "em-http-request"

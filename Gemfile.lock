@@ -1,11 +1,4 @@
 GIT
-  remote: git://github.com/cloudfoundry/eventmachine.git
-  revision: 2806c630d8631d5dcf9fb2555f665b829052aabe
-  branch: release-0.12.11-cf
-  specs:
-    eventmachine (0.12.11.cloudfoundry.3)
-
-GIT
   remote: git://github.com/cloudfoundry/steno.git
   revision: 5c68aa048c50ee0cf56253a2700ec711aff8f762
   specs:
@@ -47,6 +40,7 @@ GEM
       http_parser.rb (>= 0.5.1)
     em-socksify (0.1.0)
       eventmachine
+    eventmachine (1.0.0)
     grape (0.2.2)
       activesupport
       hashie (~> 1.2)
@@ -103,7 +97,7 @@ PLATFORMS
 
 DEPENDENCIES
   em-http-request
-  eventmachine!
+  eventmachine (~> 1.0.0)
   rake
   rest-client
   rspec
