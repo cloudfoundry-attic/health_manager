@@ -10,6 +10,11 @@ module HealthManager
       process_next_batch({}, &block)
     end
 
+    def initialize(config)
+      @error_count = 0
+      super(config)
+    end
+
     def set_expected_state(known, expected)
       logger.debug2 { "bulk: #set_expected_state: known: #{known.inspect} expected: #{expected.inspect}" }
 
@@ -61,10 +66,13 @@ module HealthManager
             'bulk_token' => encode_json(bulk_token)
           },
         }
+
         http = EM::HttpRequest.new(app_url).get(options)
         http.callback do
+          @error_count = 0 # reset after a successful request
+
           if http.response_header.status != 200
-            logger.error("bulk: request problem. Response: #{http.response_header} #{http.response}")
+            logger.error("bulk: request problem. Response status: #{http.response_header.status}")
             varz.release_expected_stats
             next
           end
@@ -89,9 +97,22 @@ module HealthManager
         end
 
         http.errback do
-          logger.error("problem talking to bulk API at #{app_url}")
-          varz.release_expected_stats
-          @user = @password = nil #ensure re-acquisition of credentials
+          logger.warn ([ "problem talking to bulk API at #{app_url}",
+                        "bulk_token: #{bulk_token}",
+                        "status: #{http.response_header.status}",
+                        "error count: #{@error_count}"
+                      ].join(", "))
+
+          @error_count += 1
+
+          if @error_count < MAX_BULK_ERROR_COUNT
+            logger.info("Retrying bulk request, bulk_token: #{bulk_token}")
+            process_next_batch(bulk_token, &block)
+          else
+            logger.error("Too many consecutive bulk API errors.")
+            varz.release_expected_stats
+            @user = @password = nil #ensure re-acquisition of credentials
+          end
         end
       end
     end

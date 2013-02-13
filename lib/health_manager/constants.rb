@@ -20,6 +20,7 @@ module HealthManager
   HIGH_PRIORITY          = 1_000_000
 
   ITERATIONS_PER_QUANTUM = 20
+  MAX_BULK_ERROR_COUNT   = 10
 
   DEFAULTS = {
     :cc_partition => "default",
