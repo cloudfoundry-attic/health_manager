@@ -1,10 +1,21 @@
 def in_em(timeout = 2)
   EM.run do
     EM.add_timer(timeout) do
+      puts "Timeout of #{timeout} seconds reached, stopping."
       EM.stop
     end
     yield
   end
+end
+
+def done
+  raise "reactor not running" if !::EM.reactor_running?
+
+  ::EM.next_tick {
+    # Assert something to show a spec-pass
+    :done.should == :done
+    ::EM.stop_event_loop
+  }
 end
 
 def make_app(options = {})
@@ -21,6 +32,19 @@ def make_app(options = {})
 
   app.set_expected_state(expected)
   return app, expected
+end
+
+def make_bulk_entry(options={})
+  {
+    'instances'     => 4,
+    'state'         => 'STARTED',
+    'live_version'  => '12345abcded',
+    'framework'     => 'sinatra',
+    'runtime'       => 'ruby19',
+    'package_state' => 'STAGED',
+    'memory'        => 256,
+    'updated_at'    => Time.now.utc
+  }
 end
 
 def make_heartbeat(apps)
