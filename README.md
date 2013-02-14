@@ -186,8 +186,3 @@ received a heartbeat in the last `droplet_lost` seconds.
 However, an instance_missing event is only triggered if the AppState
 was not reset recently, and if `check_for_missing_instances` method
 has been invoked.
-
-## File a Bug
-
-To file a bug against Cloud Foundry Open Source and its components, sign up and use our bug tracking
-system: [http://cloudfoundry.atlassian.net](http://cloudfoundry.atlassian.net)
