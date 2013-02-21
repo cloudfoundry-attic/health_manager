@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe HealthManager do
-
   describe "Varz" do
     before :each do
       @v = HealthManager::Varz.new
@@ -212,6 +211,17 @@ describe HealthManager do
           v.held?(:total).should be_true
           v.release_expected_stats
           v.held?(:total).should be_false
+        end
+
+        it 'should calculate elapsed time' do
+          v.reset_expected_stats
+          v.publish_expected_stats
+          v.get(:bulk_update_loop_duration).should be < 1
+
+          v.reset_expected_stats
+          Timecop.travel(Time.now + 5)
+          v.publish_expected_stats
+          v.get(:bulk_update_loop_duration).should be >= 5
         end
       end
     end

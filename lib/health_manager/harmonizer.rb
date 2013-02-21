@@ -229,14 +229,10 @@ module HealthManager
     end
 
     def update_expected_state
-      logger.debug { "harmonizer: expected_state_update pre-check" }
-
       if expected_state_update_in_progress?
         postpone_expected_state_update
         return
       end
-
-      start_at = Time.now
 
       expected_state_provider.update_user_counts
       varz.reset_expected_stats
@@ -244,10 +240,6 @@ module HealthManager
         known = known_state_provider.get_droplet(app_id)
         expected_state_provider.set_expected_state(known, expected)
       end
-
-      elapsed = Time.now - start_at
-      varz.set(:bulk_update_loop_duration, elapsed)
-      logger.info { "harmonizer: Expected State Update complete. Elapsed time: #{elapsed}" }
     end
 
     def postpone_expected_state_update

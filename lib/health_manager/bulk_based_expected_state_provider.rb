@@ -83,7 +83,7 @@ module HealthManager
 
           if batch.nil? || batch.empty?
             varz.publish_expected_stats
-            logger.info("bulk: done")
+            logger.info("bulk: done. Loop duration: #{varz.get(:bulk_update_loop_duration)}")
             next
           end
 

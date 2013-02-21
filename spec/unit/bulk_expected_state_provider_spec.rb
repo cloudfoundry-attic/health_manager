@@ -23,7 +23,6 @@ describe HealthManager::BulkBasedExpectedStateProvider do
     subject
   end
 
-
   describe "each_droplet" do
     let(:bulk_token) { "{}" }
     let(:droplets_received) { [] }
@@ -140,7 +139,6 @@ describe HealthManager::BulkBasedExpectedStateProvider do
         before do
 
           #setup the expectation to call the errback block first, and callback block then.
-
           flags = double("flags")
           flags.stub("must_succeed").and_return(false, false, true)
 
@@ -168,7 +166,6 @@ describe HealthManager::BulkBasedExpectedStateProvider do
           provider.logger.should_receive(:info).with(/bulk.*done/).ordered.and_call_original
           subject
         end
-
       end
 
       context "when the failures keep repeating" do
