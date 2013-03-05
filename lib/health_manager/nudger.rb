@@ -70,11 +70,10 @@ module HealthManager
       }
     end
 
-    private
-
     def queue(message, priority = NORMAL_PRIORITY)
       logger.debug { "nudger: queueing: #{message}, #{priority}" }
-      key = message.clone.delete(:last_updated)
+      key = message.clone
+      key.delete(:last_updated)
       @queue.insert(message, priority, key)
       varz.set(:queue_length, @queue.size)
     end
