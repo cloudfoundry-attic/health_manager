@@ -43,6 +43,7 @@ module HealthManager
       declare_counter :droplet_updated_msgs_received
       declare_counter :healthmanager_status_msgs_received
       declare_counter :healthmanager_health_request_msgs_received
+      declare_counter :healthmanager_droplet_request_msgs_received
 
       declare_counter :analysis_loop_duration
       declare_counter :bulk_update_loop_duration

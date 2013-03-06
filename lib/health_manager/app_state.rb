@@ -53,7 +53,6 @@ module HealthManager
     attr_reader :last_updated
     attr_reader :versions, :crashes
     attr_reader :pending_restarts
-
     attr_reader :existence_justified_at
 
     def initialize(id)
@@ -99,10 +98,10 @@ module HealthManager
     end
 
     def to_json(*a)
-      encode_json({ "json_class" => self.class.name,
-      }.merge(self.instance_variables.inject({}) {|h, v|
-                h[v] = self.instance_variable_get(v); h
-              }))
+      encode_json(
+                  self.instance_variables.inject({}) {|h, v|
+                    h[v[1..-1]] = self.instance_variable_get(v); h
+                  })
     end
 
     def restart_pending?(index)

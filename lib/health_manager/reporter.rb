@@ -15,6 +15,9 @@ module HealthManager
       NATS.subscribe('healthmanager.health') { |msg, reply_to|
         process_health_message(msg, reply_to)
       }
+      NATS.subscribe('healthmanager.droplet') { |msg, reply_to|
+        process_droplet_message(msg, reply_to)
+      }
     end
 
     def process_status_message(message, reply_to)
@@ -64,6 +67,16 @@ module HealthManager
           :healthy => running
         }
         publisher.publish(reply_to, encode_json(response))
+      end
+    end
+    def process_droplet_message(message, reply_to)
+      varz.inc(:healthmanager_droplet_request_msgs_received)
+      message = parse_json(message)
+      message['droplets'].each do |droplet|
+        droplet_id = droplet['droplet'].to_s
+        next unless known_state_provider.has_droplet?(droplet_id)
+        known_droplet = known_state_provider.get_droplet(droplet_id)
+        publisher.publish(reply_to, encode_json(known_droplet))
       end
     end
   end
