@@ -16,11 +16,83 @@ describe HealthManager::BulkBasedExpectedStateProvider do
   }
   let(:manager) { m = HealthManager::Manager.new(config); m.varz.prepare; m }
   let(:varz) { manager.varz }
+  let(:provider) { manager.expected_state_provider }
 
-  subject { manager.expected_state_provider }
+  before do
+    manager.varz.reset_expected_stats
+    provider.stub(:with_credentials).and_yield(bulk_login, bulk_password)
+    EM::HttpConnection.any_instance.stub(:get).with(any_args).and_return(http_mock)
+  end
 
-  it "should be instantiated with the proper config" do
-    subject
+  describe "update_user_counts" do
+    let(:http_mock) do
+      http = double("http")
+      http.stub(:response_header).and_return(double("response header"))
+      http.response_header.stub(:status).and_return(http_response_status)
+      http.stub(:response).and_return(http_response_body)
+      http
+    end
+
+    let(:http_response_status) { 200 }
+    let(:user_count) { 1000 }
+    let(:http_response_body) { encode_json({ :counts => { :user => user_count }}) }
+
+    subject do
+      in_em do
+        provider.update_user_counts
+        done
+      end
+    end
+
+    context "http callback successful" do
+
+      before do
+        http_mock.should_receive(:callback).and_yield
+        http_mock.should_receive(:errback)
+      end
+
+      it "should update varz[:total_users] with user counts" do
+        varz.should_receive(:set).with(:total_users, user_count)
+        provider.should_not_receive(:reset_credentials)
+        subject
+      end
+    end
+
+    context "http callback with non-200 status" do
+      let(:http_response_status) { 500 }
+      before do
+        http_mock.should_receive(:callback).and_yield
+        http_mock.should_receive(:errback)
+      end
+
+      it "should not update varz" do
+        varz.should_not_receive(:set)
+        subject
+      end
+
+      it "should reset credentials" do
+        provider.should_receive(:reset_credentials)
+        subject
+      end
+    end
+
+    context "http errback" do
+
+      before do
+        http_mock.should_receive(:callback)
+        http_mock.should_receive(:errback).and_yield
+      end
+
+      it "should not update varz" do
+        varz.should_not_receive(:set)
+        subject
+      end
+
+      it "should reset credentials" do
+        provider.should_receive(:reset_credentials)
+        subject
+      end
+    end
   end
 
   describe "each_droplet" do
@@ -28,7 +100,6 @@ describe HealthManager::BulkBasedExpectedStateProvider do
     let(:droplets_received) { [] }
     let(:block) { Proc.new { |app_id, droplet_hash| droplets_received << droplet_hash } }
 
-    let(:provider) { manager.expected_state_provider }
     let(:http_mock) do
       http = double("http")
       http.stub(:response_header).and_return(double("response header"))
@@ -62,13 +133,6 @@ describe HealthManager::BulkBasedExpectedStateProvider do
         provider.each_droplet(&block)
         done
       end
-    end
-
-    before do
-      manager.varz.reset_expected_stats
-      provider.stub(:with_credentials).and_yield(bulk_login, bulk_password)
-
-      EM::HttpConnection.any_instance.stub(:get).with(any_args).and_return(http_mock)
     end
 
     context "when the http request is successful" do
@@ -182,6 +246,11 @@ describe HealthManager::BulkBasedExpectedStateProvider do
 
         it "should release varz" do
           varz.should_receive(:release_expected_stats)
+          subject
+        end
+
+        it "should reset credentials" do
+          provider.should_receive(:reset_credentials)
           subject
         end
 

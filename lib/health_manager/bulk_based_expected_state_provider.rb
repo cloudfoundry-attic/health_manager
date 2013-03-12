@@ -38,7 +38,7 @@ module HealthManager
         http.callback do
           if http.response_header.status != 200
             logger.error("bulk: request problem. Response: #{http.response_header} #{http.response}")
-            @user = @password = nil #ensure re-acquisition of credentials
+            reset_credentials
             next
           end
 
@@ -51,9 +51,13 @@ module HealthManager
 
         http.errback do
           logger.error("bulk: error: talking to bulk API at #{counts_url}")
-          @user = @password = nil #ensure re-acquisition of credentials
+          reset_credentials
         end
       end
+    end
+
+    def reset_credentials
+      @user = @password = nil #ensure re-acquisition of credentials
     end
 
     private
@@ -112,7 +116,7 @@ module HealthManager
           else
             logger.error("Too many consecutive bulk API errors.")
             varz.release_expected_stats
-            @user = @password = nil #ensure re-acquisition of credentials
+            reset_credentials
           end
         end
       end
