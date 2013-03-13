@@ -127,7 +127,7 @@ module HealthManager
     end
 
     def batch_size
-      (@config['bulk_api'] && @config['bulk_api']['batch_size']) || "50"
+      (@config['bulk_api'] && @config['bulk_api']['batch_size']) || "500"
     end
 
     def bulk_url
