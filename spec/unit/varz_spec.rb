@@ -2,11 +2,7 @@ require 'spec_helper'
 
 describe HealthManager do
   describe "Varz" do
-    before :each do
-      @v = HealthManager::Varz.new
-    end
-
-    def v; @v; end
+    let(:v) { HealthManager::Varz.new }
 
     it 'should allow declaring counters' do
       v.declare_counter :counter1
@@ -211,6 +207,22 @@ describe HealthManager do
           v.held?(:total).should be_true
           v.release_expected_stats
           v.held?(:total).should be_false
+        end
+
+        describe '#expected_stats_held?' do
+          it 'returns true when all are held' do
+            v.reset_expected_stats
+            expect(v.expected_stats_held?).to eq(true)
+          end
+
+          it 'return false when all are not held' do
+            expect(v.expected_stats_held?).to eq(false)
+          end
+
+          it 'raises when some are held and some are not' do
+            v.hold(:total)
+            expect { v.expected_stats_held? }.to raise_error(/inconsistent/)
+          end
         end
 
         it 'should calculate elapsed time' do

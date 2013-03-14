@@ -62,6 +62,12 @@ module HealthManager
       EXPECTED_STATS.each { |s| hold(s); reset(s) }
     end
 
+    def expected_stats_held?
+      return true if EXPECTED_STATS.all? { |s| held?(s) }
+      return false if EXPECTED_STATS.all? { |s| !held?(s) }
+      raise "varz: inconsistently held expected stats"
+    end
+
     def release_realtime_stats
       REALTIME_STATS.each { |s| release(s) }
     end
