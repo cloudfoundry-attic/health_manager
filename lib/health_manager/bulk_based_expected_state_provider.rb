@@ -60,8 +60,6 @@ module HealthManager
       @user = @password = nil #ensure re-acquisition of credentials
     end
 
-    private
-
     def process_next_batch(bulk_token, &block)
       with_credentials do |user, password|
         options = {
@@ -160,7 +158,7 @@ module HealthManager
         NATS.timeout(sid,
                      get_param_from_config_or_default(:nats_request_timeout, @config)) do
           logger.error("bulk: NATS timeout getting bulk api credentials. Request ignored.")
-          varz.release_expected_stats
+          varz.release_expected_stats if varz.expected_stats_held?
         end
       end
     end
