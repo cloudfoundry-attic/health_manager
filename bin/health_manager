@@ -59,5 +59,3 @@ trap('INT') { hm.shutdown }
 trap('SIGTERM') { hm.shutdown }
 
 hm.start
-
-

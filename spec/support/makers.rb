@@ -9,7 +9,7 @@ def in_em(timeout = 2)
 end
 
 def done
-  raise "reactor not running" if !::EM.reactor_running?
+  raise "reactor not running" unless ::EM.reactor_running?
   ::EM.next_tick { ::EM.stop_event_loop }
 end
 

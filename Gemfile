@@ -11,6 +11,7 @@ gem "rest-client"
 gem "em-http-request"
 
 group :test do
+  gem "httparty"
   gem "rspec"
   gem "timecop"
 end

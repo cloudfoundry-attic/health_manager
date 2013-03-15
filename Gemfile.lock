@@ -52,6 +52,9 @@ GEM
       virtus
     hashie (1.2.0)
     http_parser.rb (0.5.3)
+    httparty (0.10.0)
+      multi_json (~> 1.0)
+      multi_xml
     httpclient (2.3.0.1)
     i18n (0.6.1)
     json_pure (1.7.5)
@@ -98,6 +101,7 @@ PLATFORMS
 DEPENDENCIES
   em-http-request
   eventmachine (~> 1.0.0)
+  httparty
   rake
   rest-client
   rspec
