@@ -9,19 +9,19 @@ describe "Startup flow of Health Manager", :type => :integration do
   }
 
   it "attempts to get bulk api credentials " do
-    published = false
+    credentials_requested = false
     with_nats_server do
       NATS.subscribe("cloudcontroller.bulk.credentials.default") do |_,reply|
         NATS.publish(reply, bulk_credentials) {
-          published = true
+          credentials_requested = true
           graceful_shutdown(:hm, @hm_pid)
           done_with_nats
         }
       end
 
-      NATS.publish("foo") { startup_health_manager }
+      NATS.flush { startup_health_manager }
     end
 
-    expect(published).to eq true
+    expect(credentials_requested).to eq true
   end
 end
