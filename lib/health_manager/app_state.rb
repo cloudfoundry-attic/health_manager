@@ -48,7 +48,6 @@ module HealthManager
     attr_reader :state
     attr_reader :live_version
     attr_reader :num_instances
-    attr_reader :framework, :runtime
     attr_reader :package_state
     attr_reader :last_updated
     attr_reader :versions, :crashes
@@ -79,8 +78,6 @@ module HealthManager
       [:state,
        :num_instances,
        :live_version,
-       :framework,
-       :runtime,
        :package_state,
        :last_updated].each do |k|
 

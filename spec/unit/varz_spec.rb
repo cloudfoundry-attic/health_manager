@@ -174,29 +174,29 @@ describe HealthManager do
       end
 
       it 'should return valid hm varz' do
-        v.declare_node :running, :frameworks, 'sinatra'
-        v.declare_counter :running, :frameworks, 'sinatra', :apps
+        v.declare_counter :running, :apps
 
         v.set :total_apps, 10
-        10.times { v.inc :running, :frameworks, 'sinatra', :apps }
+
+        10.times { v.inc :running, :apps }
 
         v.get(:total_apps).should == 10
-        v.get(:running, :frameworks, 'sinatra', :apps).should == 10
+        v.get(:running, :apps).should == 10
       end
 
       it 'should have hm metrics once #prepare is called' do
         v.get(:total_apps).should == 0
         v.get(:missing_instances).should == 0
 
-        v.get(:running).should == { :frameworks => {}, :runtimes => {} }
-        v.get(:total).should == { :frameworks => {}, :runtimes => {} }
+        v.get(:running).should == {}
+        v.get(:total).should == {}
       end
 
       it 'should update realtime stats according to droplet data' do
         app, _ = make_app({:num_instances => 2})
         v.update_realtime_stats_for_droplet(app)
         v.get(:total_apps).should == 1
-        v.get(:running, :frameworks, 'sinatra', :missing_instances) == 2
+        v.get(:running, :missing_instances) == 2
       end
 
       describe 'expected stats' do
