@@ -80,8 +80,6 @@ def create_app(app_id, config)
     'state' => 'STARTED',
     'staged_package_hash' => make_hash,
     'run_count' => 1,
-    'framework' => 'sinatra',
-    'runtime' => 'ruby19',
     'package_state' => 'STAGED',
     'updated_at' => (Time.now - 3600).to_s
   }

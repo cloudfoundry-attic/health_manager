@@ -25,16 +25,12 @@ module HealthManager
       declare_counter :flapping_instances
 
       declare_node :running
-      declare_node :running, :frameworks
-      declare_node :running, :runtimes
 
       declare_counter :total_users
       declare_collection :users # FIXIT: ensure can be safely removed
       declare_collection :apps # FIXIT: ensure can be safely removed
 
       declare_node :total
-      declare_node :total, :frameworks
-      declare_node :total, :runtimes
 
       declare_counter :queue_length
 
@@ -92,25 +88,17 @@ module HealthManager
       add(:total_instances, droplet.num_instances)
       add(:crashed_instances, droplet.crashes.size)
 
-      if droplet.state == STARTED && droplet.framework && droplet.runtime
-
-        #top-level running/missing/flapping stats, i.e., empty path prefix
+      if droplet.state == STARTED
+        # top-level running/missing/flapping stats, i.e., empty path prefix
         update_state_stats_for_instances(droplet)
 
-        ['framework', 'runtime'].each do |metric|
-          path = [:running, "#{metric}s".to_sym, droplet.send(metric) ]
+        create_realtime_metrics(:running)
 
-          #e.g., [:running, :frameworks, 'sinatra']
-          #or,   [:running, :runtimes, 'ruby19' ]
+        inc(:running, :apps)
+        add(:running, :crashes, droplet.crashes.size)
 
-          create_realtime_metrics(*path)
-
-          inc(*path, :apps)
-          add(*path, :crashes, droplet.crashes.size)
-
-          #per framework, per runtime  running/missing/flapping stats
-          update_state_stats_for_instances(*path, droplet)
-        end
+        # running/missing/flapping stats
+        update_state_stats_for_instances(:running, droplet)
       end
     end
 
@@ -130,24 +118,21 @@ module HealthManager
     end
 
     def update_expected_stats_for_droplet(droplet_hash)
-      ['framework', 'runtime'].each do |metric|
-        path = [:total, "#{metric}s".to_sym, droplet_hash[metric]]
+      create_db_metrics(:total)
 
-        create_db_metrics(*path)
+      inc(:total, :apps)
+      add(:total, :instances, droplet_hash['instances'])
+      add(:total, :memory, droplet_hash['memory'] * droplet_hash['instances'])
 
-        inc(*path, :apps)
-        add(*path, :instances, droplet_hash['instances'])
-        add(*path, :memory, droplet_hash['memory'] * droplet_hash['instances'])
-
-        if droplet_hash['state'] == STARTED
-          inc(*path, :started_apps)
-          add(*path, :started_instances, droplet_hash['instances'])
-          add(*path, :started_memory, droplet_hash['memory'] * droplet_hash['instances'])
-        end
+      if droplet_hash['state'] == STARTED
+        inc(:total, :started_apps)
+        add(:total, :started_instances, droplet_hash['instances'])
+        add(:total, :started_memory, droplet_hash['memory'] * droplet_hash['instances'])
       end
     end
 
     private
+
     def create_realtime_metrics(*path)
       declare_node(*path)
       set(*path, {
@@ -158,6 +143,7 @@ module HealthManager
             :flapping_instances => 0
           }) if get(*path).empty?
     end
+
     def create_db_metrics(*path)
       declare_node(*path)
       set(*path, {
