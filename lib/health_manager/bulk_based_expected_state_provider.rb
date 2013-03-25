@@ -22,8 +22,6 @@ module HealthManager
                                :num_instances => expected['instances'],
                                :state         => expected['state'],
                                :live_version  => expected['version'],
-                               :framework     => expected['framework'],
-                               :runtime       => expected['runtime'],
                                :package_state => expected['package_state'],
                                :last_updated  => parse_utc(expected['updated_at']))
     end

@@ -19,8 +19,6 @@ def make_app(options = {})
     :num_instances => 4,
     :state         => 'STARTED',
     :live_version  => '12345abcded',
-    :framework     => 'sinatra',
-    :runtime       => 'ruby19',
     :package_state => 'STAGED',
     :last_updated  => Time.now.to_i - 60*60*24
   }.merge(options)
@@ -34,8 +32,6 @@ def make_bulk_entry(options={})
     'instances'     => 4,
     'state'         => 'STARTED',
     'live_version'  => '12345abcded',
-    'framework'     => 'sinatra',
-    'runtime'       => 'ruby19',
     'package_state' => 'STAGED',
     'memory'        => 256,
     'updated_at'    => Time.now.utc.to_s
