@@ -95,10 +95,9 @@ module HealthManager
     end
 
     def to_json(*a)
-      encode_json(
-                  self.instance_variables.inject({}) {|h, v|
-                    h[v[1..-1]] = self.instance_variable_get(v); h
-                  })
+      encode_json(self.instance_variables.inject({}) do |h, v|
+        h[v[1..-1]] = self.instance_variable_get(v); h
+      end)
     end
 
     def restart_pending?(index)
