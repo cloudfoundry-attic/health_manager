@@ -11,14 +11,6 @@ module HealthManager
       AppState.droplet_gc_grace_period = 60
     end
 
-    it 'should become ripe for GC after inactivity' do
-      app, _ = make_app
-      app.should_not be_ripe_for_gc
-
-      Timecop.travel(Time.now + AppState.droplet_gc_grace_period + 10)
-      app.should be_ripe_for_gc
-    end
-
     it 'should not invoke missing_instances for non-staged states' do
       app, _ = make_app(:package_state => 'PENDING')
       app.missing_indices.should == []
@@ -108,6 +100,64 @@ module HealthManager
       event_handler_invoked.should be_false
       app.analyze
       event_handler_invoked.should be_true
+    end
+
+    describe "#ripe_for_gc?" do
+      before { Timecop.freeze }
+      after { Timecop.return }
+
+      let!(:app_with_expected_state) { make_app }
+      let!(:expected_state) { app_with_expected_state.last }
+      let!(:app) { app_with_expected_state.first }
+
+      it "is not ripe at first" do
+        app.should_not be_ripe_for_gc
+      end
+
+      context "when app was never updated" do
+        it "can be gc-ed at the end of gc period" do
+          Timecop.travel(end_of_gc_period = AppState.droplet_gc_grace_period)
+          app.should_not be_ripe_for_gc
+
+          Timecop.travel(after_end_of_gc_period = 1)
+          app.should be_ripe_for_gc
+        end
+      end
+
+      context "when app was updated via change in expected state" do
+        before do
+          Timecop.travel(during_gc_period = 10)
+          app.set_expected_state(expected_state)
+        end
+
+        it "cannot be gc-ed at the end of gc period " +
+           "because expected state indicates that app *should* be running" do
+          Timecop.travel(end_of_gc_period = AppState.droplet_gc_grace_period - 10)
+          app.should_not be_ripe_for_gc
+
+          Timecop.travel(after_end_of_gc_period = 1)
+          app.should_not be_ripe_for_gc
+
+          Timecop.travel(after_end_of_next_gc_period = 10)
+          app.should be_ripe_for_gc
+        end
+      end
+
+      context "when app was updated via heartbeat" do
+        before do
+          Timecop.travel(during_gc_period = 10)
+          app.process_heartbeat(make_heartbeat([app]))
+        end
+
+        it "can be gc-ed at the end of the gc period " +
+           "because heartbeat alone does not indicate that app *should* be running" do
+          Timecop.travel(end_of_gc_period = AppState.droplet_gc_grace_period - 10)
+          app.should_not be_ripe_for_gc
+
+          Timecop.travel(after_end_of_gc_period = 1)
+          app.should be_ripe_for_gc
+        end
+      end
     end
   end
 end

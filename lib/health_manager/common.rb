@@ -79,7 +79,7 @@ module HealthManager::Common
   end
 
   def timestamp_older_than?(timestamp, age)
-    timestamp > 0 && now - timestamp > age
+    timestamp > 0 && (now - timestamp) > age
   end
 
   def now

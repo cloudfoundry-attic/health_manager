@@ -133,7 +133,6 @@ module HealthManager
           'crash_timestamp' => beat['state_timestamp']
         }
       end
-      justify_existence_for_now
     end
 
     def check_for_missing_indices
