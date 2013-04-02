@@ -1,4 +1,4 @@
-require 'httparty'
+require "httparty"
 
 module IntegrationHelpers
   def startup_health_manager
@@ -8,11 +8,13 @@ module IntegrationHelpers
       loop do
         sleep 0.2
         begin
-          result = HTTParty.get("http://127.0.0.1:54321/varz",
-                                basic_auth: { username: "thin", password: "thin" })
+          result = HTTParty.get(
+            "http://127.0.0.1:54321/varz",
+            basic_auth: { username: "thin", password: "thin" }
+          )
           break if result.success?
         rescue Errno::ECONNREFUSED => e
-          #puts "rescued and retrying from #{e}"
+          # puts "rescued and retrying from #{e}"
         end
       end
     end
