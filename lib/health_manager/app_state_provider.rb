@@ -52,7 +52,7 @@ module HealthManager
 
       # skip over garbage-collected droplets
       while (droplet = @droplets[@ids[@cur_droplet_index]]).nil? &&
-          @cur_droplet_index < @ids.size &&
+          @cur_droplet_index < @ids.size
         @cur_droplet_index += 1
       end
 
