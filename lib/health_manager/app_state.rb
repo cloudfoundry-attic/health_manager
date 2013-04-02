@@ -4,19 +4,24 @@ module HealthManager
   #this class provides answers about droplet's State
   class AppState
     include HealthManager::Common
+
     class << self
       attr_accessor :heartbeat_deadline
+      attr_accessor :expected_state_update_deadline
       attr_accessor :flapping_timeout
       attr_accessor :flapping_death
       attr_accessor :droplet_gc_grace_period
 
       def known_event_types
-        [:missing_instances,
-         :extra_instances,
-         :exit_crashed,
-         :exit_stopped,
-         :exit_dea,
-         :droplet_updated]
+        [
+          :extra_app,
+          :missing_instances,
+          :extra_instances,
+          :exit_crashed,
+          :exit_stopped,
+          :exit_dea,
+          :droplet_updated,
+        ]
       end
 
       def add_listener(event_type, &block)
@@ -84,6 +89,7 @@ module HealthManager
       end
 
       @expected_state_update_required = false
+      @expected_state_update_timestamp = now
       justify_existence_for_now
     end
 
@@ -225,6 +231,7 @@ module HealthManager
 
     #check for all anomalies and trigger appropriate events so that listeners can take action
     def analyze
+      check_if_extra
       check_for_missing_indices
       check_and_prune_extra_indices
       prune_crashes
@@ -297,6 +304,10 @@ module HealthManager
       end
     end
 
+    def all_instances
+      @versions.map { |_, v| v["instances"].values }.flatten
+    end
+
     def get_version(version = @live_version)
       @versions[version] ||= {'instances' => {}}
     end
@@ -312,6 +323,19 @@ module HealthManager
         'crash_timestamp' => -1,
         'last_action' => -1
       }
+    end
+
+    private
+
+    def check_if_extra
+      notify(:extra_app) if expected_state_update_overdue?
+    end
+
+    def expected_state_update_overdue?
+      timestamp_older_than?(
+        @expected_state_update_timestamp,
+        AppState.expected_state_update_deadline,
+      )
     end
   end
 end

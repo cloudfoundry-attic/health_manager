@@ -39,14 +39,16 @@ def make_bulk_entry(options={})
   }
 end
 
-def make_heartbeat(apps)
+def make_heartbeat(apps, options={})
   hb = []
   apps.each do |app|
-    app.num_instances.times {|index|
+    app.num_instances.times { |index|
+      app_live_version = options[:app_live_version] || app.live_version
+
       hb << {
         'droplet' => app.id,
-        'version' => app.live_version,
-        'instance' => "#{app.live_version}-#{index}",
+        'version' => app_live_version,
+        'instance' => "#{app_live_version}-#{index}",
         'index' => index,
         'state' => HealthManager::RUNNING,
         'state_timestamp' => now,

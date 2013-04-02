@@ -29,7 +29,13 @@ shadow_mode: disable
 
 intervals:
 
+  # how often the expected state is updated
   expected_state_update: 60
+
+  # if the expected state has not been updated for this period,
+  # the expected stated is deemed lost
+  # (e.g., application has been removed from the ccdb)
+  expected_state_lost:   180
 
   # when a database update is requested but one is in progress,
   # the new update is postponed this many seconds

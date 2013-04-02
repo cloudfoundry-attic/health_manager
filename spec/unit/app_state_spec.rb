@@ -9,6 +9,31 @@ module HealthManager
       AppState.heartbeat_deadline = 10
       AppState.flapping_death = 1
       AppState.droplet_gc_grace_period = 60
+      AppState.expected_state_update_deadline = 50
+    end
+
+    describe "#analyze" do
+      before { Timecop.freeze }
+      after { Timecop.return }
+
+      let!(:app) { a, _ = make_app; a }
+
+      before do
+        @called_extra_app = nil
+        AppState.add_listener(:extra_app) do |app|
+          @called_extra_app = app
+        end
+      end
+
+      it "notifies of an extra app after expected state was not recently updated" do
+        Timecop.travel(AppState.expected_state_update_deadline)
+        app.analyze
+        @called_extra_app.should be_nil
+
+        Timecop.travel(1)
+        app.analyze
+        @called_extra_app.should == app
+      end
     end
 
     it 'should not invoke missing_instances for non-staged states' do
@@ -156,6 +181,30 @@ module HealthManager
 
           Timecop.travel(after_end_of_gc_period = 1)
           app.should be_ripe_for_gc
+        end
+      end
+    end
+
+    describe "#all_instances" do
+      let(:app) { a, _ = make_app(:num_instances => 1); a }
+
+      context "when there are multiple instances of multiple versions" do
+        before do
+          heartbeats = make_heartbeat([app], :app_live_version => "version-1")
+          app.process_heartbeat(heartbeats["droplets"][0])
+          heartbeats = make_heartbeat([app], :app_live_version => "version-2")
+          app.process_heartbeat(heartbeats["droplets"][0])
+        end
+
+        it "returns list of all instances for all versions" do
+          instances = app.all_instances.map { |i| i["instance"] }
+          instances.should =~ %w(version-1-0 version-2-0)
+        end
+      end
+
+      context "when there are no instances" do
+        it "returns empty list" do
+          app.all_instances.should == []
         end
       end
     end

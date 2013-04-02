@@ -22,9 +22,14 @@ module HealthManager
 
       #set system-wide configurations
       AppState.heartbeat_deadline = interval(:droplet_lost)
+      AppState.expected_state_update_deadline = interval(:expected_state_lost)
       AppState.flapping_timeout = interval(:flapping_timeout)
       AppState.flapping_death = interval(:flapping_death)
       AppState.droplet_gc_grace_period = interval(:droplet_gc_grace_period)
+
+      AppState.add_listener(:extra_app) do |app_state|
+        on_extra_app(app_state)
+      end
 
       #set up listeners for anomalous events to respond with correcting actions
       AppState.add_listener(:missing_instances) do |app_state, missing_indices|
@@ -113,6 +118,13 @@ module HealthManager
           shadower.check_shadowing
         end
       end
+    end
+
+    # Currently we do not check that expected state provider
+    # is available; therefore, HM can be overly aggressive stopping apps.
+    def on_extra_app(app_state)
+      instance_ids_with_reasons = app_state.all_instances.map { |i| [i["instance"], "Extra app"] }
+      nudger.stop_instances_immediately(app_state, instance_ids_with_reasons)
     end
 
     # ------------------------------------------------------------
