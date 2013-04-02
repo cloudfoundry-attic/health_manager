@@ -13,19 +13,20 @@ def done
   ::EM.next_tick { ::EM.stop_event_loop }
 end
 
-def make_app(options = {})
-  app = HealthManager::AppState.new(options[:id] || 1)
-
-  expected = {
-    :num_instances => 4,
+def make_expected_state(options={})
+  { :num_instances => 4,
     :state         => 'STARTED',
     :live_version  => '12345abcded',
     :package_state => 'STAGED',
     :last_updated  => Time.now.to_i - 60*60*24
   }.merge(options)
+end
 
-  app.set_expected_state(expected)
-  return app, expected
+def make_app(options = {})
+  app = HealthManager::AppState.new(options[:id] || 1)
+  expected_state = make_expected_state(options)
+  app.set_expected_state(expected_state)
+  return app, expected_state
 end
 
 def make_bulk_entry(options={})

@@ -64,9 +64,12 @@ module HealthManager
       @num_instances = 0
       @versions = {}
       @crashes = {}
-      @expected_state_update_required = true # start out as stale until expected state is set
       @pending_restarts = {}
       reset_missing_indices
+
+      # start out as stale until expected state is set
+      @expected_state_update_required = true
+      @expected_state_update_timestamp = now
       justify_existence_for_now
     end
 

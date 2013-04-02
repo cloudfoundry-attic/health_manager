@@ -16,7 +16,7 @@ module HealthManager
       before { Timecop.freeze }
       after { Timecop.return }
 
-      let!(:app) { a, _ = make_app; a }
+      let!(:app) { described_class.new(1) }
 
       before do
         @called_extra_app = nil
@@ -25,14 +25,30 @@ module HealthManager
         end
       end
 
-      it "notifies of an extra app after expected state was not recently updated" do
-        Timecop.travel(AppState.expected_state_update_deadline)
-        app.analyze
-        @called_extra_app.should be_nil
+      context "when expected was not updated" do
+        it "notifies of an extra app after expected state was not recently updated" do
+          Timecop.travel(AppState.expected_state_update_deadline)
+          app.analyze
+          @called_extra_app.should be_nil
 
-        Timecop.travel(1)
-        app.analyze
-        @called_extra_app.should == app
+          Timecop.travel(1)
+          app.analyze
+          @called_extra_app.should == app
+        end
+      end
+
+      context "when expected was updated" do
+        before { app.set_expected_state(make_expected_state) }
+
+        it "notifies of an extra app after expected state was not recently updated" do
+          Timecop.travel(AppState.expected_state_update_deadline)
+          app.analyze
+          @called_extra_app.should be_nil
+
+          Timecop.travel(1)
+          app.analyze
+          @called_extra_app.should == app
+        end
       end
     end
 
