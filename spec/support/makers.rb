@@ -15,6 +15,7 @@ end
 
 def make_app(options = {})
   app = HealthManager::AppState.new(options[:id] || 1)
+
   expected = {
     :num_instances => 4,
     :state         => 'STARTED',
@@ -53,6 +54,7 @@ def make_heartbeat(apps)
       }
     }
   end
+
   {'droplets' => hb, 'dea' => '123456789abcdefgh'}
 end
 

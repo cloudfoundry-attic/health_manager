@@ -59,7 +59,7 @@ module HealthManager
       @num_instances = 0
       @versions = {}
       @crashes = {}
-      @stale = true # start out as stale until expected state is set
+      @expected_state_update_required = true # start out as stale until expected state is set
       @pending_restarts = {}
       reset_missing_indices
       justify_existence_for_now
@@ -86,7 +86,7 @@ module HealthManager
         self.instance_variable_set("@#{k.to_s}",v)
       end
       raise ArgumentError.new("unsupported keys: #{values.keys}") unless values.empty?
-      @stale = false
+      @expected_state_update_required = false
       justify_existence_for_now
     end
 
@@ -241,12 +241,12 @@ module HealthManager
       timestamp_fresher_than?(@reset_timestamp, AppState.heartbeat_deadline || 0)
     end
 
-    def mark_stale
-      @stale = true
+    def mark_expected_state_update_required
+      @expected_state_update_required = true
     end
 
-    def stale?
-      @stale
+    def expected_state_update_required?
+      @expected_state_update_required
     end
 
     def process_exit_dea(message)
