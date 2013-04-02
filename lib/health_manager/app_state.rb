@@ -75,17 +75,14 @@ module HealthManager
 
     def set_expected_state(original_values)
       values = original_values.dup # preserve the original
-      [:state,
-       :num_instances,
-       :live_version,
-       :package_state,
-       :last_updated].each do |k|
 
-        v = values.delete(k)
-        raise ArgumentError.new("Value #{k} is required, missing from #{original_values}") unless v
-        self.instance_variable_set("@#{k.to_s}",v)
+      [:state, :num_instances, :live_version, :package_state, :last_updated].each do |k|
+        unless v = values.delete(k)
+          raise ArgumentError, "Value #{k} is required, missing from #{original_values}"
+        end
+        instance_variable_set("@#{k.to_s}", v)
       end
-      raise ArgumentError.new("unsupported keys: #{values.keys}") unless values.empty?
+
       @expected_state_update_required = false
       justify_existence_for_now
     end
