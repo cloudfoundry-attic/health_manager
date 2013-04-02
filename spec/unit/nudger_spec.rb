@@ -1,31 +1,25 @@
 require 'spec_helper'
 
-describe HealthManager do
+module HealthManager
+  describe Nudger do
+    let(:manager) do
+      Manager.new.tap do |m|
+        m.varz.prepare
+      end
+    end
 
-  let(:manager) do
-    m = HealthManager::Manager.new
-    m.varz.prepare
-    m
-  end
+    let(:nudger) { manager.nudger }
+    let(:publisher) { manager.publisher }
 
-  let(:nudger) do
-    manager.nudger
-  end
-
-  let(:publisher) do
-    manager.publisher
-  end
-
-  describe "Nudger" do
     it 'should be able to start app instance' do
       publisher.should_receive(:publish).with('cloudcontrollers.hm.requests.default', match(/"op":"START"/)).once
-      nudger.start_instance(HealthManager::AppState.new(1), 0, 0)
+      nudger.start_instance(AppState.new(1), 0, 0)
       nudger.deque_batch_of_requests
     end
 
     it 'should be able to stop app instance' do
       publisher.should_receive(:publish).with('cloudcontrollers.hm.requests.default', match(/"op":"STOP"/)).once
-      nudger.stop_instance(HealthManager::AppState.new(1), 0, 0)
+      nudger.stop_instance(AppState.new(1), 0, 0)
       nudger.deque_batch_of_requests
     end
 
