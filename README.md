@@ -2,10 +2,7 @@
 
 # HealthManager 2.0
 
-Health Manager 2.0 (HM-2) is a complete re-write of the original Health
-Manager.
-
-HM-2 monitors the state of the applications and ensures that started
+Health Manager monitors the state of the applications and ensures that started
 applications are indeed running, their versions and number of
 instances correct.
 
@@ -31,7 +28,7 @@ application, if so, with which priority, etc.
 
 ## Components
 
-HM-2 comprises the following components:
+HM is comprised of the following components:
 
 - Manager
 - Harmonizer
@@ -71,7 +68,12 @@ Provides the expected state of the application, e.g., whether the
 application was Started or Stopped, how many instances should be
 running, etc. This information comes from the Cloud Controller by way
 of http-based Bulk API, hence the concrete class is
-BulkBasedExpectedStateProvider
+BulkBasedExpectedStateProvider.
+
+The Bulk API contains the state of the world as the Cloud Controller says 
+it should be. This is a dump of the CCs database. It might differ from what 
+the world actually looks like, and the Harmonizer will attempt to make the 
+current state match this expected state.
 
 ### Known State Provider
 
