@@ -188,3 +188,14 @@ received a heartbeat in the last `droplet_lost` seconds.
 However, an instance_missing event is only triggered if the AppState
 was not reset recently, and if `check_for_missing_instances` method
 has been invoked.
+
+## Configuration
+
+HealthManager reads its configuration from a YAML file. Look at the 
+[example config file](https://github.com/cloudfoundry/health_manager/blob/master/config/health_manager.yml) for an
+explanation of all the configurable variables.
+
+## Logs
+
+HealthManager uses [Steno](http://github.com/cloudfoundry/steno) to manage its logs. The `logging` key in the config
+file provides information for Steno configuration.
