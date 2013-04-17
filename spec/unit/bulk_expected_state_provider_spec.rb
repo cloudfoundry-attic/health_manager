@@ -14,9 +14,32 @@ describe HealthManager::BulkBasedExpectedStateProvider do
       },
     }
   }
+
+  let(:https_bulk_api_host) { "https://" + bulk_api_host }
+  let(:https_config) {
+    {
+        'bulk_api' => {
+            'host' => https_bulk_api_host,
+            'batch_size' => batch_size,
+        },
+    }
+  }
+
   let(:manager) { m = HealthManager::Manager.new(config); m.varz.prepare; m }
   let(:varz) { manager.varz }
   let(:provider) { manager.expected_state_provider }
+
+  describe "Config" do
+    it "should use http URLs" do
+      provider = HealthManager::BulkBasedExpectedStateProvider.new(config)
+      expect(provider.bulk_url).to eq("http://" + bulk_api_host + "/bulk")
+    end
+
+    it "should allow https to be used" do
+      provider = HealthManager::BulkBasedExpectedStateProvider.new(https_config)
+      expect(provider.bulk_url).to eq(https_bulk_api_host + "/bulk")
+    end
+  end
 
   describe "HTTP requests" do
     before do
