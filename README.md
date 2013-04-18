@@ -199,3 +199,10 @@ explanation of all the configurable variables.
 
 HealthManager uses [Steno](http://github.com/cloudfoundry/steno) to manage its logs. The `logging` key in the config
 file provides information for Steno configuration.
+
+Here are the log levels, with examples of what they're being used for:
+* `error` - HM received an error response from the Cloud Controller bulk API
+* `warn` - a droplet analysis was initiated while the previous droplet analysis was still going
+* `info` - HM registered a new VCAP component, HM is shutting down
+* `debug2` - HM received a heartbeat from a DEA, HM compares an app's expected and known states
+* `debug` - HM starts/stops an instance
