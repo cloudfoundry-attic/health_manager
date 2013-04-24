@@ -1,5 +1,8 @@
 require 'spec_helper'
 
+$stdout.sync = true
+$stderr.sync = true
+
 describe "when NATS fails", :type => :integration do
   let(:fake_bulk_api_port) { 30001 }
   let(:nats_port) { 4233 }
