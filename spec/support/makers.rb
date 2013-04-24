@@ -1,9 +1,6 @@
 def in_em(timeout = 2)
   EM.run do
-    EM.add_timer(timeout) do
-      puts "Timeout of #{timeout} seconds reached, stopping."
-      EM.stop
-    end
+    EM.add_timer(timeout) { EM.stop }
     yield
   end
 end

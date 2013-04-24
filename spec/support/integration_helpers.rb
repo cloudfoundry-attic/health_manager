@@ -23,19 +23,6 @@ module IntegrationHelpers
     wait_until { nats_up?(port) }
   end
 
-  def with_nats_server(timeout = 10, port = DEFAULT_NATS_PORT)
-    start_nats_server
-    start_nats(port) do
-      EM.add_timer(timeout) do
-        puts "Timeout reached, exiting..."
-        NATS.stop
-      end
-      yield
-    end
-  ensure
-    stop_nats_server
-  end
-
   def stop_fake_bulk_api
     graceful_shutdown(:bulk_api, @bulk_api_pid)
   end
@@ -59,14 +46,8 @@ module IntegrationHelpers
     })
   end
 
-  def http_server_up?(url, options)
-    HTTParty.get(url, options).success?
-  rescue Errno::ECONNREFUSED
-    false
-  end
-
   def nats_up?(port = DEFAULT_NATS_PORT)
-    start_nats(port) do
+    start_nats_client(port) do
       NATS.stop
       return true
     end
@@ -75,7 +56,7 @@ module IntegrationHelpers
   end
 
   def run_nats_for_time(time_limit, port = DEFAULT_NATS_PORT)
-    start_nats(port) do
+    start_nats_client(port) do
       EM.add_timer(time_limit) { NATS.stop }
       yield
     end
@@ -83,7 +64,13 @@ module IntegrationHelpers
 
   private
 
-  def start_nats(port, &block)
+  def http_server_up?(url, options)
+    HTTParty.get(url, options).success?
+  rescue Errno::ECONNREFUSED
+    false
+  end
+
+  def start_nats_client(port, &block)
     NATS.start(:uri => "nats://localhost:#{port}", &block)
   end
 
