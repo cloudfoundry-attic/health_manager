@@ -2,6 +2,8 @@ require "httparty"
 require "tempfile"
 
 module IntegrationHelpers
+  DEFAULT_NATS_PORT = 4222
+
   def start_health_manager(config = {})
     with_config_file(config) do |path|
       @hm_pid = run_cmd("./bin/health_manager --config=#{path}", :debug => false)
@@ -9,21 +11,21 @@ module IntegrationHelpers
     wait_until { health_manager_up? }
   end
 
-  def start_fake_bulk_api(port)
+  def start_fake_bulk_api(port, nats_port = DEFAULT_NATS_PORT)
     username = 'some_user'
     password = 'some_password'
-    @bulk_api_pid = run_cmd("./spec/bin/bulk_api_server.rb #{port} #{username} #{password}", :debug => false)
+    @bulk_api_pid = run_cmd("./spec/bin/bulk_api_server.rb #{port} #{username} #{password} #{nats_port}", :debug => false)
     wait_until { bulk_api_up?(port, { :username => username, :password => password}) }
   end
 
-  def start_nats_server
-    @nats_pid = run_cmd("nats-server -D", debug: false)
-    wait_until { nats_up? }
+  def start_nats_server(port = DEFAULT_NATS_PORT)
+    @nats_pid = run_cmd("nats-server -D -p #{port}", debug: false)
+    wait_until { nats_up?(port) }
   end
 
-  def with_nats_server(timeout = 10)
+  def with_nats_server(timeout = 10, port = DEFAULT_NATS_PORT)
     start_nats_server
-    NATS.start do
+    start_nats(port) do
       EM.add_timer(timeout) do
         puts "Timeout reached, exiting..."
         NATS.stop
@@ -63,8 +65,8 @@ module IntegrationHelpers
     false
   end
 
-  def nats_up?
-    NATS.start do
+  def nats_up?(port = DEFAULT_NATS_PORT)
+    start_nats(port) do
       NATS.stop
       return true
     end
@@ -72,14 +74,18 @@ module IntegrationHelpers
     nil
   end
 
-  def run_nats_for_time(time_limit)
-    NATS.start do
+  def run_nats_for_time(time_limit, port = DEFAULT_NATS_PORT)
+    start_nats(port) do
       EM.add_timer(time_limit) { NATS.stop }
       yield
     end
   end
 
   private
+
+  def start_nats(port, &block)
+    NATS.start(:uri => "nats://localhost:#{port}", &block)
+  end
 
   def run_cmd(cmd, opts={})
     spawn_opts = {

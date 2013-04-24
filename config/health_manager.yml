@@ -86,6 +86,10 @@ intervals:
   # use non-positive value to disable
   max_droplets_in_varz:    0
 
+  # HM periodically pings NATS to see if it needs to re-subscribe to
+  # its events. This is the interval (in seconds) between those pings
+  check_nats_availability: 5
+
 # Used for /healthz and /vars endpoints. If not provided random
 # values will be generated on component start. Uncomment to use
 # static values.

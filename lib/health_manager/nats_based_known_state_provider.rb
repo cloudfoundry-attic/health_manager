@@ -13,7 +13,20 @@ module HealthManager
       cc_partition == message['cc_partition']
     end
 
-    def start
+    def check_availability
+      was_available = @available
+      @available = available?
+
+      if @available && !was_available
+        initialize_subscriptions
+      end
+
+      if was_available && !@available
+        logger.info("connection to NATS was lost")
+      end
+    end
+
+    def initialize_subscriptions
       logger.info("subscribing to heartbeats")
       NATS.subscribe('dea.heartbeat') do |message|
         process_heartbeat(message)
@@ -28,7 +41,10 @@ module HealthManager
       NATS.subscribe('droplet.updated') do |message|
         process_droplet_updated(message)
       end
+    end
 
+    def start
+      check_availability
       super
     end
 

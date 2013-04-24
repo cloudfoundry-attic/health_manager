@@ -5,9 +5,10 @@ require "yajl"
 require "sinatra/base"
 require "nats/client"
 
+PORT = ARGV[0]
 USERNAME = ARGV[1]
 PASSWORD = ARGV[2]
-PORT = ARGV[0]
+NATS_PORT = ARGV[3]
 
 class FakeBulkApi < Sinatra::Base
   def initialize(apps_json)
@@ -67,7 +68,7 @@ Thread.new do
   Rack::Handler::Thin.run(FakeBulkApi.new(apps_json), :Port => PORT)
 end
 
-NATS.start do
+NATS.start(:uri => "nats://localhost:#{NATS_PORT}") do
   NATS.subscribe("cloudcontroller.bulk.credentials.default") do |_, reply|
     NATS.publish(reply, Yajl::Encoder.encode({ :user => USERNAME, :password => PASSWORD }))
   end

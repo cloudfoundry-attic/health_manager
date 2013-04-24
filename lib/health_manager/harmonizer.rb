@@ -118,6 +118,10 @@ module HealthManager
         gc_droplets
       end
 
+      scheduler.at_interval :check_nats_availability do
+        known_state_provider.check_availability
+      end
+
       if should_shadow?
         scheduler.at_interval :check_shadowing do
           shadower.check_shadowing

@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe HealthManager do
-
   before(:each) do
     HealthManager::AppState.flapping_death = 3
   end
@@ -12,20 +11,56 @@ describe HealthManager do
 
   describe "AppStateProvider" do
     describe "NatsBasedKnownStateProvider" do
-
       before(:each) do
         @nb = HealthManager::NatsBasedKnownStateProvider.new(build_valid_config)
       end
 
-      it 'should subscribe to heartbeat, droplet.exited/updated messages' do
-        NATS.should_receive(:subscribe).with('dea.heartbeat')
-        NATS.should_receive(:subscribe).with('droplet.exited')
-        NATS.should_receive(:subscribe).with('droplet.updated')
-        @nb.start
+      describe "check_availability" do
+        context "when not connected to nats" do
+          before do
+            NATS.stub(:subscribe)
+            NATS.stub(:connected?).and_return(false)
+          end
+
+          it "does not try to subscribe" do
+            NATS.should_not_receive(:subscribe)
+            @nb.check_availability
+          end
+
+          context "when NATS comes back up" do
+            before do
+              @nb.check_availability
+              NATS.stub(:connected?).and_return(true)
+            end
+
+            it "logs that it is subscribing" do
+              @nb.logger.should_receive(:info).with(/subscribing/).exactly(3).times
+              @nb.check_availability
+            end
+
+            it "re-subscribes to heartbeat, droplet.exited/updated messages" do
+              NATS.should_receive(:subscribe).with('dea.heartbeat')
+              NATS.should_receive(:subscribe).with('droplet.exited')
+              NATS.should_receive(:subscribe).with('droplet.updated')
+              @nb.check_availability
+            end
+
+            context "when NATS goes down again" do
+              before do
+                @nb.check_availability
+                NATS.stub(:connected?).and_return(false)
+              end
+
+              it "logs that nats went down" do
+                @nb.logger.should_receive(:info).with(/NATS/)
+                @nb.check_availability
+              end
+            end
+          end
+        end
       end
 
       context 'AppState updating' do
-
         before(:each) do
           app, expected = make_app
           @app = @nb.get_droplet(app.id)
