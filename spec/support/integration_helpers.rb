@@ -114,7 +114,7 @@ module IntegrationHelpers
   end
 
   def wait_until(&block)
-    Timeout::timeout(10) do
+    Timeout::timeout(20) do
       loop do
         sleep 0.2
         break if block.call
