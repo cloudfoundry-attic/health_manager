@@ -71,7 +71,7 @@ module IntegrationHelpers
   end
 
   def start_nats_client(port, &block)
-    NATS.start(:uri => "nats://localhost:#{port}", &block)
+    NATS.start(:uri => "nats://127.0.0.1:#{port}", &block)
   end
 
   def run_cmd(cmd, opts={})

@@ -68,7 +68,7 @@ Thread.new do
   Rack::Handler::Thin.run(FakeBulkApi.new(apps_json), :Port => PORT)
 end
 
-NATS.start(:uri => "nats://localhost:#{NATS_PORT}") do
+NATS.start(:uri => "nats://127.0.0.1:#{NATS_PORT}") do
   NATS.subscribe("cloudcontroller.bulk.credentials.default") do |_, reply|
     NATS.publish(reply, Yajl::Encoder.encode({ :user => USERNAME, :password => PASSWORD }))
   end
