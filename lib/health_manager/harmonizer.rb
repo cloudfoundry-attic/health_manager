@@ -105,7 +105,6 @@ module HealthManager
       end
 
       scheduler.at_interval :expected_state_update do
-        puts "in expected_state_update block"
         update_expected_state
       end
 
@@ -209,8 +208,6 @@ module HealthManager
     end
 
     def analyze_all_apps
-      puts "in analyze_all_apps?"
-
       if scheduler.task_running? :droplets_analysis
         logger.warn("Droplet analysis still in progress.  Consider increasing droplets_analysis interval.")
         return
