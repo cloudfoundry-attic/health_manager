@@ -5,8 +5,11 @@ module IntegrationHelpers
   DEFAULT_NATS_PORT = 4222
 
   def start_health_manager(config = {})
+    puts "in #start_health_manager"
+
     with_config_file(config) do |path|
       @hm_pid = run_cmd("./bin/health_manager --config=#{path}", :debug => true)
+      puts "started with pid: #{@hm_pid}"
     end
     wait_until { health_manager_up? }
   end
@@ -40,10 +43,12 @@ module IntegrationHelpers
   end
 
   def health_manager_up?
-    http_server_up?("http://127.0.0.1:54321/varz", basic_auth: {
+    http_server_up = http_server_up?("http://127.0.0.1:54321/varz", basic_auth: {
       username: "thin",
       password: "thin"
     })
+    puts "heath_manager_up? #{http_server_up}"
+    http_server_up
   end
 
   def nats_up?(port = DEFAULT_NATS_PORT)
