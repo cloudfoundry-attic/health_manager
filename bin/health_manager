@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
 home = File.join(File.dirname(__FILE__),'..')
 
+$stdout.sync = true
+$stderr.sync = true
+
 ENV['BUNDLE_GEMFILE'] ||= "#{home}/Gemfile"
 require 'bundler/setup'
 
