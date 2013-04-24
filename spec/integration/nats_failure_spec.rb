@@ -51,7 +51,7 @@ describe "when NATS fails", :type => :integration do
     it "does not suggest that apps be restarted" do
       hm_messages = []
 
-      run_nats_for_time(1.5, nats_port) do
+      run_nats_for_time(1, nats_port) do
         NATS.subscribe("cloudcontrollers.hm.requests.default") { |m| hm_messages << m }
       end
 
@@ -62,7 +62,7 @@ describe "when NATS fails", :type => :integration do
       hm_messages = []
 
       run_nats_for_time(4, nats_port) do
-        EM.add_timer(2) do
+        EM.add_periodic_timer(1.5) do
           NATS.publish("dea.heartbeat", Yajl::Encoder.encode({
             "dea" => "some-guid",
             "droplets" => [
