@@ -47,14 +47,20 @@ module IntegrationHelpers
   end
 
   def bulk_api_up?(port, credentials)
-    HTTParty.get("http://127.0.0.1:#{port}/bulk/counts", :basic_auth => credentials).success?
+    http_server_up?("http://127.0.0.1:#{port}/bulk/counts", :basic_auth => credentials)
   end
 
   def health_manager_up?
-    HTTParty.get("http://127.0.0.1:54321/varz", basic_auth: {
+    http_server_up?("http://127.0.0.1:54321/varz", basic_auth: {
       username: "thin",
       password: "thin"
-    }).success?
+    })
+  end
+
+  def http_server_up?(url, options)
+    HTTParty.get(url, options).success?
+  rescue Errno::ECONNREFUSED
+    false
   end
 
   def nats_up?
@@ -66,10 +72,11 @@ module IntegrationHelpers
     nil
   end
 
-  def run_nats_for_time(time_limit, &block)
-    Timeout.timeout(time_limit) { NATS.start(&block) }
-  rescue Timeout::Error
-    nil
+  def run_nats_for_time(time_limit)
+    NATS.start do
+      EM.add_timer(time_limit) { NATS.stop }
+      yield
+    end
   end
 
   private
@@ -110,10 +117,7 @@ module IntegrationHelpers
     Timeout::timeout(10) do
       loop do
         sleep 0.2
-        begin
-          break if block.call
-        rescue Errno::ECONNREFUSED => e
-        end
+        break if block.call
       end
     end
   end
