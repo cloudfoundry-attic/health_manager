@@ -64,9 +64,11 @@ apps_json = {
   }
 }
 
-Thread.new do
+thin_pid = fork do
   Rack::Handler::Thin.run(FakeBulkApi.new(apps_json), :Port => PORT)
 end
+
+at_exit { Process.kill("TERM", thin_pid) }
 
 NATS.start(:uri => "nats://127.0.0.1:#{NATS_PORT}") do
   NATS.subscribe("cloudcontroller.bulk.credentials.default") do |_, reply|
