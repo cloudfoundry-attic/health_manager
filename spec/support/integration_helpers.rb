@@ -96,6 +96,7 @@ module IntegrationHelpers
 
   def graceful_shutdown(name, pid)
     puts "Killing #{name}. Pid: #{pid}"
+    return unless pid
     Process.kill("TERM", pid)
     Timeout.timeout(1) do
       while process_alive?(pid) do
