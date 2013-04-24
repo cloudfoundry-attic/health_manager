@@ -32,6 +32,10 @@ module HealthManager
       super
     end
 
+    def available?
+      NATS.connected?
+    end
+
     def process_droplet_exited(message_str)
       message = parse_json(message_str)
       return unless cc_partition_match?(message)

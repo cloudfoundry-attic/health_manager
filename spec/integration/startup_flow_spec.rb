@@ -15,12 +15,12 @@ describe "Startup flow of Health Manager", :type => :integration do
       NATS.subscribe("cloudcontroller.bulk.credentials.default") do |_,reply|
         NATS.publish(reply, bulk_credentials) do
           credentials_requested = true
-          graceful_shutdown(:hm, @hm_pid)
-          done_with_nats
+          stop_health_manager
+          NATS.stop
         end
       end
 
-      NATS.flush { startup_health_manager }
+      NATS.flush { start_health_manager }
     end
 
     expect(credentials_requested).to eq true

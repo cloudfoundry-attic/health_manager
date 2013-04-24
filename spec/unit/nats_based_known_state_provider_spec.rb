@@ -79,6 +79,20 @@ describe HealthManager do
           end
         end
       end
+
+      describe "available?" do
+        subject { @nb.available? }
+
+        context "when connecting to NATS fails" do
+          before { NATS.stub(:connected?) { false } }
+          it { should be_false }
+        end
+
+        context "when connecting to nats succeeds" do
+          before { NATS.stub(:connected?) { true } }
+          it { should be_true }
+        end
+      end
     end
   end
 

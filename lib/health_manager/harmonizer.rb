@@ -33,6 +33,11 @@ module HealthManager
 
       #set up listeners for anomalous events to respond with correcting actions
       AppState.add_listener(:missing_instances) do |app_state, missing_indices|
+        unless known_state_provider.available?
+          logger.info { "harmonizer: known state provider was not available." }
+          next
+        end
+
         if app_state.expected_state_update_required?
           logger.info { "harmonizer: expected_state_update_required: missing_instances ignored app_id=#{app_state.id} indices=#{missing_indices}" }
           next
@@ -100,6 +105,7 @@ module HealthManager
       end
 
       scheduler.at_interval :expected_state_update do
+        puts "in expected_state_update block"
         update_expected_state
       end
 
@@ -203,6 +209,8 @@ module HealthManager
     end
 
     def analyze_all_apps
+      puts "in analyze_all_apps?"
+
       if scheduler.task_running? :droplets_analysis
         logger.warn("Droplet analysis still in progress.  Consider increasing droplets_analysis interval.")
         return
