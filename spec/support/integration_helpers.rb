@@ -6,7 +6,7 @@ module IntegrationHelpers
 
   def start_health_manager(config = {})
     with_config_file(config) do |path|
-      @hm_pid = run_cmd("./bin/health_manager --config=#{path}", :debug => false)
+      @hm_pid = run_cmd("./bin/health_manager --config=#{path}", :debug => true)
     end
     wait_until { health_manager_up? }
   end
@@ -19,7 +19,7 @@ module IntegrationHelpers
   end
 
   def start_nats_server(port = DEFAULT_NATS_PORT)
-    @nats_pid = run_cmd("nats-server -D -p #{port}", debug: false)
+    @nats_pid = run_cmd("nats-server -D -p #{port}", debug: true)
     wait_until { nats_up?(port) }
   end
 

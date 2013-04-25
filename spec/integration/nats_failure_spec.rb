@@ -8,7 +8,7 @@ describe "when NATS fails", :type => :integration do
     start_nats_server(nats_port)
     start_fake_bulk_api(fake_bulk_api_port, nats_port)
 
-    start_health_manager({
+    start_health_manager(
       "mbus" => "nats://nats:nats@127.0.0.1:#{nats_port}",
       "intervals" => {
         "expected_state_update" => 1,
@@ -20,9 +20,8 @@ describe "when NATS fails", :type => :integration do
       "bulk_api" => {
         "host" => "http://127.0.0.1:#{fake_bulk_api_port}"
       }
-    })
+    )
 
-    wait_until { health_manager_up? }
     sleep 3
     stop_nats_server
     wait_until { !nats_up?(nats_port) }
