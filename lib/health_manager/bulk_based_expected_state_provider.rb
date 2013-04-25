@@ -128,7 +128,7 @@ module HealthManager
 
     def bulk_url
       url = "#{host}/bulk"
-      url = "http://"+url unless url.start_with?("http://")
+      url = "http://" + url unless url =~ /^https?:\/\//
       url
     end
 
