@@ -22,6 +22,7 @@ describe "when NATS fails", :type => :integration do
       }
     })
 
+    wait_until { health_manager_up? }
     sleep 3
     stop_nats_server
     wait_until { !nats_up?(nats_port) }
