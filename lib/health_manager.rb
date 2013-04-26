@@ -74,7 +74,7 @@ module HealthManager
       logger.info("starting...")
 
       EM.epoll
-      NATS.start(:uri => get_nats_uri) do
+      NATS.start(:uri => get_nats_uri, :max_reconnect_attempts => Float::INFINITY) do
         @varz.prepare
         @reporter.prepare
         @harmonizer.prepare

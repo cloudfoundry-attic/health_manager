@@ -22,7 +22,7 @@ describe "when NATS fails", :type => :integration do
       }
     )
 
-    sleep 3
+    sleep 1
     stop_nats_server
     wait_until { !nats_up?(nats_port) }
     sleep 2
@@ -34,7 +34,8 @@ describe "when NATS fails", :type => :integration do
     stop_nats_server
   end
 
-  it "does not crash" do
+  it "does not crash even after a long delay but is in a degraded state" do
+    sleep (NATS::MAX_RECONNECT_ATTEMPTS * NATS::RECONNECT_TIME_WAIT) + 2
     expect(health_manager_up?).to be_true
   end
 
