@@ -70,7 +70,7 @@ end
 
 at_exit { Process.kill("TERM", thin_pid) }
 
-NATS.start(:uri => "nats://localhost:#{NATS_PORT}") do
+NATS.start(:uri => "nats://localhost:#{NATS_PORT}", :max_reconnect_attempts => Float::INFINITY) do
   NATS.subscribe("cloudcontroller.bulk.credentials.default") do |_, reply|
     NATS.publish(reply, Yajl::Encoder.encode({ :user => USERNAME, :password => PASSWORD }))
   end

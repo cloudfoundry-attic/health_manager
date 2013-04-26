@@ -58,6 +58,8 @@ describe "when NATS fails", :type => :integration do
       hm_messages = []
 
       run_nats_for_time(4, nats_port) do
+        NATS.subscribe("cloudcontrollers.hm.requests.default") { |m| hm_messages << Yajl::Parser.parse(m) }
+
         EM.add_periodic_timer(1.5) do
           NATS.publish("dea.heartbeat", Yajl::Encoder.encode({
             "dea" => "some-guid",
@@ -89,8 +91,6 @@ describe "when NATS fails", :type => :integration do
             ]
           }))
         end
-
-        NATS.subscribe("cloudcontrollers.hm.requests.default") { |m| hm_messages << Yajl::Parser.parse(m) }
       end
 
       app_ids = hm_messages.map { |msg| msg["droplet"] }
