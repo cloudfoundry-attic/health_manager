@@ -97,9 +97,7 @@ module HealthManager
       if EM.reactor_running?
         run
       else
-        EM.run do
-          run
-        end
+        EM.run { run }
       end
     end
 
