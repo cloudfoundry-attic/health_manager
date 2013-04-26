@@ -2,5 +2,3 @@ language: ruby
 
 rvm:
   - 1.9.2
-
-script: bundle exec rspec spec/integration/nats_failure_spec.rb
