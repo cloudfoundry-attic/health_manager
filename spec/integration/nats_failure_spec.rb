@@ -51,6 +51,8 @@ describe "when NATS fails", :type => :integration do
         NATS.subscribe("cloudcontrollers.hm.requests.default") { |m| hm_messages << m }
       end
 
+      p hm_messages
+
       expect(hm_messages).to have(0).messages
     end
 
@@ -96,6 +98,8 @@ describe "when NATS fails", :type => :integration do
       app_ids = hm_messages.map { |msg| msg["droplet"] }
       operations = hm_messages.map { |msg| msg["op"] }
       instance_indices = hm_messages.map { |msg| msg["indices"] }
+
+      p hm_messages
 
       expect(operations).to eq(["START", "START"])
       expect(app_ids).to eq(["app-id2", "app-id2"])
