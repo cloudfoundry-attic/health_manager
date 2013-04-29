@@ -170,5 +170,9 @@ module HealthManager
         varz[:total][:started_memory] += droplet_hash['memory'] * droplet_hash['instances']
       end
     end
+
+    def parse_utc(time)
+      Time.parse(time).to_i
+    end
   end
 end

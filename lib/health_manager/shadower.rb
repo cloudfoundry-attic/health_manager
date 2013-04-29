@@ -59,5 +59,11 @@ module HealthManager
         end
       end
     end
+
+    private
+
+    def timestamp_older_than?(timestamp, age)
+      timestamp > 0 && (now - timestamp) > age
+    end
   end
 end

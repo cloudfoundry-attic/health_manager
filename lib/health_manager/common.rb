@@ -66,27 +66,15 @@ module HealthManager::Common
     Steno.logger("hm")
   end
 
-  def encode_json(obj = {})
+  def encode_json(obj)
     Yajl::Encoder.encode(obj)
   end
 
-  def parse_json(string = '{}')
+  def parse_json(string)
     Yajl::Parser.parse(string)
-  end
-
-  def timestamp_fresher_than?(timestamp, age)
-    timestamp > 0 && now - timestamp < age
-  end
-
-  def timestamp_older_than?(timestamp, age)
-    timestamp > 0 && (now - timestamp) > age
   end
 
   def now
     ::HealthManager::Manager.now
-  end
-
-  def parse_utc(time)
-    Time.parse(time).to_i
   end
 end

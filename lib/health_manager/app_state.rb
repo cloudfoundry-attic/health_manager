@@ -364,5 +364,13 @@ module HealthManager
         AppState.expected_state_update_deadline,
       )
     end
+
+    def timestamp_fresher_than?(timestamp, age)
+      timestamp > 0 && now - timestamp < age
+    end
+
+    def timestamp_older_than?(timestamp, age)
+      timestamp > 0 && (now - timestamp) > age
+    end
   end
 end
