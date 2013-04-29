@@ -2,11 +2,7 @@ require 'spec_helper'
 
 module HealthManager
   describe Nudger do
-    let(:manager) do
-      Manager.new.tap do |m|
-        m.varz.prepare
-      end
-    end
+    let(:manager) { Manager.new }
 
     let(:nudger) { manager.nudger }
     let(:publisher) { manager.publisher }

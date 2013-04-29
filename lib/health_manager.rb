@@ -21,7 +21,6 @@ require 'health_manager/bulk_based_expected_state_provider'
 require 'health_manager/scheduler'
 require 'health_manager/nudger'
 require 'health_manager/harmonizer'
-require 'health_manager/varz_common'
 require 'health_manager/varz'
 require 'health_manager/reporter'
 require 'health_manager/shadower'
@@ -75,7 +74,6 @@ module HealthManager
 
       EM.epoll
       NATS.start(:uri => get_nats_uri, :max_reconnect_attempts => Float::INFINITY) do
-        @varz.prepare
         @reporter.prepare
         @harmonizer.prepare
         @expected_state_provider.start

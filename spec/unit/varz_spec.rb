@@ -1,241 +1,148 @@
 require 'spec_helper'
 
-describe HealthManager do
-  describe "Varz" do
-    let(:v) { HealthManager::Varz.new }
+describe HealthManager::Varz do
+  describe "#new" do
+    its([:total_apps]) { should eq 0 }
+    its([:total_instances]) { should eq 0 }
+    its([:running_instances]) { should eq 0 }
+    its([:missing_instances]) { should eq 0 }
+    its([:crashed_instances]) { should eq 0 }
+    its([:flapping_instances]) { should eq 0 }
+    its([:running]) do
+      should eq(
+        :apps => 0,
+        :crashes => 0,
+        :running_instances => 0,
+        :missing_instances => 0,
+        :flapping_instances => 0
+      )
+    end
+    its([:total_users]) { should eq 0 }
+    its([:users]) { should eq [] }
+    its([:apps]) { should eq [] }
+    its([:total]) do
+      should eq(
+        :apps => 0,
+        :started_apps => 0,
+        :instances => 0,
+        :started_instances => 0,
+        :memory => 0,
+        :started_memory => 0
+      )
+    end
+    its([:queue_length]) { should eq 0 }
+    its([:heartbeat_msgs_received]) { should eq 0 }
+    its([:droplet_exited_msgs_received]) { should eq 0 }
+    its([:droplet_updated_msgs_received]) { should eq 0 }
+    its([:healthmanager_status_msgs_received]) { should eq 0 }
+    its([:healthmanager_health_request_msgs_received]) { should eq 0 }
+    its([:healthmanager_droplet_request_msgs_received]) { should eq 0 }
+    its([:analysis_loop_duration]) { should eq 0 }
+    its([:bulk_update_loop_duration]) { should eq 0 }
+    its([:varz_publishes]) { should eq 0 }
+    its([:varz_holds]) { should eq 0 }
 
-    it 'should allow declaring counters' do
-      v.declare_counter :counter1
-      v.get(:counter1).should == 0
+    its([:droplets]) { should eq({}) } # FIXIT: remove once ready for production
+
+    its([:state]) { should eq "RUNNING" }
+
+    its([:last_up_known]) { should be_nil }
+  end
+
+  describe "#reset_expected!" do
+    before do
+      subject[:total][:apps] = 5
+      subject[:total][:memory] = 2
+      subject[:users] = %w[hi bye]
+      subject[:apps] = %w[hey buddy]
+
+      subject.reset_expected!
     end
 
-    it 'should allow declaring nodes and subcounters' do
-      v.declare_node :node
-      v.declare_counter :node, :foo
-      v.declare_node :node, :node1
-      v.declare_counter :node, :node1, :foo
+    its([:users]) { should eq [] }
+    its([:apps]) { should eq [] }
+    its([:total]) do
+      should eq(
+        :apps => 0,
+        :started_apps => 0,
+        :instances => 0,
+        :started_instances => 0,
+        :memory => 0,
+        :started_memory => 0
+      )
+    end
+  end
+
+  describe "#reset_realtime!" do
+    before do
+      subject[:running][:apps] = 5
+      subject[:running][:running_instances] = 2
+      subject[:total_apps] = 2
+      subject[:total_instances] = 2
+      subject[:running_instances] = 2
+      subject[:missing_instances] = 2
+      subject[:crashed_instances] = 2
+      subject[:flapping_instances] = 2
+
+      subject.reset_realtime!
     end
 
-    it 'should disallow double declarations' do
-      v.declare_counter :foo
-      v.declare_counter :bar
-      vv = HealthManager::Varz.new
-      vv.declare_counter :foo #ok to declare same counters for different Varz objects
-      lambda { v.declare_counter(:foo).should raise_error ArgumentError }
+    its([:total_apps]) { should eq 0 }
+    its([:total_instances]) { should eq 0 }
+    its([:running_instances]) { should eq 0 }
+    its([:missing_instances]) { should eq 0 }
+    its([:crashed_instances]) { should eq 0 }
+    its([:flapping_instances]) { should eq 0 }
+    its([:running]) do
+      should eq(
+        :apps => 0,
+        :crashes => 0,
+        :running_instances => 0,
+        :missing_instances => 0,
+        :flapping_instances => 0
+      )
+    end
+  end
+
+  describe "#publish_expected_stats" do
+    let(:create_time) { Time.parse("2013-03-23 01:43:27") }
+    let(:publish_time) { Time.parse("2013-04-13 03:32:35") }
+
+    before do
+      subject[:total_instances] = 5
+      Timecop.freeze(publish_time) { subject.publish_expected_stats }
     end
 
-    it 'should disallow undeclared counters' do
-      lambda { v.get :counter_bogus }.should raise_error ArgumentError
-      lambda { v.inc :counter_bogus }.should raise_error ArgumentError
-      v.declare_node :foo
-      v.declare_counter :foo, :bar
-      lambda { v.reset :foo, :bogus }.should raise_error ArgumentError
+    subject do
+      Timecop.freeze(create_time) { HealthManager::Varz.new }
     end
 
-    it 'should have correct held? predicate' do
-      v.declare_node(:n)
-      v.declare_counter(:n, :c1)
-      v.declare_counter(:n, :c2)
+    its([:total_instances]) { should eq VCAP::Component.varz[:total_instances] }
 
-      v.held?(:n).should be_false
-      v.held?(:n, :c1).should be_false
-      v.held?(:n, :c2).should be_false
-
-      v.hold(:n, :c1)
-
-      v.held?(:n).should be_false
-      v.held?(:n, :c1).should be_true
-      v.held?(:n, :c2).should be_false
-
-      v.release(:n, :c1)
-      v.hold(:n, :c2)
-
-      v.held?(:n).should be_false
-      v.held?(:n, :c1).should be_false
-      v.held?(:n, :c2).should be_true
-
-      v.hold(:n)
-
-      v.held?(:n).should be_true
-      v.held?(:n, :c1).should be_true
-      v.held?(:n, :c2).should be_true
+    it "sets the time since the last reset" do
+      expect(subject[:bulk_update_loop_duration]).to eq(publish_time - create_time)
     end
 
-    it 'should prevent bogus holding and releasing' do
-      lambda { v.hold :bogus }.should raise_error ArgumentError
-      v.declare_counter :boo
-      lambda { v.release :boo }.should raise_error ArgumentError
+    context "when the expected stats have been reset" do
+      let(:reset_time) { Time.parse("2013-04-12 05:23:54") }
 
-      v.hold :boo
-      v.release :boo
-    end
-
-    it 'should allow publishing, holding and releasing' do
-      v.declare_counter :counter1
-
-      v.declare_node :node1
-      v.declare_counter :node1, :counter2
-
-      v.declare_node :node1, :node2
-      v.declare_counter :node1, :node2, :counter3
-
-      #one held, but all incremented
-      v.hold(:node1, :counter2)
-
-      v.inc(:counter1)
-      v.inc(:node1, :counter2)
-      v.inc(:node1, :node2, :counter3)
-
-      v.publish_not_held_recursively(res = {}, v.get_varz)
-
-      res[:counter1].should == 1
-      res[:node1][:counter2].should be_nil
-      res[:node1][:node2][:counter3].should == 1
-
-      #after release and republish, value is again available
-      v.release(:node1, :counter2)
-      v.publish_not_held_recursively(res, v.get_varz)
-
-      res[:node1][:counter2].should == 1
-
-      #now holding top-level entry
-      v.hold(:counter1)
-      v.inc(:counter1)
-      v.inc(:node1, :counter2)
-      v.inc(:node1, :node2, :counter3)
-
-      v.publish_not_held_recursively(res, v.get_varz)
-
-      res[:counter1].should == 1
-      res[:node1][:counter2].should == 2
-      res[:node1][:node2][:counter3].should == 2
-
-      v.release(:counter1)
-      v.publish_not_held_recursively(res, v.get_varz)
-
-      res[:counter1].should == 2
-
-      #now holding third-level entry
-
-      v.hold(:node1, :node2, :counter3)
-
-      v.inc(:counter1)
-      v.inc(:node1, :counter2)
-      v.inc(:node1, :node2, :counter3)
-
-      v.publish_not_held_recursively(res, v.get_varz)
-
-      res[:counter1].should == 3
-      res[:node1][:counter2].should == 3
-      res[:node1][:node2][:counter3].should == 2
-
-      v.release(:node1, :node2, :counter3)
-      v.publish_not_held_recursively(res, v.get_varz)
-
-      res[:node1][:node2][:counter3].should == 3
-    end
-
-    it 'should properly increment and reset counters' do
-      v.declare_counter :foo
-      v.declare_node :node
-      v.declare_counter :node, :bar
-
-      v.get(:foo).should == 0
-      v.inc(:foo).should == 1
-      v.get(:foo).should == 1
-
-      v.add :foo, 10
-      v.get(:foo).should == 11
-      v.get(:node, :bar).should == 0
-      v.inc(:node, :bar).should == 1
-      v.get(:foo).should == 11
-
-      v.reset :foo
-      v.get(:foo).should == 0
-      v.get(:node, :bar).should == 1
-
-    end
-
-    it 'should allow setting of counters' do
-      v.declare_node :node
-      v.declare_node :node, 'subnode'
-      v.declare_counter :node, 'subnode', 'counter'
-      v.set :node, 'subnode', 'counter', 30
-      v.get(:node, 'subnode', 'counter').should == 30
-
-      v.inc :node, 'subnode', 'counter'
-      v.get(:node, 'subnode', 'counter').should == 31
-    end
-
-
-    describe 'hm-specific metrics' do
-      before :each do
-        v.prepare
+      before do
+        Timecop.freeze(reset_time) { subject.reset_expected! }
+        Timecop.freeze(publish_time) { subject.publish_expected_stats }
       end
 
-      it 'should return valid hm varz' do
-        v.declare_counter :running, :apps
-
-        v.set :total_apps, 10
-
-        10.times { v.inc :running, :apps }
-
-        v.get(:total_apps).should == 10
-        v.get(:running, :apps).should == 10
-      end
-
-      it 'should have hm metrics once #prepare is called' do
-        v.get(:total_apps).should == 0
-        v.get(:missing_instances).should == 0
-
-        v.get(:running).should == {}
-        v.get(:total).should == {}
-      end
-
-      it 'should update realtime stats according to droplet data' do
-        app, _ = make_app({:num_instances => 2})
-        v.update_realtime_stats_for_droplet(app)
-        v.get(:total_apps).should == 1
-        v.get(:running, :missing_instances) == 2
-      end
-
-      describe 'expected stats' do
-        it 'should be resettable' do
-          v.set(:total, 10)
-          v.get(:total).should == 10
-          v.reset_expected_stats
-          v.held?(:total).should be_true
-          v.release_expected_stats
-          v.held?(:total).should be_false
-        end
-
-        describe '#expected_stats_held?' do
-          it 'returns true when all are held' do
-            v.reset_expected_stats
-            expect(v.expected_stats_held?).to eq(true)
-          end
-
-          it 'return false when all are not held' do
-            expect(v.expected_stats_held?).to eq(false)
-          end
-
-          it 'raises when some are held and some are not' do
-            v.hold(:total)
-            expect { v.expected_stats_held? }.to raise_error(/inconsistent/)
-          end
-        end
-
-        it 'should calculate elapsed time' do
-          v.reset_expected_stats
-          v.publish_expected_stats
-          v.get(:bulk_update_loop_duration).should be < 1
-
-          v.reset_expected_stats
-          Timecop.travel(Time.now + 5)
-          v.publish_expected_stats
-          v.get(:bulk_update_loop_duration).should be >= 5
-        end
+      it "sets the time since the last reset" do
+        expect(subject[:bulk_update_loop_duration]).to eq(publish_time - reset_time)
       end
     end
+  end
+
+  describe "#publish" do
+    before do
+      subject[:total_users] = 42
+      subject.publish
+    end
+
+    its([:total_users]) { should eq VCAP::Component.varz[:total_users] }
   end
 end

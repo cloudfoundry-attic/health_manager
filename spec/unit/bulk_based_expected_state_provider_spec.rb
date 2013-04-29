@@ -14,13 +14,13 @@ describe HealthManager::BulkBasedExpectedStateProvider do
       },
     }
   }
-  let(:manager) { m = HealthManager::Manager.new(config); m.varz.prepare; m }
+  let(:manager) { HealthManager::Manager.new(config) }
   let(:varz) { manager.varz }
   let(:provider) { manager.expected_state_provider }
 
   describe "HTTP requests" do
     before do
-      manager.varz.reset_expected_stats
+      manager.varz.reset_expected!
       provider.stub(:with_credentials).and_yield(bulk_login, bulk_password)
       EM::HttpConnection.any_instance.stub(:get).with(any_args).and_return(http_mock)
     end
@@ -53,7 +53,7 @@ describe HealthManager::BulkBasedExpectedStateProvider do
         end
 
         it "should update varz[:total_users] with user counts" do
-          varz.should_receive(:set).with(:total_users, user_count)
+          varz.should_receive(:[]=).with(:total_users, user_count)
           provider.should_not_receive(:reset_credentials)
           subject
         end
@@ -67,7 +67,7 @@ describe HealthManager::BulkBasedExpectedStateProvider do
         end
 
         it "should not update varz" do
-          varz.should_not_receive(:set)
+          varz.should_not_receive(:[]=)
           subject
         end
 
@@ -85,7 +85,7 @@ describe HealthManager::BulkBasedExpectedStateProvider do
         end
 
         it "should not update varz" do
-          varz.should_not_receive(:set)
+          varz.should_not_receive(:[]=)
           subject
         end
 
@@ -147,11 +147,6 @@ describe HealthManager::BulkBasedExpectedStateProvider do
 
           it "should log an error" do
             provider.logger.should_receive(:error)
-            subject
-          end
-
-          it "should release the stats" do
-            varz.should_receive(:release_expected_stats)
             subject
           end
 
@@ -245,11 +240,6 @@ describe HealthManager::BulkBasedExpectedStateProvider do
             subject
           end
 
-          it "should release varz" do
-            varz.should_receive(:release_expected_stats)
-            subject
-          end
-
           it "should reset credentials" do
             provider.should_receive(:reset_credentials)
             subject
@@ -289,7 +279,7 @@ describe HealthManager::BulkBasedExpectedStateProvider do
       end
 
       it "does not release the stats" do
-        varz.should_not_receive :release_expected_stats
+        varz.should_not_receive :release_expected!
         provider.with_credentials {}
       end
 
@@ -309,20 +299,6 @@ describe HealthManager::BulkBasedExpectedStateProvider do
 
       it "logs the error" do
         logger.should_receive(:error).with(/timeout/)
-        provider.with_credentials {}
-      end
-
-      it "releases the stats when the expected stats are held" do
-        varz.stub(:expected_stats_held? => true)
-
-        varz.should_receive :release_expected_stats
-        provider.with_credentials {}
-      end
-
-      it "does not release the stats when the expected stats are not held" do
-        varz.stub(:expected_stats_held? => false)
-
-        varz.should_not_receive :release_expected_stats
         provider.with_credentials {}
       end
     end

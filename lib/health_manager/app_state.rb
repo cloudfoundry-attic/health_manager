@@ -122,8 +122,7 @@ module HealthManager
       instance = get_instance(beat['version'], beat['index'])
 
       if running_state?(beat)
-        if  instance['state'] == RUNNING &&
-            instance['instance'] != beat['instance']
+        if instance['state'] == RUNNING && instance['instance'] != beat['instance']
           notify(:extra_instances, [[beat['instance'],
                                      "Instance mismatch, heartbeat: #{beat['instance']}, expected: #{instance['instance']}"]])
         else
@@ -158,9 +157,7 @@ module HealthManager
       @versions.each do |version, version_entry |
         version_entry['instances'].delete_if do |index, instance|  # deleting extra instances
 
-          if running_state?(instance) &&
-              timestamp_older_than?(instance['timestamp'],
-                                    AppState.heartbeat_deadline)
+          if running_state?(instance) && timestamp_older_than?(instance['timestamp'], AppState.heartbeat_deadline)
             instance['state'] = DOWN
             instance['state_timestamp'] = now
           end
@@ -326,6 +323,33 @@ module HealthManager
         'crash_timestamp' => -1,
         'last_action' => -1
       }
+    end
+
+    def update_realtime_varz(varz)
+      varz[:total_apps] += 1
+      varz[:total_instances] += num_instances
+      varz[:crashed_instances] += crashes.size
+
+      if state == STARTED
+        varz[:running][:apps] += 1
+
+        num_instances.times do |index|
+          instance = get_instance(live_version, index)
+          case instance['state']
+            when STARTING, RUNNING
+              varz[:running_instances] += 1
+              varz[:running][:running_instances] += 1
+            when DOWN
+              varz[:missing_instances] += 1
+              varz[:running][:missing_instances] += 1
+            when FLAPPING
+              varz[:flapping_instances] += 1
+              varz[:running][:flapping_instances] += 1
+          end
+        end
+
+        varz[:running][:crashes] += crashes.size
+      end
     end
 
     private

@@ -44,7 +44,7 @@ module HealthManager
           logger.debug { "bulk: user counts received: #{response}" }
 
           counts = response['counts'] || {}
-          varz.set(:total_users, (counts['user'] || 0).to_i)
+          varz[:total_users] = (counts['user'] || 0).to_i
         end
 
         http.errback do
@@ -74,7 +74,6 @@ module HealthManager
 
           if http.response_header.status != 200
             logger.error("bulk: request problem. Response status: #{http.response_header.status}")
-            varz.release_expected_stats
             next
           end
 
@@ -84,14 +83,14 @@ module HealthManager
 
           if batch.nil? || batch.empty?
             varz.publish_expected_stats
-            logger.info("bulk: done. Loop duration: #{varz.get(:bulk_update_loop_duration)}")
+            logger.info("bulk: done. Loop duration: #{varz[:bulk_update_loop_duration]}")
             next
           end
 
           logger.debug { "bulk: batch of size #{batch.size} received" }
 
           batch.each do |app_id, droplet|
-            varz.update_expected_stats_for_droplet(droplet)
+            update_expected_stats_for_droplet(droplet)
             block.call(app_id.to_s, droplet)
           end
           process_next_batch(bulk_token, &block)
@@ -111,7 +110,6 @@ module HealthManager
             process_next_batch(bulk_token, &block)
           else
             logger.error("Too many consecutive bulk API errors.")
-            varz.release_expected_stats
             reset_credentials
           end
         end
@@ -153,11 +151,23 @@ module HealthManager
           yield @user, @password
         end
 
-        NATS.timeout(sid,
-                     get_param_from_config_or_default(:nats_request_timeout, @config)) do
+        NATS.timeout(sid, get_param_from_config_or_default(:nats_request_timeout, @config)) do
           logger.error("bulk: NATS timeout getting bulk api credentials. Request ignored.")
-          varz.release_expected_stats if varz.expected_stats_held?
         end
+      end
+    end
+
+    private
+
+    def update_expected_stats_for_droplet(droplet_hash)
+      varz[:total][:apps] += 1
+      varz[:total][:instances] += droplet_hash['instances']
+      varz[:total][:memory] += droplet_hash['memory'] * droplet_hash['instances']
+
+      if droplet_hash['state'] == STARTED
+        varz[:total][:started_apps] += 1
+        varz[:total][:started_instances] += droplet_hash['instances']
+        varz[:total][:started_memory] += droplet_hash['memory'] * droplet_hash['instances']
       end
     end
   end

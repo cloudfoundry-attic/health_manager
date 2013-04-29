@@ -11,7 +11,7 @@ def done
 end
 
 def make_expected_state(options={})
-  { :num_instances => 4,
+  { :num_instances => options[:num_instances] || 4,
     :state         => 'STARTED',
     :live_version  => '12345abcded',
     :package_state => 'STAGED',
@@ -48,7 +48,7 @@ def make_heartbeat(apps, options={})
         'version' => app_live_version,
         'instance' => "#{app_live_version}-#{index}",
         'index' => index,
-        'state' => HealthManager::RUNNING,
+        'state' => options[:state] || HealthManager::RUNNING,
         'state_timestamp' => now,
         'cc_partition' => 'default'
       }

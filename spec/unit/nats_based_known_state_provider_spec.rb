@@ -133,7 +133,6 @@ describe HealthManager do
 
   def build_valid_config(config = {})
     varz = HealthManager::Varz.new(config)
-    varz.prepare
     varz.register_hm_component(:varz, varz)
     varz.register_hm_component(:scheduler, @scheduler = HealthManager::Scheduler.new(config))
     config

@@ -17,7 +17,6 @@ describe HealthManager do
       }
     }
     @m = HealthManager::Manager.new(@config)
-    @m.varz.prepare
   end
 
   describe "Manager" do
@@ -29,7 +28,7 @@ describe HealthManager do
       end
     end
 
-    it 'should have all componets registered and available' do
+    it 'should have all components registered and available' do
       @m.harmonizer.should be_a_kind_of HealthManager::Harmonizer
 
       # chaining components should also work.

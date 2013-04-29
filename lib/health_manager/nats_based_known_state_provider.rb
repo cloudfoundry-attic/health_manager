@@ -57,7 +57,7 @@ module HealthManager
       return unless cc_partition_match?(message)
 
       logger.debug { "process_droplet_exited: #{message_str}" }
-      varz.inc(:droplet_exited_msgs_received)
+      varz[:droplet_exited_msgs_received] += 1
 
       droplet = get_droplet(message['droplet'].to_s)
 
@@ -66,7 +66,7 @@ module HealthManager
                                     message['instance'])
       case message['reason']
       when CRASHED
-        varz.inc(:crashed_instances)
+        varz[:crashed_instances] += 1
         droplet.process_exit_crash(message)
       when DEA_SHUTDOWN, DEA_EVACUATION
         droplet.process_exit_dea(message)
@@ -79,7 +79,7 @@ module HealthManager
       message = parse_json(message_str)
 
       logger.debug2 { "known: #process_heartbeat: #{message_str}" }
-      varz.inc(:heartbeat_msgs_received)
+      varz[:heartbeat_msgs_received] += 1
 
       message['droplets'].each do |beat|
         next unless cc_partition_match?(beat)
@@ -93,7 +93,7 @@ module HealthManager
       return unless cc_partition_match?(message)
 
       logger.debug { "known: #process_droplet_updated: #{message_str}" }
-      varz.inc(:droplet_updated_msgs_received)
+      varz[:droplet_updated_msgs_received] += 1
       get_droplet(message['droplet'].to_s).process_droplet_updated(message)
     end
   end

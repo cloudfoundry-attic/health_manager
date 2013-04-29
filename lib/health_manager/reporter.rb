@@ -21,7 +21,7 @@ module HealthManager
     end
 
     def process_status_message(message, reply_to)
-      varz.inc(:healthmanager_status_msgs_received)
+      varz[:healthmanager_status_msgs_received] += 1
       message = parse_json(message)
       logger.debug { "reporter: status: message: #{message}" }
       droplet_id = message['droplet'].to_s
@@ -48,7 +48,7 @@ module HealthManager
     end
 
     def process_health_message(message, reply_to)
-      varz.inc(:healthmanager_health_request_msgs_received)
+      varz[:healthmanager_health_request_msgs_received] += 1
       message = parse_json(message)
       message['droplets'].each do |droplet|
         droplet_id = droplet['droplet'].to_s
@@ -70,7 +70,7 @@ module HealthManager
       end
     end
     def process_droplet_message(message, reply_to)
-      varz.inc(:healthmanager_droplet_request_msgs_received)
+      varz[:healthmanager_droplet_request_msgs_received] += 1
       message = parse_json(message)
       message['droplets'].each do |droplet|
         droplet_id = droplet['droplet'].to_s

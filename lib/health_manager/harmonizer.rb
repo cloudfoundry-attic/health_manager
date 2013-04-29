@@ -220,28 +220,28 @@ module HealthManager
       start_at = Time.now
       logger.debug { "harmonizer: droplets_analysis" }
 
-      varz.reset_realtime_stats
+      varz.reset_realtime!
       known_state_provider.rewind
 
       scheduler.start_task :droplets_analysis do
         known_droplet = known_state_provider.next_droplet
         if known_droplet
           known_droplet.analyze
-          varz.update_realtime_stats_for_droplet(known_droplet)
+          known_droplet.update_realtime_varz(varz)
           true
         else # no more droplets to iterate through, finish up
           if known_state_provider.droplets.size <= interval(:max_droplets_in_varz)
-            varz.set(:droplets, known_state_provider.droplets)
+            varz[:droplets] = known_state_provider.droplets
           else
-            varz.set(:droplets, {})
+            varz[:droplets] = {}
           end
-          varz.publish_realtime_stats
+          varz.publish
 
           elapsed = Time.now - start_at
-          varz.set(:analysis_loop_duration, elapsed)
+          varz[:analysis_loop_duration] = elapsed
 
-          logger.info ["harmonizer: Analyzed #{varz.get(:running_instances)} running ",
-                       "#{varz.get(:missing_instances)} missing instances. ",
+          logger.info ["harmonizer: Analyzed #{varz[:running_instances]} running ",
+                       "#{varz[:missing_instances]} missing instances. ",
                        "Elapsed time: #{elapsed}"
                       ].join
           false #signal :droplets_analysis task completion to the scheduler
@@ -250,13 +250,8 @@ module HealthManager
     end
 
     def update_expected_state
-      if expected_state_update_in_progress?
-        postpone_expected_state_update
-        return
-      end
-
       expected_state_provider.update_user_counts
-      varz.reset_expected_stats
+      varz.reset_expected!
       expected_state_provider.each_droplet do |app_id, expected|
         known = known_state_provider.get_droplet(app_id)
         expected_state_provider.set_expected_state(known, expected)
@@ -274,10 +269,6 @@ module HealthManager
           update_expected_state
         end
       end
-    end
-
-    def expected_state_update_in_progress?
-      varz.held?(:total)
     end
   end
 end

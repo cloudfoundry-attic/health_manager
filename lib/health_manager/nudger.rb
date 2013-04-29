@@ -75,7 +75,7 @@ module HealthManager
       key = message.clone
       key.delete(:last_updated)
       @queue.insert(message, priority, key)
-      varz.set(:queue_length, @queue.size)
+      varz[:queue_length] = @queue.size
     end
   end
 end
