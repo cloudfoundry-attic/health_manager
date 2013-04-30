@@ -7,8 +7,15 @@ module HealthManager
   class Harmonizer
     include HealthManager::Common
 
-    def initialize(config = {})
+    attr_reader :varz, :nudger, :scheduler, :known_state_provider, :expected_state_provider
+
+    def initialize(config, varz, nudger, scheduler, known_state_provider, expected_state_provider)
       @config = config
+      @varz = varz
+      @nudger = nudger
+      @scheduler = scheduler
+      @known_state_provider = known_state_provider
+      @expected_state_provider = expected_state_provider
     end
 
     def add_logger_listener(event)

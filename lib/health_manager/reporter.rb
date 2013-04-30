@@ -4,8 +4,13 @@ module HealthManager
   class Reporter
     include HealthManager::Common
 
-    def initialize(config = {})
+    attr_reader :varz, :known_state_provider, :publisher
+
+    def initialize(config = {}, varz, known_state_provider, publisher)
       @config = config
+      @varz = varz
+      @known_state_provider = known_state_provider
+      @publisher = publisher
     end
 
     def prepare
@@ -69,6 +74,7 @@ module HealthManager
         publisher.publish(reply_to, encode_json(response))
       end
     end
+
     def process_droplet_message(message, reply_to)
       varz[:healthmanager_droplet_request_msgs_received] += 1
       message = parse_json(message)

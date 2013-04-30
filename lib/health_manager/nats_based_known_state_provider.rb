@@ -4,11 +4,6 @@ module HealthManager
   #this implementation maintains the known state by listening to the
   #DEA heartbeat messages
   class NatsBasedKnownStateProvider < KnownStateProvider
-    def initialize(config = {})
-      @config = config
-      super
-    end
-
     def cc_partition_match?(message)
       cc_partition == message['cc_partition']
     end

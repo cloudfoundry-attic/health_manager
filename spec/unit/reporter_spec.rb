@@ -4,7 +4,7 @@ describe HealthManager::Reporter do
   let(:manager) { HealthManager::Manager.new }
 
   let(:publisher) { manager.publisher }
-  let(:provider) { manager.known_state_provider }
+  let(:provider) { subject.known_state_provider }
 
   subject { manager.reporter }
 
@@ -26,8 +26,7 @@ describe HealthManager::Reporter do
 
     provider.stub(:has_droplet? => true)
     provider.stub(:get_droplet => app_state)
-    publisher.should_receive(:publish)
-      .with(reply_to, manager.encode_json(app_state))
+    publisher.should_receive(:publish).with(reply_to, manager.encode_json(app_state))
     subject.process_droplet_message(message_str, reply_to)
   end
 end

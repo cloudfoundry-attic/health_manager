@@ -10,9 +10,9 @@ module HealthManager
       process_next_batch({}, &block)
     end
 
-    def initialize(config)
+    def initialize(config, varz)
       @error_count = 0
-      super(config)
+      super
     end
 
     def set_expected_state(known, expected)

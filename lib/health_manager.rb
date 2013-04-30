@@ -29,21 +29,13 @@ module HealthManager
   class Manager
     include HealthManager::Common
 
-    attr_reader :scheduler
-    attr_reader :known_state_provider
-    attr_reader :expected_state_provider
+    attr_reader :varz, :known_state_provider, :expected_state_provider, :reporter, :nudger, :publisher, :harmonizer
 
     def initialize(config = {})
       @config = config
       logger.info("HealthManager: initializing")
 
       @varz = Varz.new(@config)
-      @reporter = Reporter.new(@config)
-      @scheduler = Scheduler.new(@config)
-      @known_state_provider = AppStateProvider.get_known_state_provider(@config)
-      @expected_state_provider = AppStateProvider.get_expected_state_provider(@config)
-      @nudger = Nudger.new(@config)
-      @harmonizer = Harmonizer.new(@config)
 
       if should_shadow?
         @publisher = @shadower = Shadower.new(@config)
@@ -51,7 +43,12 @@ module HealthManager
         @publisher = NATS
       end
 
-      register_hm_components
+      @scheduler = Scheduler.new(@config)
+      @known_state_provider = NatsBasedKnownStateProvider.new(@config, @varz)
+      @expected_state_provider = BulkBasedExpectedStateProvider.new(@config, @varz)
+      @reporter = Reporter.new(@config, @varz, @known_state_provider, @publisher)
+      @nudger = Nudger.new(@config, @varz, @publisher)
+      @harmonizer = Harmonizer.new(@config, @varz, @nudger, @scheduler, @known_state_provider, @expected_state_provider)
     end
 
     def register_as_vcap_component

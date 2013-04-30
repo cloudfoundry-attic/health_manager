@@ -2,18 +2,6 @@ require 'set'
 
 module HealthManager
 
-  COMPONENTS = [:manager,
-                :harmonizer,
-                :known_state_provider,
-                :expected_state_provider,
-                :scheduler,
-                :nudger,
-                :varz,
-                :reporter,
-                :publisher,
-                :shadower
-               ]
-
   #restart priorities
   LOW_PRIORITY           = 1
   NORMAL_PRIORITY        = 1000

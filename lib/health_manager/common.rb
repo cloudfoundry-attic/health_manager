@@ -24,34 +24,6 @@ module HealthManager::Common
     value
   end
 
-  HealthManager::COMPONENTS.each do |name|
-    define_method name do
-      find_hm_component(name)
-    end
-  end
-
-  def register_hm_components
-    HealthManager::COMPONENTS.each do |name|
-      component = self.instance_variable_get("@#{name}")
-      register_hm_component(name, component)
-    end
-  end
-
-  def register_hm_component(name, component)
-    hm_registry[name] = component
-  end
-
-  def find_hm_component(name)
-    unless component = hm_registry[name]
-      raise ArgumentError, "component #{name} can't be found in the registry #{@config}"
-    end
-    component
-  end
-
-  def hm_registry
-    @config[:health_manager_component_registry] ||= {}
-  end
-
   def should_shadow?
     #do NOT shadow by default
     ENV[HealthManager::HM_SHADOW] == 'true' ||

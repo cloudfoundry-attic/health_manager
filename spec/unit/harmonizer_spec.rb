@@ -8,7 +8,7 @@ module HealthManager
       subject do
         Harmonizer.new({
           :health_manager_component_registry => {:nudger => nudger},
-        })
+        }, {}, nudger, nil, nil, nil)
       end
 
       it "stops all instances of the app" do

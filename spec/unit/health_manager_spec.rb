@@ -2,21 +2,23 @@ require 'spec_helper'
 
 describe HealthManager do
 
-  before(:all) do
+  before do
     EM.error_handler do |e|
       fail "EM error: #{e.message}\n#{e.backtrace}"
     end
-  end
 
-  before(:each) do
     @config = {
       :shadow_mode => 'enable',
       :intervals =>
-      {
-        :expected_state_update => 1.5,
-      }
+        {
+          :expected_state_update => 1.5,
+        }
     }
     @m = HealthManager::Manager.new(@config)
+  end
+
+  after do
+    EM.error_handler # remove our handler
   end
 
   describe "Manager" do
@@ -28,24 +30,21 @@ describe HealthManager do
       end
     end
 
-    it 'should have all components registered and available' do
+    it 'should construct appropriate dependecies' do
       @m.harmonizer.should be_a_kind_of HealthManager::Harmonizer
 
-      # chaining components should also work.
-      # thus ensuring all components available from all components
-      @m.harmonizer.varz.should be_a_kind_of HealthManager::Varz
-      @m.varz.reporter.should be_a_kind_of HealthManager::Reporter
       @m.reporter.known_state_provider.should be_a_kind_of HealthManager::KnownStateProvider
-      @m.known_state_provider.expected_state_provider.should be_a_kind_of HealthManager::ExpectedStateProvider
-      @m.expected_state_provider.nudger.should be_a_kind_of HealthManager::Nudger
-      @m.nudger.scheduler.should be_a_kind_of HealthManager::Scheduler
+      @m.harmonizer.varz.should be_a_kind_of HealthManager::Varz
+      @m.harmonizer.expected_state_provider.should be_a_kind_of HealthManager::ExpectedStateProvider
+      @m.harmonizer.nudger.should be_a_kind_of HealthManager::Nudger
+      @m.nudger.publisher.should eq @m.publisher
     end
   end
 
   describe "Garbage collection of droplets" do
     GRACE_PERIOD = 60
 
-    before :each do
+    before do
       app,@expected = make_app
       @hb = make_heartbeat([app])
 
