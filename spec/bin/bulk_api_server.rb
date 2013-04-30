@@ -68,7 +68,14 @@ thin_pid = fork do
   Rack::Handler::Thin.run(FakeBulkApi.new(apps_json), :Port => PORT)
 end
 
-at_exit { Process.kill("TERM", thin_pid) }
+at_exit do
+  puts "stopping fake bulk API"
+  Process.kill("TERM", thin_pid)
+end
+
+NATS.on_error do
+  puts "can't connect to NATS"
+end
 
 NATS.start(:uri => "nats://localhost:#{NATS_PORT}", :max_reconnect_attempts => Float::INFINITY) do
   NATS.subscribe("cloudcontroller.bulk.credentials.default") do |_, reply|

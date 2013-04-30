@@ -225,6 +225,8 @@ module HealthManager
         return
       end
 
+      return unless expected_state_provider.available?
+
       start_at = Time.now
       logger.debug { "harmonizer: droplets_analysis" }
 

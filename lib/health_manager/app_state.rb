@@ -57,7 +57,6 @@ module HealthManager
     attr_reader :last_updated
     attr_reader :versions, :crashes
     attr_reader :pending_restarts
-    attr_reader :existence_justified_at
 
     def initialize(id)
       @id = id
@@ -70,15 +69,10 @@ module HealthManager
       # start out as stale until expected state is set
       @expected_state_update_required = true
       @expected_state_update_timestamp = now
-      justify_existence_for_now
-    end
-
-    def justify_existence_for_now
-      @existence_justified_at = now
     end
 
     def ripe_for_gc?
-      timestamp_older_than?(@existence_justified_at, AppState.droplet_gc_grace_period)
+      timestamp_older_than?(@expected_state_update_timestamp, AppState.droplet_gc_grace_period)
     end
 
     def set_expected_state(original_values)
@@ -93,7 +87,6 @@ module HealthManager
 
       @expected_state_update_required = false
       @expected_state_update_timestamp = now
-      justify_existence_for_now
     end
 
     def notify(event_type, *args)
@@ -243,10 +236,6 @@ module HealthManager
 
     def reset_recently?
       timestamp_fresher_than?(@reset_timestamp, AppState.heartbeat_deadline || 0)
-    end
-
-    def mark_expected_state_update_required
-      @expected_state_update_required = true
     end
 
     def expected_state_update_required?

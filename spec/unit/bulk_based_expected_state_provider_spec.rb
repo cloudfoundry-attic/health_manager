@@ -169,6 +169,11 @@ describe HealthManager::BulkBasedExpectedStateProvider do
             provider.should_receive(:process_next_batch).exactly(:once).and_call_original
             subject
           end
+
+          it 'should become unavailable' do
+            subject
+            provider.should_not be_available
+          end
         end
 
         context "and there are three entries available" do
@@ -202,6 +207,11 @@ describe HealthManager::BulkBasedExpectedStateProvider do
           it "should log something" do
             provider.logger.should_receive(:info).with /bulk.*done/
             subject
+          end
+
+          it 'should be available' do
+            subject
+            provider.should be_available
           end
         end
       end
@@ -241,6 +251,11 @@ describe HealthManager::BulkBasedExpectedStateProvider do
             provider.logger.should_receive(:info).with(/bulk.*done/).ordered.and_call_original
             subject
           end
+
+          it 'should be available' do
+            subject
+            provider.should be_available
+          end
         end
 
         context "when the failures keep repeating" do
@@ -266,6 +281,11 @@ describe HealthManager::BulkBasedExpectedStateProvider do
             provider.logger.should_receive(:error).with(/bulk/).
               exactly(:once).and_call_original
             subject
+          end
+
+          it 'should become unavailable' do
+            subject
+            provider.should_not be_available
           end
         end
       end

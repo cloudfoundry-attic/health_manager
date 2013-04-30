@@ -87,7 +87,7 @@ describe "when NATS fails", :type => :integration do
                 "state" => "RUNNING",
                 "version" => "some-version",
                 "cc_partition" => "default"
-              },
+              }
             ]
           }))
         end

@@ -70,6 +70,10 @@ module HealthManager
       logger.info("starting...")
 
       EM.epoll
+      NATS.on_error do
+        logger.warn("can't connect to NATS")
+      end
+
       NATS.start(:uri => get_nats_uri, :max_reconnect_attempts => Float::INFINITY) do
         @reporter.prepare
         @harmonizer.prepare

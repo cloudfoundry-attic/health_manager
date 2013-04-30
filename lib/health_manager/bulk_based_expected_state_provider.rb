@@ -78,8 +78,10 @@ module HealthManager
 
           if http.response_header.status != 200
             logger.error("bulk: request problem. Response status: #{http.response_header.status}")
+            @connected = false
             next
           end
+          @connected = true
 
           response = parse_json(http.response)
           bulk_token = response['bulk_token']
@@ -114,6 +116,7 @@ module HealthManager
             process_next_batch(bulk_token, &block)
           else
             logger.error("Too many consecutive bulk API errors.")
+            @connected = false
             reset_credentials
           end
         end
