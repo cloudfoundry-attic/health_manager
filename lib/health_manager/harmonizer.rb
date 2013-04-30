@@ -139,6 +139,7 @@ module HealthManager
     # Currently we do not check that expected state provider
     # is available; therefore, HM can be overly aggressive stopping apps.
     def on_extra_app(app_state)
+      return unless expected_state_provider.available?
       instance_ids_with_reasons = app_state.all_instances.map { |i| [i["instance"], "Extra app"] }
       nudger.stop_instances_immediately(app_state, instance_ids_with_reasons)
     end

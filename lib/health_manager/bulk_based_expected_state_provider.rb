@@ -12,6 +12,7 @@ module HealthManager
 
     def initialize(config, varz)
       @error_count = 0
+      @connected = false
       super
     end
 
@@ -36,9 +37,11 @@ module HealthManager
         http.callback do
           if http.response_header.status != 200
             logger.error("bulk: request problem. Response: #{http.response_header} #{http.response}")
+            @connected = false
             reset_credentials
             next
           end
+          @connected = true
 
           response = parse_json(http.response) || {}
           logger.debug { "bulk: user counts received: #{response}" }
@@ -48,6 +51,7 @@ module HealthManager
         end
 
         http.errback do
+          @connected = false
           logger.error("bulk: error: talking to bulk API at #{counts_url}")
           reset_credentials
         end
@@ -155,6 +159,10 @@ module HealthManager
           logger.error("bulk: NATS timeout getting bulk api credentials. Request ignored.")
         end
       end
+    end
+
+    def available?
+      @connected
     end
 
     private

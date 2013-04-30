@@ -57,6 +57,11 @@ describe HealthManager::BulkBasedExpectedStateProvider do
           provider.should_not_receive(:reset_credentials)
           subject
         end
+
+        it 'should be available' do
+          subject
+          provider.should be_available
+        end
       end
 
       context "http callback with non-200 status" do
@@ -75,6 +80,11 @@ describe HealthManager::BulkBasedExpectedStateProvider do
           provider.should_receive(:reset_credentials)
           subject
         end
+
+        it "should become unavailable" do
+          subject
+          provider.should_not be_available
+        end
       end
 
       context "http errback" do
@@ -92,6 +102,11 @@ describe HealthManager::BulkBasedExpectedStateProvider do
         it "should reset credentials" do
           provider.should_receive(:reset_credentials)
           subject
+        end
+
+        it "should become unavailable" do
+          subject
+          provider.should_not be_available
         end
       end
     end
