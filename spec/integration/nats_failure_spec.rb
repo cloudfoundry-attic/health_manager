@@ -3,6 +3,7 @@ require 'spec_helper'
 describe "when NATS fails", :type => :integration do
   let(:fake_bulk_api_port) { 30001 }
   let(:nats_port) { 4233 }
+  let(:lost_droplet_time) { 2 }
 
   before do
     start_nats_server(nats_port)
@@ -11,9 +12,9 @@ describe "when NATS fails", :type => :integration do
     start_health_manager(
       "mbus" => "nats://nats:nats@127.0.0.1:#{nats_port}",
       "intervals" => {
-        "expected_state_update" => 1,
-        "expected_state_lost" => 3,
-        "droplet_lost" => 2,
+        "expected_state_update" => 5,
+        "expected_state_lost" => 15,
+        "droplet_lost" => lost_droplet_time,
         "droplets_analysis" => 1,
         "check_nats_availability" => 1
       },
@@ -25,7 +26,7 @@ describe "when NATS fails", :type => :integration do
     sleep 1
     stop_nats_server
     wait_until { !nats_up?(nats_port) }
-    sleep 2
+    sleep lost_droplet_time + 1
   end
 
   after do
