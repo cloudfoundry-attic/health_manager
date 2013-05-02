@@ -57,6 +57,7 @@ module HealthManager
     attr_reader :last_updated
     attr_reader :versions, :crashes
     attr_reader :pending_restarts
+    attr_accessor :expected_state_update_required
 
     def initialize(id)
       @id = id

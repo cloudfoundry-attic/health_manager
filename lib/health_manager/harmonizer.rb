@@ -98,7 +98,7 @@ module HealthManager
 
       AppState.add_listener(:droplet_updated) do |app_state, message|
         logger.info { "harmonizer: droplet_updated: #{message}" }
-        app_state.mark_expected_state_update_required
+        app_state.expected_state_update_required = true
         abort_all_pending_delayed_restarts(app_state)
         update_expected_state
       end
