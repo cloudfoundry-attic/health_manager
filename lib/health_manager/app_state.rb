@@ -138,7 +138,7 @@ module HealthManager
       unless reset_recently?
         indices = missing_indices
         unless indices.empty?
-          notify(:missing_instances,  indices)
+          notify(:missing_instances, indices)
           reset_missing_indices
         end
       end

@@ -12,8 +12,8 @@ describe "when NATS fails", :type => :integration do
     start_health_manager(
       "mbus" => "nats://nats:nats@127.0.0.1:#{nats_port}",
       "intervals" => {
-        "expected_state_update" => 5,
-        "expected_state_lost" => 15,
+        "expected_state_update" => 1,
+        "expected_state_lost" => 5,
         "droplet_lost" => lost_droplet_time,
         "droplets_analysis" => 1,
         "check_nats_availability" => 1
@@ -35,6 +35,26 @@ describe "when NATS fails", :type => :integration do
     stop_nats_server
   end
 
+  def send_dea_heartbeat(droplets)
+    droplets_msg = []
+    droplets.each do |name, states|
+      states.each do |index|
+        droplets_msg << {
+          "droplet" => name,
+          "index" => index,
+          "instance" => "instance-guid#{index}",
+          "state" => "RUNNING",
+          "version" => "some-version-#{name}",
+          "cc_partition" => "default"
+        }
+      end
+    end
+    NATS.publish("dea.heartbeat", Yajl::Encoder.encode({
+      "dea" => "some-guid",
+      "droplets" => droplets_msg
+    }))
+  end
+
   it "does not crash even after a long delay but is in a degraded state" do
     sleep (NATS::MAX_RECONNECT_ATTEMPTS * NATS::RECONNECT_TIME_WAIT) + 2
     expect(health_manager_up?).to be_true
@@ -48,8 +68,19 @@ describe "when NATS fails", :type => :integration do
     it "does not suggest that apps be restarted" do
       hm_messages = []
 
-      run_nats_for_time(1, nats_port) do
-        NATS.subscribe("cloudcontrollers.hm.requests.default") { |m| hm_messages << m }
+      run_nats_for_time(5, nats_port) do
+        NATS.subscribe("cloudcontrollers.hm.requests.default") do |m|
+          hm_messages << m
+        end
+
+        EM.add_periodic_timer(1.5) do
+          send_dea_heartbeat(
+            {
+              "app-id1" => [0, 1],
+              "app-id2" => [0, 1, 2],
+            }
+          )
+        end
       end
 
       expect(hm_messages).to have(0).messages
@@ -58,39 +89,18 @@ describe "when NATS fails", :type => :integration do
     it "resumes its suggestions to restart crashed apps" do
       hm_messages = []
 
-      run_nats_for_time(4, nats_port) do
-        NATS.subscribe("cloudcontrollers.hm.requests.default") { |m| hm_messages << Yajl::Parser.parse(m) }
+      run_nats_for_time(3, nats_port) do
+        EM.add_periodic_timer(2) do
+          send_dea_heartbeat(
+            {
+              "app-id1" => [0, 1],
+              "app-id2" => [1],
+            }
+          )
+        end
 
-        EM.add_periodic_timer(1.5) do
-          NATS.publish("dea.heartbeat", Yajl::Encoder.encode({
-            "dea" => "some-guid",
-            "droplets" => [
-              {
-                "droplet" => "app-id1",
-                "index" => 0,
-                "instance" => "instance-guid1",
-                "state" => "RUNNING",
-                "version" => "some-version",
-                "cc_partition" => "default"
-              },
-              {
-                "droplet" => "app-id1",
-                "index" => 1,
-                "instance" => "instance-guid2",
-                "state" => "RUNNING",
-                "version" => "some-version",
-                "cc_partition" => "default"
-              },
-              {
-                "droplet" => "app-id2",
-                "index" => 1,
-                "instance" => "instance-guid3",
-                "state" => "RUNNING",
-                "version" => "some-version",
-                "cc_partition" => "default"
-              }
-            ]
-          }))
+        NATS.subscribe("cloudcontrollers.hm.requests.default") do |m|
+          hm_messages << Yajl::Parser.parse(m)
         end
       end
 
