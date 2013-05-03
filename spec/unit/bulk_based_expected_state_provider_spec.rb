@@ -315,8 +315,8 @@ describe HealthManager::BulkBasedExpectedStateProvider do
       end
     end
   end
-  describe "#with_credentials" do
 
+  describe "#with_credentials" do
     before do
       provider.reset_credentials
     end
@@ -359,6 +359,34 @@ describe HealthManager::BulkBasedExpectedStateProvider do
       it "logs the error" do
         logger.should_receive(:error).with(/timeout/)
         provider.with_credentials {}
+      end
+    end
+  end
+
+  describe "#bulk_url" do
+    subject { described_class.new(config, varz) }
+
+    context "with no scheme configured" do
+      let(:bulk_api_host) { "api.vcap.me" }
+
+      it "is the config with http://" do
+        expect(subject.bulk_url).to eq("http://api.vcap.me/bulk")
+      end
+    end
+
+    context "with a http scheme" do
+      let(:bulk_api_host) { "http://api.vcap.me" }
+
+      it "keeps the http scheme" do
+        expect(subject.bulk_url).to eq("http://api.vcap.me/bulk")
+      end
+    end
+
+    context "with a https scheme" do
+      let(:bulk_api_host) { "https://api.vcap.me" }
+
+      it "keeps the https scheme" do
+        expect(subject.bulk_url).to eq("https://api.vcap.me/bulk")
       end
     end
   end
