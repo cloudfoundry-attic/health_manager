@@ -18,6 +18,30 @@ describe HealthManager::BulkBasedExpectedStateProvider do
   let(:varz) { manager.varz }
   let(:provider) { manager.expected_state_provider }
 
+  describe "bulk_url" do
+    context "when url starts with https" do
+      let(:bulk_api_host) { "https://127.0.0.1" }
+
+      it "starts with https" do
+        provider.bulk_url.should eq ("https://127.0.0.1/bulk")
+      end
+    end
+
+    context "when url starts with http" do
+      let(:bulk_api_host) { "http://127.0.0.1" }
+
+      it "starts with http" do
+        provider.bulk_url.should eq ("http://127.0.0.1/bulk")
+      end
+    end
+
+    context "when does not start with http or https" do
+      it "starts with http" do
+        provider.bulk_url.should eq ("http://127.0.0.1/bulk")
+      end
+    end
+  end
+
   describe "HTTP requests" do
     before do
       manager.varz.reset_expected!

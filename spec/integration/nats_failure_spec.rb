@@ -23,7 +23,7 @@ describe "when NATS fails", :type => :integration do
       }
     )
 
-    sleep 1
+    sleep 3
     stop_nats_server
     wait_until { !nats_up?(nats_port) }
     sleep lost_droplet_time + 1
