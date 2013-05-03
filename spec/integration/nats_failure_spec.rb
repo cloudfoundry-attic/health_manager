@@ -3,7 +3,7 @@ require 'spec_helper'
 describe "when NATS fails", :type => :integration do
   let(:fake_bulk_api_port) { 30001 }
   let(:nats_port) { 4233 }
-  let(:lost_droplet_time) { 2 }
+  let(:lost_droplet_time) { 3 }
 
   before do
     start_nats_server(nats_port)
@@ -89,18 +89,18 @@ describe "when NATS fails", :type => :integration do
     it "resumes its suggestions to restart crashed apps" do
       hm_messages = []
 
-      run_nats_for_time(3, nats_port) do
-        EM.add_periodic_timer(2) do
+      run_nats_for_time(5, nats_port) do
+        NATS.subscribe("cloudcontrollers.hm.requests.default") do |m|
+          hm_messages << Yajl::Parser.parse(m)
+        end
+
+        EM.add_periodic_timer(1.5) do
           send_dea_heartbeat(
             {
               "app-id1" => [0, 1],
               "app-id2" => [1],
             }
           )
-        end
-
-        NATS.subscribe("cloudcontrollers.hm.requests.default") do |m|
-          hm_messages << Yajl::Parser.parse(m)
         end
       end
 
