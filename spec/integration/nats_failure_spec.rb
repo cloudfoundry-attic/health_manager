@@ -69,10 +69,6 @@ describe "when NATS fails", :type => :integration do
       hm_messages = []
 
       run_nats_for_time(5, nats_port) do
-        NATS.subscribe("cloudcontrollers.hm.requests.default") do |m|
-          hm_messages << m
-        end
-
         EM.add_periodic_timer(1.5) do
           send_dea_heartbeat(
             {
@@ -80,6 +76,10 @@ describe "when NATS fails", :type => :integration do
               "app-id2" => [0, 1, 2],
             }
           )
+        end
+
+        NATS.subscribe("cloudcontrollers.hm.requests.default") do |m|
+          hm_messages << m
         end
       end
 
@@ -105,12 +105,10 @@ describe "when NATS fails", :type => :integration do
       end
 
       app_ids = hm_messages.map { |msg| msg["droplet"] }
-      operations = hm_messages.map { |msg| msg["op"] }
       instance_indices = hm_messages.map { |msg| msg["indices"] }
 
-      expect(operations).to eq(["START", "START"])
-      expect(app_ids).to eq(["app-id2", "app-id2"])
-      expect(instance_indices).to match_array([[0], [2]])
+      app_ids.should_not include("app-id1")
+      instance_indices.should_not include 1
     end
   end
 end
