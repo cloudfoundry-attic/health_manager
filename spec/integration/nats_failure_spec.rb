@@ -69,7 +69,7 @@ describe "when NATS fails", :type => :integration do
       hm_messages = []
 
       run_nats_for_time(5, nats_port) do
-        EM.add_periodic_timer(1.5) do
+        EM.add_periodic_timer(1) do
           send_dea_heartbeat(
             {
               "app-id1" => [0, 1],
