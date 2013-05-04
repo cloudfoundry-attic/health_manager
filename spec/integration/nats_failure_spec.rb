@@ -15,7 +15,7 @@ describe "when NATS fails", :type => :integration do
         "expected_state_update" => 1,
         "expected_state_lost" => 5,
         "droplet_lost" => lost_droplet_time,
-        "droplets_analysis" => 1,
+        "droplets_analysis" => 2,
         "check_nats_availability" => 1
       },
       "bulk_api" => {
@@ -88,13 +88,12 @@ describe "when NATS fails", :type => :integration do
 
     it "resumes its suggestions to restart crashed apps" do
       hm_messages = []
-
       run_nats_for_time(5, nats_port) do
         NATS.subscribe("cloudcontrollers.hm.requests.default") do |m|
           hm_messages << Yajl::Parser.parse(m)
         end
 
-        EM.add_periodic_timer(1.5) do
+        EM.add_periodic_timer(1) do
           send_dea_heartbeat(
             {
               "app-id1" => [0, 1],
