@@ -11,6 +11,5 @@ ci-artifacts-dir
 ci-working-dir
 *.rbc
 *.swp
-.rvmrc
 *.pid
 /vendor
