@@ -83,6 +83,9 @@ describe "when NATS fails", :type => :integration do
         end
       end
 
+      if hm_messages.size != 0
+        p hm_messages
+      end
       expect(hm_messages).to have(0).messages
     end
 
