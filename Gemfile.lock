@@ -9,7 +9,7 @@ GIT
 
 GIT
   remote: git://github.com/cloudfoundry/vcap-common.git
-  revision: b9c47759e11e1f55b7ad5265b95db3fc17a8c51f
+  revision: 98463856010d63227315b54fb9bf80f220cddbdd
   specs:
     vcap_common (2.0.10)
       em-http-request (~> 1.0)
@@ -21,6 +21,7 @@ GIT
       nats (~> 0.4.24)
       posix-spawn (~> 0.3.6)
       thin
+      vmstat (~> 2.0)
       yajl-ruby
 
 GEM
@@ -65,7 +66,7 @@ GEM
       multi_xml (>= 0.5.2)
     httpclient (2.3.3)
     i18n (0.6.1)
-    json_pure (1.7.7)
+    json_pure (1.8.0)
     membrane (0.0.2)
     mime-types (1.23)
     msgpack (0.4.7)
@@ -109,6 +110,7 @@ GEM
     virtus (0.5.4)
       backports (~> 2.6.1)
       descendants_tracker (~> 0.0.1)
+    vmstat (2.0.0)
     yajl-ruby (1.1.0)
 
 PLATFORMS
