@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/cloudfoundry/health_manager.png)](https://travis-ci.org/cloudfoundry/health_manager)
+[![Code Climate](https://codeclimate.com/github/cloudfoundry/health_manager.png)](https://codeclimate.com/github/cloudfoundry/health_manager)
 
 # HealthManager 2.0
 
