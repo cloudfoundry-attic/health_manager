@@ -2,6 +2,7 @@
 # HealthManager is implementing.  It describes a set of rules that
 # recognize certain conditions (e.g. missing instances, etc) and
 # initiates certain actions (e.g. restarting the missing instances)
+require "set"
 
 module HealthManager
   class Harmonizer
@@ -93,7 +94,7 @@ module HealthManager
 
       AppState.add_listener(:exit_stopped) do |app_state, message|
         logger.info { "harmonizer: exit_stopped: #{message}" }
-        # NOOP
+        app_state.expected_state_update_required = true
       end
 
       AppState.add_listener(:droplet_updated) do |app_state, message|
@@ -136,8 +137,6 @@ module HealthManager
       end
     end
 
-    # Currently we do not check that expected state provider
-    # is available; therefore, HM can be overly aggressive stopping apps.
     def on_extra_app(app_state)
       return unless expected_state_provider.available?
       instance_ids_with_reasons = app_state.all_instances.map { |i| [i["instance"], "Extra app"] }
@@ -262,9 +261,26 @@ module HealthManager
     def update_expected_state
       expected_state_provider.update_user_counts
       varz.reset_expected!
+
+      seen_droplets = Set.new
       expected_state_provider.each_droplet do |app_id, expected|
+        seen_droplets << app_id
         known = known_state_provider.get_droplet(app_id)
+        logger.debug "Updating expected state ", :expected => expected, :known => known
         expected_state_provider.set_expected_state(known, expected)
+      end
+
+      known_statze_provider.droplets.each do |id, droplet|
+        if seen_droplets.include?(id)
+          logger.debug "droplet_seen", :id => id, :droplet => droplet
+        else
+          logger.debug "droplet_disappeared", :id => id, :droplet => droplet
+
+          droplet.set_expected_state(
+            :state => STOPPED,
+            :num_instances => 0
+          )
+        end
       end
     end
 
