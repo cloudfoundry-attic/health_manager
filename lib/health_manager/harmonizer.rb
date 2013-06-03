@@ -270,7 +270,7 @@ module HealthManager
         expected_state_provider.set_expected_state(known, expected)
       end
 
-      known_statze_provider.droplets.each do |id, droplet|
+      known_state_provider.droplets.each do |id, droplet|
         if seen_droplets.include?(id)
           logger.debug "droplet_seen", :id => id, :droplet => droplet
         else
