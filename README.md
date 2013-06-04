@@ -88,7 +88,7 @@ stores them and notifies registered listeners about events, such as
 
 ### Nudger
 
-Nudger is the interface for health manager to effect the change on the
+Nudger is the interface for health manager to affect the change on the
 world, by dispatching `cloudcontrollers.hm.requests` messages
 that instruct CCs to start or stop instances. Nudger maintains a
 priority queue of these requests, and deques the messages by a
