@@ -63,7 +63,9 @@ module HealthManager
                                :nats => @publisher,
                                :port => status_config['port'],
                                :user => status_config['user'],
-                               :password => status_config['password'])
+                               :password => status_config['password'],
+                               :logger => logger
+      )
     end
 
     def start
