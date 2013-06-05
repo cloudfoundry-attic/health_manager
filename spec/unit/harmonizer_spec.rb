@@ -140,31 +140,5 @@ module HealthManager
         end
       end
     end
-
-    describe "#update_expected_state" do
-      context "when droplet is missing in expected state provider" do
-        before do
-          expected_state_provider.stub(:each_droplet).and_yield(99, {})
-          known_state_provider.stub(:droplets) { {app.id => app} }
-        end
-
-        it "updates the state" do
-          subject.update_expected_state
-          app.state.should eq(STOPPED)
-        end
-      end
-
-      context "when droplet is in expected state provider" do
-        before do
-          expected_state_provider.stub(:each_droplet).and_yield(app.id, {})
-          known_state_provider.stub(:droplets) { {app.id => app} }
-        end
-
-        it "updates the state" do
-          subject.update_expected_state
-          app.state.should eq(STARTED)
-        end
-      end
-    end
   end
 end

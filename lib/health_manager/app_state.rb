@@ -80,9 +80,10 @@ module HealthManager
       values = original_values.dup # preserve the original
 
       [:state, :num_instances, :live_version, :package_state, :last_updated].each do |k|
-        if values.key?(k)
-          instance_variable_set("@#{k.to_s}", values[k])
+        unless v = values.delete(k)
+          raise ArgumentError, "Value #{k} is required, missing from #{original_values}"
         end
+        instance_variable_set("@#{k.to_s}", v)
       end
 
       @expected_state_update_required = false
@@ -190,9 +191,13 @@ module HealthManager
     end
 
     def missing_indices
-      # possibly add other sanity checks here to ensure valid running state,
-      # e.g. valid version, etc.
-      return [] unless @state == STARTED && @package_state == STAGED
+      return [] unless [
+                        @state == STARTED,
+                        @package_state == STAGED
+                        # possibly add other sanity checks here to ensure valid running state,
+                        # e.g. valid version, etc.
+                       ].all?
+
 
       (0...num_instances).find_all do |i|
         instance = get_instance(live_version, i)
