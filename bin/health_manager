@@ -35,20 +35,8 @@ def parse_args
   results
 end
 
-def setup_logging(logging_config)
-  steno_config = Steno::Config.to_config_hash(logging_config)
-  steno_config[:context] = Steno::Context::ThreadLocal.new
-  Steno.init(Steno::Config.new(steno_config))
-end
-
 args = parse_args
 config = read_config_from_file(args[:config_file])
-
-logging_config = config['logging']
-logging_config = {'level' => ENV['LOG_LEVEL']} if ENV['LOG_LEVEL'] #ENV override
-logging_config ||= {'level' => 'info'} #fallback value
-
-setup_logging(logging_config)
 
 hm = HealthManager::Manager.new(config)
 

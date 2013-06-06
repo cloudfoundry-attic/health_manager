@@ -12,6 +12,9 @@ describe HealthManager::BulkBasedExpectedStateProvider do
         'host' => bulk_api_host,
         'batch_size' => batch_size,
       },
+      'logging' => {
+        'file' => '/dev/null'
+      }
     }
   }
   let(:manager) { HealthManager::Manager.new(config) }

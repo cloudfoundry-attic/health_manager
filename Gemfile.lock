@@ -1,17 +1,17 @@
 GIT
   remote: git://github.com/cloudfoundry/steno.git
-  revision: 38c35b846b4e047adea0cec2308da4551d04b1fd
+  revision: d88c70767c43a5eff32ccb47e3bb561b981e62e8
   specs:
-    steno (1.0.3)
+    steno (1.1.0)
       fluent-logger
       grape
       yajl-ruby (~> 1.0)
 
 GIT
   remote: git://github.com/cloudfoundry/vcap-common.git
-  revision: 775e0647a013a0f279fda86f7839e9373707f8ba
+  revision: 736e71da40b5283835d76acaa287e0c477d5b276
   specs:
-    vcap_common (3.0.0)
+    vcap_common (2.0.11)
       em-http-request (~> 1.0)
       eventmachine
       httpclient
@@ -124,7 +124,7 @@ DEPENDENCIES
   rest-client
   rspec
   sinatra
-  steno!
+  steno (~> 1.1.0)!
   timecop
   vcap_common!
   yajl-ruby

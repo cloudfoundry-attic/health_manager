@@ -33,6 +33,14 @@ module HealthManager
 
     def initialize(config = {})
       @config = config
+
+      @log_counter = Steno::Sink::Counter.new
+
+      logging_config = config['logging']
+      logging_config = {'level' => ENV['LOG_LEVEL']} if ENV['LOG_LEVEL'] #ENV override
+      logging_config ||= {'level' => 'info'}
+      setup_logging(logging_config)
+
       logger.info("HealthManager: initializing")
 
       @varz = Varz.new(@config)
@@ -64,8 +72,17 @@ module HealthManager
                                :port => status_config['port'],
                                :user => status_config['user'],
                                :password => status_config['password'],
-                               :logger => logger
+                               :logger => logger,
+                               :log_counter => @log_counter
       )
+    end
+
+    def setup_logging(logging_config)
+      steno_config = Steno::Config.to_config_hash(logging_config)
+      steno_config[:context] = Steno::Context::ThreadLocal.new
+      config = Steno::Config.new(steno_config)
+      config.sinks << @log_counter
+      Steno.init(config)
     end
 
     def start

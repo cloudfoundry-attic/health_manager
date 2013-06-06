@@ -1,7 +1,14 @@
 require 'spec_helper'
 
 describe HealthManager::Reporter do
-  let(:manager) { HealthManager::Manager.new }
+  let(:config) do
+    {
+      'logging' => {
+        'file' => "/dev/null"
+      }
+    }
+  end
+  let(:manager) { HealthManager::Manager.new(config) }
 
   let(:publisher) { manager.publisher }
   let(:provider) { subject.known_state_provider }

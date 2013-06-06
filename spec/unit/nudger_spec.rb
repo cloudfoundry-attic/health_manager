@@ -2,7 +2,14 @@ require 'spec_helper'
 
 module HealthManager
   describe Nudger do
-    let(:manager) { Manager.new }
+    let(:config) do
+      {
+        'logging' => {
+          'file' => "/dev/null"
+        }
+      }
+    end
+    let(:manager) { Manager.new(config) }
 
     let(:nudger) { manager.nudger }
     let(:publisher) { manager.publisher }
