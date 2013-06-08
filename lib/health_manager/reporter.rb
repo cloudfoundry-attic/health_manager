@@ -4,12 +4,12 @@ module HealthManager
   class Reporter
     include HealthManager::Common
 
-    attr_reader :varz, :known_state_provider, :publisher
+    attr_reader :varz, :actual_state, :publisher
 
-    def initialize(config = {}, varz, known_state_provider, publisher)
+    def initialize(config = {}, varz, actual_state, publisher)
       @config = config
       @varz = varz
-      @known_state_provider = known_state_provider
+      @actual_state = actual_state
       @publisher = publisher
     end
 
@@ -31,21 +31,21 @@ module HealthManager
       logger.debug { "reporter: status: message: #{message}" }
       droplet_id = message['droplet'].to_s
 
-      return unless known_state_provider.has_droplet?(droplet_id)
-      known_droplet = known_state_provider.get_droplet(droplet_id)
+      return unless actual_state.has_droplet?(droplet_id)
+      actual_droplet_state = actual_state.get_droplet(droplet_id)
       state = message['state']
 
       result = nil
       case state
       when FLAPPING
         version = message['version']
-        result = known_droplet.get_instances(version)
+        result = actual_droplet_state.get_instances(version)
           .select { |_, instance| FLAPPING == instance['state'] }
           .map { |i, instance| { :index => i, :since => instance['state_timestamp'] }}
 
         publisher.publish(reply_to, encode_json({:indices => result}))
       when CRASHED
-        result = known_droplet.crashes.map { |instance, crash|
+        result = actual_droplet_state.crashes.map { |instance, crash|
           { :instance => instance, :since => crash['crash_timestamp'] }
         }
         publisher.publish(reply_to, encode_json({:instances => result}))
@@ -58,13 +58,13 @@ module HealthManager
       message['droplets'].each do |droplet|
         droplet_id = droplet['droplet'].to_s
 
-        next unless known_state_provider.has_droplet?(droplet_id)
+        next unless actual_state.has_droplet?(droplet_id)
 
         version = droplet['version']
-        known_droplet = known_state_provider.get_droplet(droplet_id)
+        actual_droplet_state = actual_state.get_droplet(droplet_id)
 
-        running = (0...known_droplet.num_instances).count { |i|
-          RUNNING == known_droplet.get_instance(version, i)['state']
+        running = (0...actual_droplet_state.num_instances).count { |i|
+          RUNNING == actual_droplet_state.get_instance(version, i)['state']
         }
         response = {
           :droplet => droplet_id,
@@ -80,9 +80,9 @@ module HealthManager
       message = parse_json(message)
       message['droplets'].each do |droplet|
         droplet_id = droplet['droplet'].to_s
-        next unless known_state_provider.has_droplet?(droplet_id)
-        known_droplet = known_state_provider.get_droplet(droplet_id)
-        publisher.publish(reply_to, encode_json(known_droplet))
+        next unless actual_state.has_droplet?(droplet_id)
+        actual_droplet_state = actual_state.get_droplet(droplet_id)
+        publisher.publish(reply_to, encode_json(actual_droplet_state))
       end
     end
   end

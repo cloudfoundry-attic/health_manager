@@ -16,10 +16,10 @@ module HealthManager
       super
     end
 
-    def set_expected_state(known, expected)
-      logger.debug2 { "bulk: #set_expected_state: known: #{known.inspect} expected: #{expected.inspect}" }
+    def set_expected_state(actual, expected)
+      logger.debug2 { "bulk: #set_expected_state: actual: #{actual.inspect} expected: #{expected.inspect}" }
 
-      known.set_expected_state(
+      actual.set_expected_state(
                                :num_instances => expected['instances'],
                                :state         => expected['state'],
                                :live_version  => expected['version'],

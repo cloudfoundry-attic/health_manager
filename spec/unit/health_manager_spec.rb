@@ -38,7 +38,7 @@ describe HealthManager do
     it 'should construct appropriate dependecies' do
       manager.harmonizer.should be_a_kind_of HealthManager::Harmonizer
 
-      manager.reporter.known_state_provider.should be_a_kind_of HealthManager::KnownStateProvider
+      manager.reporter.actual_state.should be_a_kind_of HealthManager::AppStateProvider
       manager.harmonizer.varz.should be_a_kind_of HealthManager::Varz
       manager.harmonizer.expected_state_provider.should be_a_kind_of HealthManager::ExpectedStateProvider
       manager.harmonizer.nudger.should be_a_kind_of HealthManager::Nudger
@@ -65,7 +65,7 @@ describe HealthManager do
       app,@expected = make_app
       @hb = make_heartbeat([app])
 
-      @ksp = manager.known_state_provider
+      @ksp = manager.actual_state
       @ksp.droplets.size.should == 0
       @h = manager.harmonizer
 

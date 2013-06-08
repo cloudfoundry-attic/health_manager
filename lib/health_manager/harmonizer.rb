@@ -7,14 +7,14 @@ module HealthManager
   class Harmonizer
     include HealthManager::Common
 
-    attr_reader :varz, :nudger, :scheduler, :known_state_provider, :expected_state_provider
+    attr_reader :varz, :nudger, :scheduler, :actual_state, :expected_state_provider
 
-    def initialize(config, varz, nudger, scheduler, known_state_provider, expected_state_provider)
+    def initialize(config, varz, nudger, scheduler, actual_state, expected_state_provider)
       @config = config
       @varz = varz
       @nudger = nudger
       @scheduler = scheduler
-      @known_state_provider = known_state_provider
+      @actual_state = actual_state
       @expected_state_provider = expected_state_provider
     end
 
@@ -40,8 +40,8 @@ module HealthManager
 
       #set up listeners for anomalous events to respond with correcting actions
       AppState.add_listener(:missing_instances) do |app_state, missing_indices|
-        unless known_state_provider.available?
-          logger.info { "harmonizer: known state provider was not available." }
+        unless actual_state.available?
+          logger.info { "harmonizer: actual state was not available." }
           next
         end
 
@@ -126,7 +126,7 @@ module HealthManager
       end
 
       scheduler.at_interval :check_nats_availability do
-        known_state_provider.check_availability
+        actual_state.check_availability
       end
 
       if should_shadow?
@@ -213,9 +213,9 @@ module HealthManager
     # ------------------------------------------------------------
 
     def gc_droplets
-      before = known_state_provider.droplets.size
-      known_state_provider.droplets.delete_if { |_,d| d.ripe_for_gc? }
-      after = known_state_provider.droplets.size
+      before = actual_state.droplets.size
+      actual_state.droplets.delete_if { |_,d| d.ripe_for_gc? }
+      after = actual_state.droplets.size
       logger.info("harmonizer: droplet GC ran. Number of droplets before: #{before}, after: #{after}. #{before-after} droplets removed")
     end
 
@@ -231,17 +231,17 @@ module HealthManager
       logger.debug { "harmonizer: droplets_analysis" }
 
       varz.reset_realtime!
-      known_state_provider.rewind
+      actual_state.rewind
 
       scheduler.start_task :droplets_analysis do
-        known_droplet = known_state_provider.next_droplet
-        if known_droplet
-          known_droplet.analyze
-          known_droplet.update_realtime_varz(varz)
+        actual_droplet_state = actual_state.next_droplet
+        if actual_droplet_state
+          actual_droplet_state.analyze
+          actual_droplet_state.update_realtime_varz(varz)
           true
         else # no more droplets to iterate through, finish up
-          if known_state_provider.droplets.size <= interval(:max_droplets_in_varz)
-            varz[:droplets] = known_state_provider.droplets
+          if actual_state.droplets.size <= interval(:max_droplets_in_varz)
+            varz[:droplets] = actual_state.droplets
           else
             varz[:droplets] = {}
           end
@@ -263,8 +263,8 @@ module HealthManager
       expected_state_provider.update_user_counts
       varz.reset_expected!
       expected_state_provider.each_droplet do |app_id, expected|
-        known = known_state_provider.get_droplet(app_id)
-        expected_state_provider.set_expected_state(known, expected)
+        actual = actual_state.get_droplet(app_id)
+        expected_state_provider.set_expected_state(actual, expected)
       end
     end
 

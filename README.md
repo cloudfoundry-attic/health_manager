@@ -35,7 +35,7 @@ HM is comprised of the following components:
 - Harmonizer
 - Scheduler
 - ExpectedStateProvider
-- KnownStateProvider
+- ActualState
 - Nudger
 - Reporter
 - Shadower
@@ -76,10 +76,9 @@ it should be. This is a dump of the CCs database. It might differ from what
 the world actually looks like, and the Harmonizer will attempt to make the 
 current state match this expected state.
 
-### Known State Provider
+### Actual State
 
-The Known state will be discovered from NatsBasedKnownStateProvider,
-that will listen to heartbeat and other messages on the NATS bus.
+The ActualState listens to heartbeat and other messages on the NATS bus from the DEA.
 
 The State of each application is represented by an instant of object
 AppState. That object receives updates of the application state,

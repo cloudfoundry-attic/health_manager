@@ -1,9 +1,9 @@
 
 module HealthManager
 
-  #this implementation maintains the known state by listening to the
+  #this implementation maintains the actual state by listening to the
   #DEA heartbeat messages
-  class NatsBasedKnownStateProvider < KnownStateProvider
+  class ActualState < AppStateProvider
     def cc_partition_match?(message)
       cc_partition == message['cc_partition']
     end
@@ -73,7 +73,7 @@ module HealthManager
     def process_heartbeat(message_str)
       message = parse_json(message_str)
 
-      logger.debug2 { "known: #process_heartbeat: #{message_str}" }
+      logger.debug2 { "Actual: #process_heartbeat: #{message_str}" }
       varz[:heartbeat_msgs_received] += 1
 
       message['droplets'].each do |beat|
@@ -87,7 +87,7 @@ module HealthManager
       message = parse_json(message_str)
       return unless cc_partition_match?(message)
 
-      logger.debug { "known: #process_droplet_updated: #{message_str}" }
+      logger.debug { "Actual: #process_droplet_updated: #{message_str}" }
       varz[:droplet_updated_msgs_received] += 1
       get_droplet(message['droplet'].to_s).process_droplet_updated(message)
     end

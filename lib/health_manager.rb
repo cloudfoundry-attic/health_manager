@@ -16,7 +16,7 @@ require 'health_manager/constants'
 require 'health_manager/common'
 require 'health_manager/app_state'
 require 'health_manager/app_state_provider'
-require 'health_manager/nats_based_known_state_provider'
+require 'health_manager/actual_state'
 require 'health_manager/bulk_based_expected_state_provider'
 require 'health_manager/scheduler'
 require 'health_manager/nudger'
@@ -29,7 +29,7 @@ module HealthManager
   class Manager
     include HealthManager::Common
 
-    attr_reader :varz, :known_state_provider, :expected_state_provider, :reporter, :nudger, :publisher, :harmonizer
+    attr_reader :varz, :actual_state, :expected_state_provider, :reporter, :nudger, :publisher, :harmonizer
 
     def initialize(config = {})
       @config = config
@@ -52,11 +52,11 @@ module HealthManager
       end
 
       @scheduler = Scheduler.new(@config)
-      @known_state_provider = NatsBasedKnownStateProvider.new(@config, @varz)
+      @actual_state = ActualState.new(@config, @varz)
       @expected_state_provider = BulkBasedExpectedStateProvider.new(@config, @varz)
-      @reporter = Reporter.new(@config, @varz, @known_state_provider, @publisher)
+      @reporter = Reporter.new(@config, @varz, @actual_state, @publisher)
       @nudger = Nudger.new(@config, @varz, @publisher)
-      @harmonizer = Harmonizer.new(@config, @varz, @nudger, @scheduler, @known_state_provider, @expected_state_provider)
+      @harmonizer = Harmonizer.new(@config, @varz, @nudger, @scheduler, @actual_state, @expected_state_provider)
     end
 
     def register_as_vcap_component
@@ -97,7 +97,7 @@ module HealthManager
         @reporter.prepare
         @harmonizer.prepare
         @expected_state_provider.start
-        @known_state_provider.start
+        @actual_state.start
 
         if should_shadow?
           logger.info("starting Shadower")

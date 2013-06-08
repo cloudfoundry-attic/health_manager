@@ -4,7 +4,7 @@ module HealthManager
   describe Harmonizer do
     let(:nudger) { mock.as_null_object }
     let(:expected_state_provider) { mock.as_null_object }
-    let(:known_state_provider) { mock.as_null_object }
+    let(:actual_state) { mock.as_null_object }
     let(:scheduler) { mock.as_null_object }
     let(:varz) { mock.as_null_object }
     let(:app) do
@@ -19,7 +19,7 @@ module HealthManager
     subject do
       Harmonizer.new({
         :health_manager_component_registry => {:nudger => nudger},
-      }, varz, nudger, scheduler, known_state_provider, expected_state_provider)
+      }, varz, nudger, scheduler, actual_state, expected_state_provider)
     end
 
     describe "#prepare" do

@@ -11,7 +11,7 @@ describe HealthManager::Reporter do
   let(:manager) { HealthManager::Manager.new(config) }
 
   let(:publisher) { manager.publisher }
-  let(:provider) { subject.known_state_provider }
+  let(:provider) { subject.actual_state }
 
   subject { manager.reporter }
 

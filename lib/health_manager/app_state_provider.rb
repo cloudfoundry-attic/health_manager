@@ -36,7 +36,7 @@ module HealthManager
       end
 
       @cur_droplet_index += 1
-      return droplet
+      droplet
     end
 
     def has_droplet?(id)
@@ -58,9 +58,5 @@ module HealthManager
     def set_expected_state(known, expected)
       raise 'Not Implemented' # should be implemented by the concrete class
     end
-  end
-
-  # "abstract" provider of known state. Primarily for documenting the API
-  class KnownStateProvider < AppStateProvider
   end
 end

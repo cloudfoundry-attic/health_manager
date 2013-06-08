@@ -1,9 +1,9 @@
 require 'spec_helper'
 
-describe HealthManager::NatsBasedKnownStateProvider do
+describe HealthManager::ActualState do
   before do
     HealthManager::AppState.flapping_death = 3
-    @nb = HealthManager::NatsBasedKnownStateProvider.new({}, HealthManager::Varz.new)
+    @nb = HealthManager::ActualState.new({}, HealthManager::Varz.new)
   end
 
   after do
