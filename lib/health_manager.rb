@@ -17,6 +17,7 @@ require 'health_manager/common'
 require 'health_manager/app_state'
 require 'health_manager/actual_state'
 require 'health_manager/desired_state'
+require 'health_manager/droplet_registry'
 require 'health_manager/scheduler'
 require 'health_manager/nudger'
 require 'health_manager/harmonizer'
@@ -28,7 +29,7 @@ module HealthManager
   class Manager
     include HealthManager::Common
 
-    attr_reader :varz, :actual_state, :desired_state, :reporter, :nudger, :publisher, :harmonizer
+    attr_reader :varz, :actual_state, :desired_state, :droplet_registry, :reporter, :nudger, :publisher, :harmonizer
 
     def initialize(config = {})
       @config = config
@@ -51,11 +52,12 @@ module HealthManager
       end
 
       @scheduler = Scheduler.new(@config)
-      @actual_state = ActualState.new(@config, @varz)
+      @droplet_registry = DropletRegistry.new
+      @actual_state = ActualState.new(@config, @varz, @droplet_registry)
       @desired_state = DesiredState.new(@config, @varz)
-      @reporter = Reporter.new(@config, @varz, @actual_state, @publisher)
       @nudger = Nudger.new(@config, @varz, @publisher)
-      @harmonizer = Harmonizer.new(@config, @varz, @nudger, @scheduler, @actual_state, @desired_state)
+      @harmonizer = Harmonizer.new(@config, @varz, @nudger, @scheduler, @actual_state, @desired_state, @droplet_registry)
+      @reporter = Reporter.new(@config, @varz, @droplet_registry, @publisher)
     end
 
     def register_as_vcap_component

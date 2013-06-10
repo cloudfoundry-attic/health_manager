@@ -9,13 +9,14 @@ module HealthManager
 
     attr_reader :varz, :nudger, :scheduler, :actual_state, :desired_state
 
-    def initialize(config, varz, nudger, scheduler, actual_state, desired_state)
+    def initialize(config, varz, nudger, scheduler, actual_state, desired_state, droplet_registry)
       @config = config
       @varz = varz
       @nudger = nudger
       @scheduler = scheduler
       @actual_state = actual_state
       @desired_state = desired_state
+      @droplet_registry = droplet_registry
     end
 
     def add_logger_listener(event)
@@ -213,9 +214,9 @@ module HealthManager
     # ------------------------------------------------------------
 
     def gc_droplets
-      before = actual_state.app_states.size
-      actual_state.app_states.delete_if { |_,d| d.ripe_for_gc? }
-      after = actual_state.app_states.size
+      before = @droplet_registry.size
+      @droplet_registry.delete_if { |_,d| d.ripe_for_gc? }
+      after = @droplet_registry.size
       logger.info("harmonizer: droplet GC ran. Number of droplets before: #{before}, after: #{after}. #{before-after} droplets removed")
     end
 
@@ -231,30 +232,29 @@ module HealthManager
       logger.debug { "harmonizer: droplets_analysis" }
 
       varz.reset_realtime!
-      actual_state.rewind
-
       scheduler.start_task :droplets_analysis do
-        actual_droplet_state = actual_state.next_droplet
-        if actual_droplet_state
-          actual_droplet_state.analyze
-          actual_droplet_state.update_realtime_varz(varz)
-          true
-        else # no more droplets to iterate through, finish up
-          if actual_state.app_states.size <= interval(:max_droplets_in_varz)
-            varz[:droplets] = actual_state.app_states
-          else
-            varz[:droplets] = {}
+        @droplet_registry.each do |_, droplet|
+          if droplet
+            droplet.analyze
+            droplet.update_realtime_varz(varz)
+            true
+          else # no more droplets to iterate through, finish up
+            if @droplet_registry.size <= interval(:max_droplets_in_varz)
+              varz[:droplets] = @droplet_registry
+            else
+              varz[:droplets] = {}
+            end
+            varz.publish
+
+            elapsed = Time.now - start_at
+            varz[:analysis_loop_duration] = elapsed
+
+            logger.info ["harmonizer: Analyzed #{varz[:running_instances]} running ",
+              "#{varz[:missing_instances]} missing instances. ",
+              "Elapsed time: #{elapsed}"
+            ].join
+            false #signal :droplets_analysis task completion to the scheduler
           end
-          varz.publish
-
-          elapsed = Time.now - start_at
-          varz[:analysis_loop_duration] = elapsed
-
-          logger.info ["harmonizer: Analyzed #{varz[:running_instances]} running ",
-                       "#{varz[:missing_instances]} missing instances. ",
-                       "Elapsed time: #{elapsed}"
-                      ].join
-          false #signal :droplets_analysis task completion to the scheduler
         end
       end
     end
@@ -262,8 +262,8 @@ module HealthManager
     def update_desired_state
       desired_state.update_user_counts
       varz.reset_desired!
-      desired_state.each_droplet do |app_id, desired_droplet|
-        actual_state.get_app_state(app_id).set_desired_state(desired_droplet)
+      desired_state.each_droplet do |droplet_id, desired_droplet|
+        @droplet_registry.get(droplet_id).set_desired_state(desired_droplet)
       end
     end
 

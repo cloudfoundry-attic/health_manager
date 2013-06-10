@@ -11,7 +11,7 @@ describe HealthManager::Reporter do
   let(:manager) { HealthManager::Manager.new(config) }
 
   let(:publisher) { manager.publisher }
-  let(:provider) { subject.actual_state }
+  let(:provider) { subject.droplet_registry }
 
   subject { manager.reporter }
 
@@ -31,8 +31,8 @@ describe HealthManager::Reporter do
 
   it "should publish a response to droplet request" do
 
-    provider.stub(:has_app_state? => true)
-    provider.stub(:get_app_state => app_state)
+    provider.stub(:include? => true)
+    provider.stub(:[] => app_state)
     publisher.should_receive(:publish).with(reply_to, manager.encode_json(app_state))
     subject.process_droplet_message(message_str, reply_to)
   end

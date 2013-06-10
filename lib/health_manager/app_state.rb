@@ -60,7 +60,7 @@ module HealthManager
     attr_accessor :desired_state_update_required
 
     def initialize(id)
-      @id = id
+      @id = id.to_s
       @num_instances = 0
       @versions = {}
       @crashes = {}

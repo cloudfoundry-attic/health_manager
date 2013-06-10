@@ -1,9 +1,11 @@
 require 'spec_helper'
 
 describe HealthManager::ActualState do
+  let(:droplet_registry) { HealthManager::DropletRegistry.new }
+
   before do
     HealthManager::AppState.flapping_death = 3
-    @nb = HealthManager::ActualState.new({}, HealthManager::Varz.new)
+    @actual_state = HealthManager::ActualState.new({}, HealthManager::Varz.new, droplet_registry)
   end
 
   after do
@@ -19,36 +21,36 @@ describe HealthManager::ActualState do
 
       it "does not try to subscribe" do
         NATS.should_not_receive(:subscribe)
-        @nb.check_availability
+        @actual_state.start
       end
 
       context "when NATS comes back up" do
         before do
-          @nb.check_availability
+          @actual_state.start
           NATS.stub(:connected?).and_return(true)
         end
 
         it "logs that it is subscribing" do
-          @nb.logger.should_receive(:info).with(/subscribing/).exactly(3).times
-          @nb.check_availability
+          @actual_state.logger.should_receive(:info).with(/subscribing/).exactly(3).times
+          @actual_state.start
         end
 
         it "re-subscribes to heartbeat, droplet.exited/updated messages" do
           NATS.should_receive(:subscribe).with('dea.heartbeat')
           NATS.should_receive(:subscribe).with('droplet.exited')
           NATS.should_receive(:subscribe).with('droplet.updated')
-          @nb.check_availability
+          @actual_state.start
         end
 
         context "when NATS goes down again" do
           before do
-            @nb.check_availability
+            @actual_state.start
             NATS.stub(:connected?).and_return(false)
           end
 
           it "logs that nats went down" do
-            @nb.logger.should_receive(:info).with(/NATS/)
-            @nb.check_availability
+            @actual_state.logger.should_receive(:info).with(/NATS/)
+            @actual_state.start
           end
         end
       end
@@ -58,25 +60,25 @@ describe HealthManager::ActualState do
   context 'AppState updating' do
     before(:each) do
       app, desired = make_app
-      @app = @nb.get_app_state(app.id)
-      @app.set_desired_state(desired)
-      instance = @app.get_instance(@app.live_version, 0)
+      @droplet = droplet_registry.get(app.id)
+      @droplet.set_desired_state(desired)
+      instance = @droplet.get_instance(@droplet.live_version, 0)
       instance['state'].should == 'DOWN'
       instance['last_heartbeat'].should be_nil
     end
 
     def make_and_send_heartbeat
-      hb = make_heartbeat([@app])
-      @nb.process_heartbeat(encode_json(hb))
+      hb = make_heartbeat([@droplet])
+      @actual_state.send(:process_heartbeat, encode_json(hb))
     end
 
     def make_and_send_exited_message(reason)
-      msg = make_exited_message(@app, {'reason'=>reason})
-      @nb.process_droplet_exited(encode_json(msg))
+      msg = make_exited_message(@droplet, 'reason'=>reason)
+      @actual_state.send(:process_droplet_exited, encode_json(msg))
     end
 
     def check_instance_state(state='RUNNING')
-      instance = @app.get_instance(@app.live_version, 0)
+      instance = @droplet.get_instance(@droplet.live_version, 0)
       instance['state'].should == state
       instance['last_heartbeat'].should_not be_nil
     end
@@ -101,7 +103,7 @@ describe HealthManager::ActualState do
       make_and_send_heartbeat
       check_instance_state('RUNNING')
 
-      ['STOPPED','DEA_SHUTDOWN','DEA_EVACUATION'].each do |reason|
+      %w[STOPPED DEA_SHUTDOWN DEA_EVACUATION].each do |reason|
         make_and_send_exited_message(reason)
         check_instance_state('DOWN')
         make_and_send_heartbeat
@@ -111,7 +113,7 @@ describe HealthManager::ActualState do
   end
 
   describe "available?" do
-    subject { @nb.available? }
+    subject { @actual_state.available? }
 
     context "when connecting to NATS fails" do
       before { NATS.stub(:connected?) { false } }

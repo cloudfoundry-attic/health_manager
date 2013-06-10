@@ -37,14 +37,14 @@ def make_bulk_entry(options={})
   }
 end
 
-def make_heartbeat(apps, options={})
+def make_heartbeat(droplets, options={})
   hb = []
-  apps.each do |app|
-    app.num_instances.times { |index|
-      app_live_version = options[:app_live_version] || app.live_version
+  droplets.each do |droplet|
+    droplet.num_instances.times { |index|
+      app_live_version = options[:app_live_version] || droplet.live_version
 
       hb << {
-        'droplet' => app.id,
+        'droplet' => droplet.id,
         'version' => app_live_version,
         'instance' => "#{app_live_version}-#{index}",
         'index' => index,

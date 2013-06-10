@@ -63,34 +63,35 @@ describe HealthManager do
       app,@desired = make_app
       @hb = make_heartbeat([app])
 
-      @ksp = manager.actual_state
-      @ksp.app_states.size.should == 0
       @h = manager.harmonizer
+
+      @actual_state = manager.actual_state
+      manager.droplet_registry.size.should == 0
 
       HealthManager::AppState.droplet_gc_grace_period = GRACE_PERIOD
     end
 
     it 'should not GC when a recent h/b arrives' do
-      @ksp.process_heartbeat(encode_json(@hb))
-      @ksp.app_states.size.should == 1
-      droplet = @ksp.app_states.values.first
+      @actual_state.send(:process_heartbeat, encode_json(@hb))
+      manager.droplet_registry.size.should == 1
+      droplet = manager.droplet_registry.values.first
 
       droplet.should_not be_ripe_for_gc
       @h.gc_droplets
 
-      @ksp.app_states.size.should == 1
+      manager.droplet_registry.size.should == 1
 
       Timecop.travel(Time.now + GRACE_PERIOD + 10)
 
       droplet.should be_ripe_for_gc
 
       @h.gc_droplets
-      @ksp.app_states.size.should == 0
+      manager.droplet_registry.size.should == 0
     end
 
     it 'should not GC after desired state is set' do
-      @ksp.process_heartbeat(encode_json(@hb))
-      droplet = @ksp.app_states.values.first
+      @actual_state.send(:process_heartbeat, encode_json(@hb))
+      droplet = manager.droplet_registry.values.first
 
       Timecop.travel(Time.now + GRACE_PERIOD + 10)
 

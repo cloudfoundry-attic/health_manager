@@ -3,6 +3,7 @@ require "spec_helper"
 module HealthManager
   describe Harmonizer do
     let(:nudger) { mock.as_null_object }
+    let(:droplet_registry) { mock.as_null_object }
     let(:desired_state) { mock.as_null_object }
     let(:actual_state) { mock.as_null_object }
     let(:scheduler) { mock.as_null_object }
@@ -19,7 +20,7 @@ module HealthManager
     subject do
       Harmonizer.new({
         :health_manager_component_registry => {:nudger => nudger},
-      }, varz, nudger, scheduler, actual_state, desired_state)
+      }, varz, nudger, scheduler, actual_state, desired_state, droplet_registry)
     end
 
     describe "#prepare" do
