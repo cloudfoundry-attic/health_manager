@@ -10,20 +10,20 @@ def done
   ::EM.next_tick { ::EM.stop_event_loop }
 end
 
-def make_desired_state(options={})
-  { :num_instances => options[:num_instances] || 4,
-    :state         => 'STARTED',
-    :live_version  => '12345abcded',
-    :package_state => 'STAGED',
-    :last_updated  => Time.now.to_i - 60*60*24
+def make_desired_droplet(options={})
+  { 'instances' => options[:num_instances] || 4,
+    'state' => 'STARTED',
+    'version' => '12345abcded',
+    'package_state' => 'STAGED',
+    'updated_at' => Time.now.to_s
   }.merge(options)
 end
 
 def make_app(options = {})
   app = HealthManager::AppState.new(options[:id] || 1)
-  desired_state = make_desired_state(options)
-  app.set_desired_state(desired_state)
-  return app, desired_state
+  desired_droplet = make_desired_droplet(options)
+  app.set_desired_state(desired_droplet)
+  [app, desired_droplet]
 end
 
 def make_bulk_entry(options={})

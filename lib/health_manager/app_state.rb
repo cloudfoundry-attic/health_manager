@@ -76,15 +76,20 @@ module HealthManager
       timestamp_older_than?(@desired_state_update_timestamp, AppState.droplet_gc_grace_period)
     end
 
-    def set_desired_state(original_values)
-      values = original_values.dup # preserve the original
+    def set_desired_state(desired_droplet)
+      logger.debug { "bulk: #set_desired_state: actual: #{self.inspect} desired_droplet: #{desired_droplet.inspect}" }
 
-      [:state, :num_instances, :live_version, :package_state, :last_updated].each do |k|
-        unless v = values.delete(k)
-          raise ArgumentError, "Value #{k} is required, missing from #{original_values}"
+      %w[state instances version package_state updated_at].each do |k|
+        unless desired_droplet[k]
+          raise ArgumentError, "Value #{k} is required, missing from #{desired_droplet}"
         end
-        instance_variable_set("@#{k.to_s}", v)
       end
+
+      @num_instances = desired_droplet['instances']
+      @state = desired_droplet['state']
+      @live_version = desired_droplet['version']
+      @package_state = desired_droplet['package_state']
+      @last_updated = parse_utc(desired_droplet['updated_at'])
 
       @desired_state_update_required = false
       @desired_state_update_timestamp = now
@@ -361,6 +366,10 @@ module HealthManager
 
     def timestamp_older_than?(timestamp, age)
       timestamp > 0 && (now - timestamp) > age
+    end
+
+    def parse_utc(time)
+      Time.parse(time).to_i
     end
   end
 end

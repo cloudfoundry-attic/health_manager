@@ -16,17 +16,6 @@ module HealthManager
       process_next_batch({}, &block)
     end
 
-    def set_desired_state(actual, desired)
-      logger.debug2 { "bulk: #set_desired_state: actual: #{actual.inspect} desired: #{desired.inspect}" }
-
-      actual.set_desired_state(
-                               :num_instances => desired['instances'],
-                               :state         => desired['state'],
-                               :live_version  => desired['version'],
-                               :package_state => desired['package_state'],
-                               :last_updated  => parse_utc(desired['updated_at']))
-    end
-
     def update_user_counts
       with_credentials do |user, password|
         options = {
@@ -180,10 +169,6 @@ module HealthManager
         varz[:total][:started_instances] += droplet_hash['instances']
         varz[:total][:started_memory] += droplet_hash['memory'] * droplet_hash['instances']
       end
-    end
-
-    def parse_utc(time)
-      Time.parse(time).to_i
     end
   end
 end

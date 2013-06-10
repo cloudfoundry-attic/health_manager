@@ -37,7 +37,7 @@ describe HealthManager::AppState do
     end
 
     context "when desired was updated" do
-      before { app.set_desired_state(make_desired_state) }
+      before { app.set_desired_state(make_desired_droplet) }
 
       it "notifies of an extra app after desired state was not recently updated" do
         Timecop.travel(HealthManager::AppState.desired_state_update_deadline)
@@ -52,7 +52,7 @@ describe HealthManager::AppState do
   end
 
   it 'should not invoke missing_instances for non-staged states' do
-    app, _ = make_app(:package_state => 'PENDING')
+    app, _ = make_app('package_state' => 'PENDING')
     app.missing_indices.should == []
   end
 
@@ -117,7 +117,7 @@ describe HealthManager::AppState do
 
   it 'should invoke extra_instances event handler' do
     app, desired = make_app
-    extra_instance_id = desired[:live_version]+"-0"
+    extra_instance_id = desired['version'] + "-0"
 
     future_answer = [[extra_instance_id, "Extra instance"]]
     event_handler_invoked = false

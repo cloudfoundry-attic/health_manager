@@ -31,8 +31,8 @@ module HealthManager
       logger.debug { "reporter: status: message: #{message}" }
       droplet_id = message['droplet'].to_s
 
-      return unless actual_state.has_droplet?(droplet_id)
-      actual_droplet_state = actual_state.get_droplet(droplet_id)
+      return unless actual_state.has_app_state?(droplet_id)
+      actual_droplet_state = actual_state.get_app_state(droplet_id)
       state = message['state']
 
       result = nil
@@ -58,10 +58,10 @@ module HealthManager
       message['droplets'].each do |droplet|
         droplet_id = droplet['droplet'].to_s
 
-        next unless actual_state.has_droplet?(droplet_id)
+        next unless actual_state.has_app_state?(droplet_id)
 
         version = droplet['version']
-        actual_droplet_state = actual_state.get_droplet(droplet_id)
+        actual_droplet_state = actual_state.get_app_state(droplet_id)
 
         running = (0...actual_droplet_state.num_instances).count { |i|
           RUNNING == actual_droplet_state.get_instance(version, i)['state']
@@ -80,8 +80,8 @@ module HealthManager
       message = parse_json(message)
       message['droplets'].each do |droplet|
         droplet_id = droplet['droplet'].to_s
-        next unless actual_state.has_droplet?(droplet_id)
-        actual_droplet_state = actual_state.get_droplet(droplet_id)
+        next unless actual_state.has_app_state?(droplet_id)
+        actual_droplet_state = actual_state.get_app_state(droplet_id)
         publisher.publish(reply_to, encode_json(actual_droplet_state))
       end
     end

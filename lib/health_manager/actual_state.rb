@@ -1,13 +1,13 @@
 module HealthManager
   class ActualState
     include HealthManager::Common
-    attr_reader :droplets, :varz
+    attr_reader :app_states, :varz
 
     def initialize(config, varz)
       @config = config
-      @droplets = {} # hashes droplet_id => AppState instance
-      @cur_droplet_index = 0
-      @ids = []
+      @app_states = {} # hashes droplet_id => AppState instance
+      @current_app_state_index = 0
+      @app_state_ids = []
       @varz = varz
     end
 
@@ -51,8 +51,8 @@ module HealthManager
 
     # these methods have to do with threading and quantization
     def rewind
-      @cur_droplet_index = 0
-      @ids = @droplets.keys
+      @current_app_state_index = 0
+      @app_state_ids = @app_states.keys
     end
 
     def next_droplet
@@ -64,21 +64,21 @@ module HealthManager
       droplet = nil # nil value indicates the end of the collection
 
       # skip over garbage-collected droplets
-      while (droplet = @droplets[@ids[@cur_droplet_index]]).nil? && @cur_droplet_index < @ids.size
-        @cur_droplet_index += 1
+      while (droplet = @app_states[@app_state_ids[@current_app_state_index]]).nil? && @current_app_state_index < @app_state_ids.size
+        @current_app_state_index += 1
       end
 
-      @cur_droplet_index += 1
+      @current_app_state_index += 1
       droplet
     end
 
-    def has_droplet?(id)
-      @droplets.has_key?(id.to_s)
+    def has_app_state?(id)
+      @app_states.has_key?(id.to_s)
     end
 
-    def get_droplet(id)
+    def get_app_state(id)
       id = id.to_s
-      @droplets[id] ||= AppState.new(id)
+      @app_states[id] ||= AppState.new(id)
     end
 
     def available?
@@ -92,7 +92,7 @@ module HealthManager
       logger.debug { "process_droplet_exited: #{message_str}" }
       varz[:droplet_exited_msgs_received] += 1
 
-      droplet = get_droplet(message['droplet'].to_s)
+      droplet = get_app_state(message['droplet'].to_s)
 
       droplet.mark_instance_as_down(message['version'],
                                     message['index'],
@@ -111,13 +111,13 @@ module HealthManager
     def process_heartbeat(message_str)
       message = parse_json(message_str)
 
-      logger.debug2 { "Actual: #process_heartbeat: #{message_str}" }
+      logger.debug { "Actual: #process_heartbeat: #{message_str}" }
       varz[:heartbeat_msgs_received] += 1
 
       message['droplets'].each do |beat|
         next unless cc_partition_match?(beat)
         id = beat['droplet'].to_s
-        get_droplet(id).process_heartbeat(beat)
+        get_app_state(id).process_heartbeat(beat)
       end
     end
 
@@ -127,7 +127,7 @@ module HealthManager
 
       logger.debug { "Actual: #process_droplet_updated: #{message_str}" }
       varz[:droplet_updated_msgs_received] += 1
-      get_droplet(message['droplet'].to_s).process_droplet_updated(message)
+      get_app_state(message['droplet'].to_s).process_droplet_updated(message)
     end
   end
 end

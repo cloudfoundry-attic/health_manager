@@ -213,9 +213,9 @@ module HealthManager
     # ------------------------------------------------------------
 
     def gc_droplets
-      before = actual_state.droplets.size
-      actual_state.droplets.delete_if { |_,d| d.ripe_for_gc? }
-      after = actual_state.droplets.size
+      before = actual_state.app_states.size
+      actual_state.app_states.delete_if { |_,d| d.ripe_for_gc? }
+      after = actual_state.app_states.size
       logger.info("harmonizer: droplet GC ran. Number of droplets before: #{before}, after: #{after}. #{before-after} droplets removed")
     end
 
@@ -240,8 +240,8 @@ module HealthManager
           actual_droplet_state.update_realtime_varz(varz)
           true
         else # no more droplets to iterate through, finish up
-          if actual_state.droplets.size <= interval(:max_droplets_in_varz)
-            varz[:droplets] = actual_state.droplets
+          if actual_state.app_states.size <= interval(:max_droplets_in_varz)
+            varz[:droplets] = actual_state.app_states
           else
             varz[:droplets] = {}
           end
@@ -262,9 +262,8 @@ module HealthManager
     def update_desired_state
       desired_state.update_user_counts
       varz.reset_desired!
-      desired_state.each_droplet do |app_id, desired|
-        actual = actual_state.get_droplet(app_id)
-        desired_state.set_desired_state(actual, desired)
+      desired_state.each_droplet do |app_id, desired_droplet|
+        actual_state.get_app_state(app_id).set_desired_state(desired_droplet)
       end
     end
 
