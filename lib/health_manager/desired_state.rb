@@ -1,19 +1,19 @@
 require 'em-http'
 
 module HealthManager
-  #this implementation will use the REST(ish) BulkAPI to
-  #interrogate the CloudController on the desired state of the apps
-  #the API should allow for non-blocking operation
-  class DesiredState < AppStateProvider
+  class DesiredState
+    include HealthManager::Common
+    attr_reader :varz
+
+    def initialize(config, varz)
+      @config = config
+      @varz = varz
+      @error_count = 0
+      @connected = false
+    end
 
     def each_droplet(&block)
       process_next_batch({}, &block)
-    end
-
-    def initialize(config, varz)
-      @error_count = 0
-      @connected = false
-      super
     end
 
     def set_desired_state(actual, desired)

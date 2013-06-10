@@ -15,7 +15,6 @@ require 'vcap/priority_queue'
 require 'health_manager/constants'
 require 'health_manager/common'
 require 'health_manager/app_state'
-require 'health_manager/app_state_provider'
 require 'health_manager/actual_state'
 require 'health_manager/desired_state'
 require 'health_manager/scheduler'
@@ -45,10 +44,10 @@ module HealthManager
 
       @varz = Varz.new(@config)
 
-      if should_shadow?
-        @publisher = @shadower = Shadower.new(@config)
+      @publisher = if should_shadow?
+        @shadower = Shadower.new(@config)
       else
-        @publisher = NATS
+        NATS
       end
 
       @scheduler = Scheduler.new(@config)
@@ -96,7 +95,6 @@ module HealthManager
       NATS.start(:uri => get_nats_uri, :max_reconnect_attempts => Float::INFINITY) do
         @reporter.prepare
         @harmonizer.prepare
-        @desired_state.start
         @actual_state.start
 
         if should_shadow?

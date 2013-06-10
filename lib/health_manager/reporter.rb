@@ -14,15 +14,15 @@ module HealthManager
     end
 
     def prepare
-      NATS.subscribe('healthmanager.status') { |msg, reply_to|
+      NATS.subscribe('healthmanager.status') do |msg, reply_to|
         process_status_message(msg, reply_to)
-      }
-      NATS.subscribe('healthmanager.health') { |msg, reply_to|
+      end
+      NATS.subscribe('healthmanager.health') do |msg, reply_to|
         process_health_message(msg, reply_to)
-      }
-      NATS.subscribe('healthmanager.droplet') { |msg, reply_to|
+      end
+      NATS.subscribe('healthmanager.droplet') do |msg, reply_to|
         process_droplet_message(msg, reply_to)
-      }
+      end
     end
 
     def process_status_message(message, reply_to)

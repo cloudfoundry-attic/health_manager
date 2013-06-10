@@ -37,8 +37,6 @@ describe HealthManager do
 
     it 'should construct appropriate dependecies' do
       manager.harmonizer.should be_a_kind_of HealthManager::Harmonizer
-
-      manager.reporter.actual_state.should be_a_kind_of HealthManager::AppStateProvider
       manager.harmonizer.varz.should be_a_kind_of HealthManager::Varz
       manager.harmonizer.desired_state.should be_a_kind_of HealthManager::DesiredState
       manager.harmonizer.nudger.should be_a_kind_of HealthManager::Nudger
