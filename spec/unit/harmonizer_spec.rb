@@ -3,7 +3,7 @@ require "spec_helper"
 module HealthManager
   describe Harmonizer do
     let(:nudger) { mock.as_null_object }
-    let(:expected_state_provider) { mock.as_null_object }
+    let(:desired_state) { mock.as_null_object }
     let(:actual_state) { mock.as_null_object }
     let(:scheduler) { mock.as_null_object }
     let(:varz) { mock.as_null_object }
@@ -19,7 +19,7 @@ module HealthManager
     subject do
       Harmonizer.new({
         :health_manager_component_registry => {:nudger => nudger},
-      }, varz, nudger, scheduler, actual_state, expected_state_provider)
+      }, varz, nudger, scheduler, actual_state, desired_state)
     end
 
     describe "#prepare" do
@@ -40,8 +40,8 @@ module HealthManager
         after { AppState.remove_all_listeners }
 
         describe "on missing instances" do
-          context "when expected state update is required" do
-            before { app_state.expected_state_update_required = false }
+          context "when desired state update is required" do
+            before { app_state.desired_state_update_required = false }
 
             context "when instance is flapping" do
               it "executes flapping policy" do
@@ -60,8 +60,8 @@ module HealthManager
         end
 
         describe "on extra_instances" do
-          context "when expected state update is required" do
-            before { app_state.expected_state_update_required = false }
+          context "when desired state update is required" do
+            before { app_state.desired_state_update_required = false }
 
             it "stops instances immediately" do
               nudger.should_receive(:stop_instances_immediately).with(app_state, [1, 2])
@@ -103,13 +103,13 @@ module HealthManager
             test_listener
           end
 
-          it "updates expected state" do
-            subject.should_receive(:update_expected_state)
+          it "updates desired state" do
+            subject.should_receive(:update_desired_state)
             test_listener
           end
 
-          it "sets expected_state_update_required" do
-            app_state.should_receive(:expected_state_update_required=).with(true)
+          it "sets desired_state_update_required" do
+            app_state.should_receive(:desired_state_update_required=).with(true)
             test_listener
           end
         end
@@ -124,14 +124,14 @@ module HealthManager
             ["version-1-0", "Extra app"],
             ["version-2-0", "Extra app"]
           ])
-        expected_state_provider.stub(:available?) { true }
+        desired_state.stub(:available?) { true }
 
         subject.on_extra_app(app)
       end
 
-      context "when the expected state provider is unavailable" do
+      context "when the desired state provider is unavailable" do
         before do
-          expected_state_provider.stub(:available?) { false }
+          desired_state.stub(:available?) { false }
         end
 
         it 'should not stop anything' do

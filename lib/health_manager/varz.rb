@@ -1,5 +1,5 @@
 module HealthManager
-  DEFAULT_EXPECTED = {
+  DEFAULT_DESIRED = {
     :users => [],
     :apps => [],
     :total => {
@@ -33,7 +33,7 @@ module HealthManager
 
     def initialize(config={})
       @config = config
-      @expected_stats_reset_at = Time.now
+      @desired_stats_reset_at = Time.now
       self.merge!({
         :total_users => 0,
         :queue_length => 0,
@@ -50,20 +50,20 @@ module HealthManager
         :droplets => {}, # FIXIT: remove
         :state => "RUNNING",
         :last_up_known => nil
-      }.merge(deep_dup(DEFAULT_EXPECTED)).merge(deep_dup(DEFAULT_REALTIME)))
+      }.merge(deep_dup(DEFAULT_DESIRED)).merge(deep_dup(DEFAULT_REALTIME)))
     end
 
-    def reset_expected!
-      @expected_stats_reset_at = Time.now
-      self.merge!(deep_dup(DEFAULT_EXPECTED))
+    def reset_desired!
+      @desired_stats_reset_at = Time.now
+      self.merge!(deep_dup(DEFAULT_DESIRED))
     end
 
     def reset_realtime!
       self.merge!(deep_dup(DEFAULT_REALTIME))
     end
 
-    def publish_expected_stats
-      self[:bulk_update_loop_duration] = Time.now - @expected_stats_reset_at
+    def publish_desired_stats
+      self[:bulk_update_loop_duration] = Time.now - @desired_stats_reset_at
       publish
     end
 

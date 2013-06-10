@@ -17,7 +17,7 @@ require 'health_manager/common'
 require 'health_manager/app_state'
 require 'health_manager/app_state_provider'
 require 'health_manager/actual_state'
-require 'health_manager/bulk_based_expected_state_provider'
+require 'health_manager/desired_state'
 require 'health_manager/scheduler'
 require 'health_manager/nudger'
 require 'health_manager/harmonizer'
@@ -29,7 +29,7 @@ module HealthManager
   class Manager
     include HealthManager::Common
 
-    attr_reader :varz, :actual_state, :expected_state_provider, :reporter, :nudger, :publisher, :harmonizer
+    attr_reader :varz, :actual_state, :desired_state, :reporter, :nudger, :publisher, :harmonizer
 
     def initialize(config = {})
       @config = config
@@ -53,10 +53,10 @@ module HealthManager
 
       @scheduler = Scheduler.new(@config)
       @actual_state = ActualState.new(@config, @varz)
-      @expected_state_provider = BulkBasedExpectedStateProvider.new(@config, @varz)
+      @desired_state = DesiredState.new(@config, @varz)
       @reporter = Reporter.new(@config, @varz, @actual_state, @publisher)
       @nudger = Nudger.new(@config, @varz, @publisher)
-      @harmonizer = Harmonizer.new(@config, @varz, @nudger, @scheduler, @actual_state, @expected_state_provider)
+      @harmonizer = Harmonizer.new(@config, @varz, @nudger, @scheduler, @actual_state, @desired_state)
     end
 
     def register_as_vcap_component
@@ -96,7 +96,7 @@ module HealthManager
       NATS.start(:uri => get_nats_uri, :max_reconnect_attempts => Float::INFINITY) do
         @reporter.prepare
         @harmonizer.prepare
-        @expected_state_provider.start
+        @desired_state.start
         @actual_state.start
 
         if should_shadow?

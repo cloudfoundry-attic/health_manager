@@ -7,15 +7,15 @@ module HealthManager
   class Harmonizer
     include HealthManager::Common
 
-    attr_reader :varz, :nudger, :scheduler, :actual_state, :expected_state_provider
+    attr_reader :varz, :nudger, :scheduler, :actual_state, :desired_state
 
-    def initialize(config, varz, nudger, scheduler, actual_state, expected_state_provider)
+    def initialize(config, varz, nudger, scheduler, actual_state, desired_state)
       @config = config
       @varz = varz
       @nudger = nudger
       @scheduler = scheduler
       @actual_state = actual_state
-      @expected_state_provider = expected_state_provider
+      @desired_state = desired_state
     end
 
     def add_logger_listener(event)
@@ -29,7 +29,7 @@ module HealthManager
 
       #set system-wide configurations
       AppState.heartbeat_deadline = interval(:droplet_lost)
-      AppState.expected_state_update_deadline = interval(:expected_state_lost)
+      AppState.desired_state_update_deadline = interval(:desired_state_lost)
       AppState.flapping_timeout = interval(:flapping_timeout)
       AppState.flapping_death = interval(:flapping_death)
       AppState.droplet_gc_grace_period = interval(:droplet_gc_grace_period)
@@ -45,8 +45,8 @@ module HealthManager
           next
         end
 
-        if app_state.expected_state_update_required?
-          logger.info { "harmonizer: expected_state_update_required: missing_instances ignored app_id=#{app_state.id} indices=#{missing_indices}" }
+        if app_state.desired_state_update_required?
+          logger.info { "harmonizer: desired_state_update_required: missing_instances ignored app_id=#{app_state.id} indices=#{missing_indices}" }
           next
         end
 
@@ -62,8 +62,8 @@ module HealthManager
       end
 
       AppState.add_listener(:extra_instances) do |app_state, extra_instances|
-        if app_state.expected_state_update_required?
-          logger.info { "harmonizer: expected_state_update_required: extra_instances ignored: #{extra_instances}" }
+        if app_state.desired_state_update_required?
+          logger.info { "harmonizer: desired_state_update_required: extra_instances ignored: #{extra_instances}" }
           next
         end
 
@@ -98,21 +98,21 @@ module HealthManager
 
       AppState.add_listener(:droplet_updated) do |app_state, message|
         logger.info { "harmonizer: droplet_updated: #{message}" }
-        app_state.expected_state_update_required = true
+        app_state.desired_state_update_required = true
         abort_all_pending_delayed_restarts(app_state)
-        update_expected_state
+        update_desired_state
       end
 
       #schedule time-based actions
 
-      scheduler.immediately { update_expected_state }
+      scheduler.immediately { update_desired_state }
 
       scheduler.at_interval :request_queue do
         nudger.deque_batch_of_requests
       end
 
-      scheduler.at_interval :expected_state_update do
-        update_expected_state
+      scheduler.at_interval :desired_state_update do
+        update_desired_state
       end
 
       scheduler.after_interval :droplet_lost do
@@ -136,10 +136,10 @@ module HealthManager
       end
     end
 
-    # Currently we do not check that expected state provider
+    # Currently we do not check that desired state
     # is available; therefore, HM can be overly aggressive stopping apps.
     def on_extra_app(app_state)
-      return unless expected_state_provider.available?
+      return unless desired_state.available?
       instance_ids_with_reasons = app_state.all_instances.map { |i| [i["instance"], "Extra app"] }
       nudger.stop_instances_immediately(app_state, instance_ids_with_reasons)
     end
@@ -225,7 +225,7 @@ module HealthManager
         return
       end
 
-      return unless expected_state_provider.available?
+      return unless desired_state.available?
 
       start_at = Time.now
       logger.debug { "harmonizer: droplets_analysis" }
@@ -259,24 +259,24 @@ module HealthManager
       end
     end
 
-    def update_expected_state
-      expected_state_provider.update_user_counts
-      varz.reset_expected!
-      expected_state_provider.each_droplet do |app_id, expected|
+    def update_desired_state
+      desired_state.update_user_counts
+      varz.reset_desired!
+      desired_state.each_droplet do |app_id, desired|
         actual = actual_state.get_droplet(app_id)
-        expected_state_provider.set_expected_state(actual, expected)
+        desired_state.set_desired_state(actual, desired)
       end
     end
 
-    def postpone_expected_state_update
+    def postpone_desired_state_update
       if @postponed
-        logger.info("harmonizer: update_expected_state is currently running, and a postponed one is already scheduled.  Ignoring.")
+        logger.info("harmonizer: update_desired_state is currently running, and a postponed one is already scheduled.  Ignoring.")
       else
-        logger.info("harmonizer: postponing expected_state_update")
+        logger.info("harmonizer: postponing desired_state_update")
         @postponed = scheduler.after_interval :postpone_update do
-          logger.info("harmonizer: starting postponed expected_state_update")
+          logger.info("harmonizer: starting postponed desired_state_update")
           @postponed = nil
-          update_expected_state
+          update_desired_state
         end
       end
     end

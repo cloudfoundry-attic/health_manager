@@ -20,7 +20,7 @@ require 'yajl'
   - decide which apps are up, "spread" them over "deas"
   - publish h/b
   - generate and publish events like crashes, stop/starts, updates
-  - maintain bulk api to the expected state
+  - maintain bulk api to the desired state
 
 EOL
 
@@ -75,7 +75,7 @@ def create_app(app_id, config)
     :id => app_id,
     :instances => [],
     'memory' => 128,
-    # "expected state" stuff
+    # "desired state" stuff
     'instances' => expect_positive_integer_at(config[:instance_per_app]),
     'state' => 'STARTED',
     'staged_package_hash' => make_hash,

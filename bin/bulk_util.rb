@@ -16,7 +16,7 @@ EM::run do
     }
     VCAP::Logging.setup_from_config({'level' => ENV['LOG_LEVEL'] || 'debug'})
 
-    prov = HealthManager::BulkBasedExpectedStateProvider.new(config)
+    prov = HealthManager::DesiredState.new(config, nil)
     prov.each_droplet do |id, droplet|
       puts "Droplet #{id}:"
       puts droplet.inspect

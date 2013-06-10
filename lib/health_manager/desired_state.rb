@@ -2,9 +2,9 @@ require 'em-http'
 
 module HealthManager
   #this implementation will use the REST(ish) BulkAPI to
-  #interrogate the CloudController on the expected state of the apps
+  #interrogate the CloudController on the desired state of the apps
   #the API should allow for non-blocking operation
-  class BulkBasedExpectedStateProvider < ExpectedStateProvider
+  class DesiredState < AppStateProvider
 
     def each_droplet(&block)
       process_next_batch({}, &block)
@@ -16,15 +16,15 @@ module HealthManager
       super
     end
 
-    def set_expected_state(actual, expected)
-      logger.debug2 { "bulk: #set_expected_state: actual: #{actual.inspect} expected: #{expected.inspect}" }
+    def set_desired_state(actual, desired)
+      logger.debug2 { "bulk: #set_desired_state: actual: #{actual.inspect} desired: #{desired.inspect}" }
 
-      actual.set_expected_state(
-                               :num_instances => expected['instances'],
-                               :state         => expected['state'],
-                               :live_version  => expected['version'],
-                               :package_state => expected['package_state'],
-                               :last_updated  => parse_utc(expected['updated_at']))
+      actual.set_desired_state(
+                               :num_instances => desired['instances'],
+                               :state         => desired['state'],
+                               :live_version  => desired['version'],
+                               :package_state => desired['package_state'],
+                               :last_updated  => parse_utc(desired['updated_at']))
     end
 
     def update_user_counts
@@ -88,7 +88,7 @@ module HealthManager
           batch = response['results']
 
           if batch.nil? || batch.empty?
-            varz.publish_expected_stats
+            varz.publish_desired_stats
             logger.info("bulk: done. Loop duration: #{varz[:bulk_update_loop_duration]}")
             next
           end
@@ -96,7 +96,7 @@ module HealthManager
           logger.debug { "bulk: batch of size #{batch.size} received" }
 
           batch.each do |app_id, droplet|
-            update_expected_stats_for_droplet(droplet)
+            update_desired_stats_for_droplet(droplet)
             block.call(app_id.to_s, droplet)
           end
           process_next_batch(bulk_token, &block)
@@ -170,7 +170,7 @@ module HealthManager
 
     private
 
-    def update_expected_stats_for_droplet(droplet_hash)
+    def update_desired_stats_for_droplet(droplet_hash)
       varz[:total][:apps] += 1
       varz[:total][:instances] += droplet_hash['instances']
       varz[:total][:memory] += droplet_hash['memory'] * droplet_hash['instances']

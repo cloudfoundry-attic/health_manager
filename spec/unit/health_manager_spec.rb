@@ -6,7 +6,7 @@ describe HealthManager do
     {
       'shadow_mode' => 'enable',
       'intervals' => {
-        'expected_state_update' => 1.5,
+        'desired_state_update' => 1.5,
       },
       'logging' => {
         'file' => "/dev/null"
@@ -40,7 +40,7 @@ describe HealthManager do
 
       manager.reporter.actual_state.should be_a_kind_of HealthManager::AppStateProvider
       manager.harmonizer.varz.should be_a_kind_of HealthManager::Varz
-      manager.harmonizer.expected_state_provider.should be_a_kind_of HealthManager::ExpectedStateProvider
+      manager.harmonizer.desired_state.should be_a_kind_of HealthManager::DesiredState
       manager.harmonizer.nudger.should be_a_kind_of HealthManager::Nudger
       manager.nudger.publisher.should eq manager.publisher
     end
@@ -62,7 +62,7 @@ describe HealthManager do
     GRACE_PERIOD = 60
 
     before do
-      app,@expected = make_app
+      app,@desired = make_app
       @hb = make_heartbeat([app])
 
       @ksp = manager.actual_state
@@ -90,7 +90,7 @@ describe HealthManager do
       @ksp.droplets.size.should == 0
     end
 
-    it 'should not GC after expected state is set' do
+    it 'should not GC after desired state is set' do
       @ksp.process_heartbeat(encode_json(@hb))
       droplet = @ksp.droplets.values.first
 
@@ -98,7 +98,7 @@ describe HealthManager do
 
       droplet.should be_ripe_for_gc
 
-      droplet.set_expected_state(@expected)
+      droplet.set_desired_state(@desired)
       droplet.should_not be_ripe_for_gc
     end
   end

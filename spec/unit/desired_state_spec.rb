@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe HealthManager::BulkBasedExpectedStateProvider do
+describe HealthManager::DesiredState do
   let(:bulk_api_host) { "127.0.0.1" }
   let(:bulk_login) { "bulk_api" }
   let(:bulk_password) { "bulk_password" }
@@ -19,7 +19,7 @@ describe HealthManager::BulkBasedExpectedStateProvider do
   }
   let(:manager) { HealthManager::Manager.new(config) }
   let(:varz) { manager.varz }
-  let(:provider) { manager.expected_state_provider }
+  let(:provider) { manager.desired_state }
 
   describe "bulk_url" do
     context "when url starts with https" do
@@ -47,7 +47,7 @@ describe HealthManager::BulkBasedExpectedStateProvider do
 
   describe "HTTP requests" do
     before do
-      manager.varz.reset_expected!
+      manager.varz.reset_desired!
       provider.stub(:with_credentials).and_yield(bulk_login, bulk_password)
       EM::HttpConnection.any_instance.stub(:get).with(any_args).and_return(http_mock)
     end
@@ -227,7 +227,7 @@ describe HealthManager::BulkBasedExpectedStateProvider do
           end
 
           it "should publish varz stats" do
-            varz.should_receive(:publish_expected_stats)
+            varz.should_receive(:publish_desired_stats)
             subject
           end
 
@@ -267,8 +267,8 @@ describe HealthManager::BulkBasedExpectedStateProvider do
             expect(droplets_received).to eq([bulk_hash1, bulk_hash2, bulk_hash3])
           end
 
-          it "should publish expected stats" do
-            varz.should_receive(:publish_expected_stats).and_call_original
+          it "should publish desired stats" do
+            varz.should_receive(:publish_desired_stats).and_call_original
             subject
           end
 
@@ -292,8 +292,8 @@ describe HealthManager::BulkBasedExpectedStateProvider do
             http_mock.should_receive(:errback).exactly(HealthManager::MAX_BULK_ERROR_COUNT).times.and_yield
           end
 
-          it "should not publish expected stats" do
-            varz.should_not_receive(:publish_expected_stats)
+          it "should not publish desired stats" do
+            varz.should_not_receive(:publish_desired_stats)
             subject
           end
 
@@ -341,7 +341,7 @@ describe HealthManager::BulkBasedExpectedStateProvider do
       end
 
       it "does not release the stats" do
-        varz.should_not_receive :release_expected!
+        varz.should_not_receive :release_desired!
         provider.with_credentials {}
       end
 

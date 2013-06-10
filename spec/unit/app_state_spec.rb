@@ -6,7 +6,7 @@ describe HealthManager::AppState do
     HealthManager::AppState.heartbeat_deadline = 10
     HealthManager::AppState.flapping_death = 1
     HealthManager::AppState.droplet_gc_grace_period = 60
-    HealthManager::AppState.expected_state_update_deadline = 50
+    HealthManager::AppState.desired_state_update_deadline = 50
   end
 
   after { HealthManager::AppState.remove_all_listeners }
@@ -24,9 +24,9 @@ describe HealthManager::AppState do
       end
     end
 
-    context "when expected was not updated" do
-      it "notifies of an extra app after expected state was not recently updated" do
-        Timecop.travel(HealthManager::AppState.expected_state_update_deadline)
+    context "when desired was not updated" do
+      it "notifies of an extra app after desired state was not recently updated" do
+        Timecop.travel(HealthManager::AppState.desired_state_update_deadline)
         app.analyze
         @called_extra_app.should be_nil
 
@@ -36,11 +36,11 @@ describe HealthManager::AppState do
       end
     end
 
-    context "when expected was updated" do
-      before { app.set_expected_state(make_expected_state) }
+    context "when desired was updated" do
+      before { app.set_desired_state(make_desired_state) }
 
-      it "notifies of an extra app after expected state was not recently updated" do
-        Timecop.travel(HealthManager::AppState.expected_state_update_deadline)
+      it "notifies of an extra app after desired state was not recently updated" do
+        Timecop.travel(HealthManager::AppState.desired_state_update_deadline)
         app.analyze
         @called_extra_app.should be_nil
 
@@ -116,8 +116,8 @@ describe HealthManager::AppState do
   end
 
   it 'should invoke extra_instances event handler' do
-    app, expected = make_app
-    extra_instance_id = expected[:live_version]+"-0"
+    app, desired = make_app
+    extra_instance_id = desired[:live_version]+"-0"
 
     future_answer = [[extra_instance_id, "Extra instance"]]
     event_handler_invoked = false
@@ -146,9 +146,9 @@ describe HealthManager::AppState do
     before { Timecop.freeze }
     after { Timecop.return }
 
-    let!(:app_with_expected_state) { make_app }
-    let!(:expected_state) { app_with_expected_state.last }
-    let!(:app) { app_with_expected_state.first }
+    let!(:app_with_desired_state) { make_app }
+    let!(:desired_state) { app_with_desired_state.last }
+    let!(:app) { app_with_desired_state.first }
 
     it "is not ripe at first" do
       app.should_not be_ripe_for_gc
@@ -164,14 +164,14 @@ describe HealthManager::AppState do
       end
     end
 
-    context "when app was updated via change in expected state" do
+    context "when app was updated via change in desired state" do
       before do
         Timecop.travel(during_gc_period = 10)
-        app.set_expected_state(expected_state)
+        app.set_desired_state(desired_state)
       end
 
       it "cannot be gc-ed at the end of gc period " +
-        "because expected state indicates that app *should* be running" do
+        "because desired state indicates that app *should* be running" do
         Timecop.travel(end_of_gc_period = HealthManager::AppState.droplet_gc_grace_period - 10)
         app.should_not be_ripe_for_gc
 

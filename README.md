@@ -7,10 +7,10 @@ Health Manager monitors the state of the applications and ensures that started
 applications are indeed running, their versions and number of
 instances correct.
 
-Conceptually, this is done by maintaining a Known State of
-applications and comparing it against the Expected State. When
+Conceptually, this is done by maintaining a Actual State of
+applications and comparing it against the Desired State. When
 discrepancies are found, actions are initiated to bring the
-applications to the Expected State, e.g., start/stop commands are
+applications to the Desired State, e.g., start/stop commands are
 issued for missing/extra instances, respectively.
 
 Additionally, Health Manager collects and exposes statistics and
@@ -34,7 +34,7 @@ HM is comprised of the following components:
 - Manager
 - Harmonizer
 - Scheduler
-- ExpectedStateProvider
+- DesiredState
 - ActualState
 - Nudger
 - Reporter
@@ -47,13 +47,13 @@ components.
 
 ### Harmonizer
 
-Expresses the policy of bringing the applications to the Expected
-State by observing the Known State.
+Expresses the policy of bringing the applications to the Desired
+State by observing the Actual State.
 
 Harmonizer sets up the interactions between other components, and aims
 to achieve clarity of the intent through delegation:
 
-Known State and Expected State are compared periodically with the use
+Actual State and Desired State are compared periodically with the use
 of the Scheduler and Nudger actions are Scheduled to bring the States
 into harmony.
 
@@ -63,18 +63,17 @@ Encapsulates EventMachine-related functionality such as timer setup
 and cancellation, quantization of long-running tasks to prevent EM
 Reactor loop blocking.
 
-### Expected State Provider
+### Desired State
 
-Provides the expected state of the application, e.g., whether the
+Provides the desired state of the application, e.g., whether the
 application was Started or Stopped, how many instances should be
 running, etc. This information comes from the Cloud Controller by way
-of http-based Bulk API, hence the concrete class is
-BulkBasedExpectedStateProvider.
+of http-based Bulk API.
 
 The Bulk API contains the state of the world as the Cloud Controller says 
 it should be. This is a dump of the CCs database. It might differ from what 
 the world actually looks like, and the Harmonizer will attempt to make the 
-current state match this expected state.
+current state match this desired state.
 
 ### Actual State
 
@@ -204,5 +203,5 @@ Here are the log levels, with examples of what they're being used for:
 * `error` - HM received an error response from the Cloud Controller bulk API
 * `warn` - a droplet analysis was initiated while the previous droplet analysis was still going
 * `info` - HM registered a new VCAP component, HM is shutting down
-* `debug2` - HM received a heartbeat from a DEA, HM compares an app's expected and known states
+* `debug2` - HM received a heartbeat from a DEA, HM compares an app's desired and known states
 * `debug` - HM starts/stops an instance

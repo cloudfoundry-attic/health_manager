@@ -7,7 +7,7 @@ module HealthManager
 
     class << self
       attr_accessor :heartbeat_deadline
-      attr_accessor :expected_state_update_deadline
+      attr_accessor :desired_state_update_deadline
       attr_accessor :flapping_timeout
       attr_accessor :flapping_death
       attr_accessor :droplet_gc_grace_period
@@ -57,7 +57,7 @@ module HealthManager
     attr_reader :last_updated
     attr_reader :versions, :crashes
     attr_reader :pending_restarts
-    attr_accessor :expected_state_update_required
+    attr_accessor :desired_state_update_required
 
     def initialize(id)
       @id = id
@@ -67,16 +67,16 @@ module HealthManager
       @pending_restarts = {}
       reset_missing_indices
 
-      # start out as stale until expected state is set
-      @expected_state_update_required = true
-      @expected_state_update_timestamp = now
+      # start out as stale until desired state is set
+      @desired_state_update_required = true
+      @desired_state_update_timestamp = now
     end
 
     def ripe_for_gc?
-      timestamp_older_than?(@expected_state_update_timestamp, AppState.droplet_gc_grace_period)
+      timestamp_older_than?(@desired_state_update_timestamp, AppState.droplet_gc_grace_period)
     end
 
-    def set_expected_state(original_values)
+    def set_desired_state(original_values)
       values = original_values.dup # preserve the original
 
       [:state, :num_instances, :live_version, :package_state, :last_updated].each do |k|
@@ -86,8 +86,8 @@ module HealthManager
         instance_variable_set("@#{k.to_s}", v)
       end
 
-      @expected_state_update_required = false
-      @expected_state_update_timestamp = now
+      @desired_state_update_required = false
+      @desired_state_update_timestamp = now
     end
 
     def notify(event_type, *args)
@@ -118,7 +118,7 @@ module HealthManager
       if running_state?(beat)
         if instance['state'] == RUNNING && instance['instance'] != beat['instance']
           notify(:extra_instances, [[beat['instance'],
-                                     "Instance mismatch, heartbeat: #{beat['instance']}, expected: #{instance['instance']}"]])
+                                     "Instance mismatch, actual: #{beat['instance']}, desired: #{instance['instance']}"]])
         else
           instance['last_heartbeat'] = now
           instance['timestamp'] = now
@@ -239,8 +239,8 @@ module HealthManager
       timestamp_fresher_than?(@reset_timestamp, AppState.heartbeat_deadline || 0)
     end
 
-    def expected_state_update_required?
-      @expected_state_update_required
+    def desired_state_update_required?
+      @desired_state_update_required
     end
 
     def process_exit_dea(message)
@@ -259,7 +259,7 @@ module HealthManager
 
       instance['instance'] ||= message['instance']
       if instance['instance'] != message['instance']
-        logger.warn { "unexpected instance_id: #{message['instance']}, expected: #{instance['instance']}" }
+        logger.warn { "unexpected instance_id: #{message['instance']}, desired: #{instance['instance']}" }
       end
 
       instance['crashes'] = 0 if timestamp_older_than?(instance['crash_timestamp'], AppState.flapping_timeout)
@@ -288,7 +288,7 @@ module HealthManager
         logger.debug("Marking as down: #{version}, #{index}, #{instance_id}")
         instance['state'] = DOWN
       elsif instance['instance']
-        logger.warn("instance mismatch. expected: #{instance['instance']}, got: #{instance_id}")
+        logger.warn("instance mismatch. actual: #{instance_id}, desired: #{instance['instance']}")
       else
         # NOOP for freshly created instance with nil instance_id
       end
@@ -345,13 +345,13 @@ module HealthManager
     private
 
     def check_if_extra
-      notify(:extra_app) if expected_state_update_overdue?
+      notify(:extra_app) if desired_state_update_overdue?
     end
 
-    def expected_state_update_overdue?
+    def desired_state_update_overdue?
       timestamp_older_than?(
-        @expected_state_update_timestamp,
-        AppState.expected_state_update_deadline,
+        @desired_state_update_timestamp,
+        AppState.desired_state_update_deadline,
       )
     end
 

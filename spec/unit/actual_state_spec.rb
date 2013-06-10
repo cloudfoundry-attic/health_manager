@@ -57,9 +57,9 @@ describe HealthManager::ActualState do
 
   context 'AppState updating' do
     before(:each) do
-      app, expected = make_app
+      app, desired = make_app
       @app = @nb.get_droplet(app.id)
-      @app.set_expected_state(expected)
+      @app.set_desired_state(desired)
       instance = @app.get_instance(@app.live_version, 0)
       instance['state'].should == 'DOWN'
       instance['last_heartbeat'].should be_nil

@@ -10,7 +10,7 @@ def done
   ::EM.next_tick { ::EM.stop_event_loop }
 end
 
-def make_expected_state(options={})
+def make_desired_state(options={})
   { :num_instances => options[:num_instances] || 4,
     :state         => 'STARTED',
     :live_version  => '12345abcded',
@@ -21,9 +21,9 @@ end
 
 def make_app(options = {})
   app = HealthManager::AppState.new(options[:id] || 1)
-  expected_state = make_expected_state(options)
-  app.set_expected_state(expected_state)
-  return app, expected_state
+  desired_state = make_desired_state(options)
+  app.set_desired_state(desired_state)
+  return app, desired_state
 end
 
 def make_bulk_entry(options={})

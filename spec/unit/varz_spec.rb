@@ -49,14 +49,14 @@ describe HealthManager::Varz do
     its([:last_up_known]) { should be_nil }
   end
 
-  describe "#reset_expected!" do
+  describe "#reset_desired!" do
     before do
       subject[:total][:apps] = 5
       subject[:total][:memory] = 2
       subject[:users] = %w[hi bye]
       subject[:apps] = %w[hey buddy]
 
-      subject.reset_expected!
+      subject.reset_desired!
     end
 
     its([:users]) { should eq [] }
@@ -104,13 +104,13 @@ describe HealthManager::Varz do
     end
   end
 
-  describe "#publish_expected_stats" do
+  describe "#publish_desired_stats" do
     let(:create_time) { Time.parse("2013-03-23 01:43:27") }
     let(:publish_time) { Time.parse("2013-04-13 03:32:35") }
 
     before do
       subject[:total_instances] = 5
-      Timecop.freeze(publish_time) { subject.publish_expected_stats }
+      Timecop.freeze(publish_time) { subject.publish_desired_stats }
     end
 
     subject do
@@ -123,12 +123,12 @@ describe HealthManager::Varz do
       expect(subject[:bulk_update_loop_duration]).to eq(publish_time - create_time)
     end
 
-    context "when the expected stats have been reset" do
+    context "when the desired stats have been reset" do
       let(:reset_time) { Time.parse("2013-04-12 05:23:54") }
 
       before do
-        Timecop.freeze(reset_time) { subject.reset_expected! }
-        Timecop.freeze(publish_time) { subject.publish_expected_stats }
+        Timecop.freeze(reset_time) { subject.reset_desired! }
+        Timecop.freeze(publish_time) { subject.publish_desired_stats }
       end
 
       it "sets the time since the last reset" do

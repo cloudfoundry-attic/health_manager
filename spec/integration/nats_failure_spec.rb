@@ -12,8 +12,8 @@ describe "when NATS fails", :type => :integration do
     start_health_manager(
       "mbus" => "nats://nats:nats@127.0.0.1:#{nats_port}",
       "intervals" => {
-        "expected_state_update" => 1,
-        "expected_state_lost" => 5,
+        "desired_state_update" => 1,
+        "desired_state_lost" => 5,
         "droplet_lost" => lost_droplet_time,
         "droplets_analysis" => 2,
         "check_nats_availability" => 1

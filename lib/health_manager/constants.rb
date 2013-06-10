@@ -14,11 +14,11 @@ module HealthManager
     :cc_partition => "default",
     :shadow_mode => "disable",
     #intervals
-    :expected_state_update    => 60,
+    :desired_state_update    => 60,
     :analysis_delay           => 5,
     :droplets_analysis         => 20,
     :droplet_lost             => 30,
-    :expected_state_lost      => 180,
+    :desired_state_lost      => 180,
     :postpone_update          => 30,
     :request_queue            => 1,
     :queue_batch_size         => 40,

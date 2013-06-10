@@ -52,11 +52,4 @@ module HealthManager
       get_droplet(id.to_s).state
     end
   end
-
-  # "abstract" provider of expected state. Primarily for documenting the API
-  class ExpectedStateProvider < AppStateProvider
-    def set_expected_state(known, expected)
-      raise 'Not Implemented' # should be implemented by the concrete class
-    end
-  end
 end
