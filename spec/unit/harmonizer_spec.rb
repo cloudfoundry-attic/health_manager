@@ -25,8 +25,26 @@ module HealthManager
       }
     end
 
+    let(:droplet_desired_state) do
+      {
+        'instances' => 1,
+        'state' => STARTED,
+        'version' => "123",
+        'package_state' => STAGED,
+        'updated_at' => Time.now.to_s
+      }
+    end
+
     subject do
       Harmonizer.new(config, varz, nudger, scheduler, actual_state, desired_state, droplet_registry)
+    end
+
+    def register_droplets(droplets_number)
+      droplets_number.times do |i|
+        droplet = droplet_registry.get(i)
+        droplet.stub(:analyze)
+        droplet.set_desired_state(droplet_desired_state)
+      end
     end
 
     describe "#prepare" do
@@ -161,20 +179,6 @@ module HealthManager
         desired_state.stub(:available?) { true }
       end
 
-      def register_droplets(droplets_number)
-        droplets_number.times do |i|
-          droplet = droplet_registry.get(i)
-          droplet.stub(:analyze)
-          droplet.set_desired_state({
-            'instances' => 1,
-            'state' => STARTED,
-            'version' => "123",
-            'package_state' => STAGED,
-            'updated_at' => Time.now.to_s
-          })
-        end
-      end
-
       it "marks droplets_analysis task as running" do
         scheduler.should_receive(:mark_task_started).with(:droplets_analysis)
         subject.analyze_apps
@@ -241,6 +245,30 @@ module HealthManager
             subject.analyze_apps
           end
         end
+      end
+    end
+
+    describe "update_desired_state" do
+      before do
+        register_droplets(5)
+        desired_state.stub(:each_droplet) do |&blk|
+          4.times do |i|
+            blk.call(i, droplet_desired_state)
+          end
+        end
+      end
+
+      it "sets desired state for all droplets in registry" do
+        4.times do |i|
+          droplet_registry.get(i).should_receive(:set_desired_state)
+        end
+        subject.update_desired_state
+      end
+
+      it "removes from registry droplets that are not in desired state" do
+        droplet = droplet_registry.get(4)
+        subject.update_desired_state
+        expect(droplet_registry).to_not include(droplet)
       end
     end
   end

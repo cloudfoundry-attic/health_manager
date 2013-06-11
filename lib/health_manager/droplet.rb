@@ -153,7 +153,7 @@ module HealthManager
       extra_instances = []
 
       # first, go through each version and prune indices
-      @versions.each do |version, version_entry |
+      @versions.each do |version, version_entry|
         version_entry['instances'].delete_if do |index, instance|  # deleting extra instances
 
           if running_state?(instance) && timestamp_older_than?(instance['timestamp'], Droplet.heartbeat_deadline)
