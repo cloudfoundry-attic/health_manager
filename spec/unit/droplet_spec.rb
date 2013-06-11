@@ -11,6 +11,47 @@ describe HealthManager::Droplet do
 
   after { HealthManager::Droplet.remove_all_listeners }
 
+  describe "process_heartbeat" do
+    let(:droplet) { HealthManager::Droplet.new(2) }
+    let(:droplet_beat_1) do
+      {
+        'droplet' => 2,
+        'version' => "abc-def",
+        'instance' => "someinstance1",
+        'index' => 0,
+        'state' => HealthManager::RUNNING,
+        'state_timestamp' => now,
+        'cc_partition' => 'default'
+      }
+    end
+    let(:droplet_beat_2) do
+      {
+        'droplet' => 2,
+        'version' => "abc-def",
+        'instance' => "someinstance2",
+        'index' => 1,
+        'state' => HealthManager::RUNNING,
+        'state_timestamp' => now,
+        'cc_partition' => 'default'
+      }
+    end
+
+    subject do
+      droplet.process_heartbeat(droplet_beat_1)
+      droplet.process_heartbeat(droplet_beat_2)
+    end
+
+    it "sets versions correctly" do
+      subject
+      expect(droplet.versions["abc-def"]["instances"][0]).to include(
+        "state" => "RUNNING"
+      )
+      expect(droplet.versions["abc-def"]["instances"][1]).to include(
+        "state" => "RUNNING"
+      )
+    end
+  end
+
   describe "#analyze" do
     before { Timecop.freeze }
     after { Timecop.return }
