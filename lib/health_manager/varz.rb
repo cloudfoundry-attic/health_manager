@@ -50,7 +50,7 @@ module HealthManager
         :droplets => {}, # FIXIT: remove
         :state => "RUNNING",
         :last_up_known => nil
-      }.merge(deep_dup(DEFAULT_DESIRED)).merge(deep_dup(DEFAULT_REALTIME)))
+      })
     end
 
     def reset_desired!
