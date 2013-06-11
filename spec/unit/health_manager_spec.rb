@@ -68,7 +68,7 @@ describe HealthManager do
       @actual_state = manager.actual_state
       manager.droplet_registry.size.should == 0
 
-      HealthManager::AppState.droplet_gc_grace_period = GRACE_PERIOD
+      HealthManager::Droplet.droplet_gc_grace_period = GRACE_PERIOD
     end
 
     it 'should not GC when a recent h/b arrives' do

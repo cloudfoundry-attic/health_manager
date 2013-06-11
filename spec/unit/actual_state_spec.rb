@@ -4,12 +4,12 @@ describe HealthManager::ActualState do
   let(:droplet_registry) { HealthManager::DropletRegistry.new }
 
   before do
-    HealthManager::AppState.flapping_death = 3
+    HealthManager::Droplet.flapping_death = 3
     @actual_state = HealthManager::ActualState.new({}, HealthManager::Varz.new, droplet_registry)
   end
 
   after do
-    HealthManager::AppState.remove_all_listeners
+    HealthManager::Droplet.remove_all_listeners
   end
 
   describe "check_availability" do
@@ -57,7 +57,7 @@ describe HealthManager::ActualState do
     end
   end
 
-  context 'AppState updating' do
+  context 'Droplet updating' do
     before(:each) do
       app, desired = make_app
       @droplet = droplet_registry.get(app.id)

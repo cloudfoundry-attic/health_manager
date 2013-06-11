@@ -16,13 +16,13 @@ module HealthManager
 
     it 'should be able to start app instance' do
       publisher.should_receive(:publish).with('cloudcontrollers.hm.requests.default', match(/"op":"START"/)).once
-      nudger.start_instance(AppState.new(1), 0, 0)
+      nudger.start_instance(Droplet.new(1), 0, 0)
       nudger.deque_batch_of_requests
     end
 
     it 'should be able to stop app instance' do
       publisher.should_receive(:publish).with('cloudcontrollers.hm.requests.default', match(/"op":"STOP"/)).once
-      nudger.stop_instance(AppState.new(1), 0, 0)
+      nudger.stop_instance(Droplet.new(1), 0, 0)
       nudger.deque_batch_of_requests
     end
 

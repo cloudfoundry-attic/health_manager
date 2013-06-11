@@ -20,7 +20,7 @@ def make_desired_droplet(options={})
 end
 
 def make_app(options = {})
-  app = HealthManager::AppState.new(options[:id] || 1)
+  app = HealthManager::Droplet.new(options[:id] || 1)
   desired_droplet = make_desired_droplet(options)
   app.set_desired_state(desired_droplet)
   [app, desired_droplet]

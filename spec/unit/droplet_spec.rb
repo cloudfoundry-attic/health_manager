@@ -1,15 +1,15 @@
 require 'spec_helper'
 
-describe HealthManager::AppState do
+describe HealthManager::Droplet do
   before do
-    HealthManager::AppState.remove_all_listeners
-    HealthManager::AppState.heartbeat_deadline = 10
-    HealthManager::AppState.flapping_death = 1
-    HealthManager::AppState.droplet_gc_grace_period = 60
-    HealthManager::AppState.desired_state_update_deadline = 50
+    HealthManager::Droplet.remove_all_listeners
+    HealthManager::Droplet.heartbeat_deadline = 10
+    HealthManager::Droplet.flapping_death = 1
+    HealthManager::Droplet.droplet_gc_grace_period = 60
+    HealthManager::Droplet.desired_state_update_deadline = 50
   end
 
-  after { HealthManager::AppState.remove_all_listeners }
+  after { HealthManager::Droplet.remove_all_listeners }
 
   describe "#analyze" do
     before { Timecop.freeze }
@@ -19,14 +19,14 @@ describe HealthManager::AppState do
 
     before do
       @called_extra_app = nil
-      HealthManager::AppState.add_listener(:extra_app) do |app|
+      HealthManager::Droplet.add_listener(:extra_app) do |app|
         @called_extra_app = app
       end
     end
 
     context "when desired was not updated" do
       it "notifies of an extra app after desired state was not recently updated" do
-        Timecop.travel(HealthManager::AppState.desired_state_update_deadline)
+        Timecop.travel(HealthManager::Droplet.desired_state_update_deadline)
         app.analyze
         @called_extra_app.should be_nil
 
@@ -40,7 +40,7 @@ describe HealthManager::AppState do
       before { app.set_desired_state(make_desired_droplet) }
 
       it "notifies of an extra app after desired state was not recently updated" do
-        Timecop.travel(HealthManager::AppState.desired_state_update_deadline)
+        Timecop.travel(HealthManager::Droplet.desired_state_update_deadline)
         app.analyze
         @called_extra_app.should be_nil
 
@@ -68,7 +68,7 @@ describe HealthManager::AppState do
     app, _ = make_app
     invoked = false
 
-    HealthManager::AppState.add_listener :exit_crashed do
+    HealthManager::Droplet.add_listener :exit_crashed do
       invoked = true
     end
     message = make_crash_message(app)
@@ -86,7 +86,7 @@ describe HealthManager::AppState do
     #no heartbeats arrived yet, so all instances are assumed missing
     app.missing_indices.should == [0, 1, 2, 3]
 
-    HealthManager::AppState.add_listener :missing_instances do |a, indices|
+    HealthManager::Droplet.add_listener :missing_instances do |a, indices|
       a.should == app
       indices.should == future_answer
       event_handler_invoked = true
@@ -109,7 +109,7 @@ describe HealthManager::AppState do
 
     event_handler_invoked.should be_false
 
-    HealthManager::AppState.heartbeat_deadline = 0
+    HealthManager::Droplet.heartbeat_deadline = 0
     app.analyze
 
     event_handler_invoked.should be_true
@@ -124,7 +124,7 @@ describe HealthManager::AppState do
 
     #no heartbeats arrived yet, so all instances are assumed missing
 
-    HealthManager::AppState.add_listener :extra_instances do |a, indices|
+    HealthManager::Droplet.add_listener :extra_instances do |a, indices|
       a.should == app
       indices.should == future_answer
       event_handler_invoked = true
@@ -156,7 +156,7 @@ describe HealthManager::AppState do
 
     context "when app was never updated" do
       it "can be gc-ed at the end of gc period" do
-        Timecop.travel(end_of_gc_period = HealthManager::AppState.droplet_gc_grace_period)
+        Timecop.travel(end_of_gc_period = HealthManager::Droplet.droplet_gc_grace_period)
         app.should_not be_ripe_for_gc
 
         Timecop.travel(after_end_of_gc_period = 1)
@@ -172,7 +172,7 @@ describe HealthManager::AppState do
 
       it "cannot be gc-ed at the end of gc period " +
         "because desired state indicates that app *should* be running" do
-        Timecop.travel(end_of_gc_period = HealthManager::AppState.droplet_gc_grace_period - 10)
+        Timecop.travel(end_of_gc_period = HealthManager::Droplet.droplet_gc_grace_period - 10)
         app.should_not be_ripe_for_gc
 
         Timecop.travel(after_end_of_gc_period = 1)
@@ -191,7 +191,7 @@ describe HealthManager::AppState do
 
       it "can be gc-ed at the end of the gc period " +
         "because heartbeat alone does not indicate that app *should* be running" do
-        Timecop.travel(end_of_gc_period = HealthManager::AppState.droplet_gc_grace_period - 10)
+        Timecop.travel(end_of_gc_period = HealthManager::Droplet.droplet_gc_grace_period - 10)
         app.should_not be_ripe_for_gc
 
         Timecop.travel(after_end_of_gc_period = 1)
@@ -225,35 +225,35 @@ describe HealthManager::AppState do
   end
 
   describe "#update_realtime_varz" do
-    let(:app_state) do
+    let(:droplet) do
       make_app(:num_instances => 23)[0].tap do |app|
         app.process_exit_crash(make_crash_message(app))
       end
     end
     let(:varz) { HealthManager::Varz.new }
     let(:beat) do
-      heart = make_heartbeat([app_state])
+      heart = make_heartbeat([droplet])
       heart['droplets'][0]['state'] = HealthManager::DOWN # Flapping from multiple crashes
       heart['droplets'][1]['state'] = HealthManager::DOWN
       heart['droplets'][2]['state'] = HealthManager::STARTING
-      (3...app_state.num_instances).each do |time|
+      (3...droplet.num_instances).each do |time|
         heart['droplets'][time]['state'] = HealthManager::RUNNING
       end
       heart
     end
-    let(:app_state_state) { HealthManager::STARTED }
+    let(:droplet_state) { HealthManager::STARTED }
     
-    subject(:update_realtime_varz) { app_state.update_realtime_varz(varz) }
+    subject(:update_realtime_varz) { droplet.update_realtime_varz(varz) }
 
     before do
-      HealthManager::AppState.flapping_timeout = 3456
-      HealthManager::AppState.flapping_death = 1
-      app_state.process_exit_crash(make_crash_message(app_state))
-      app_state.instance_variable_set(:@state, app_state_state)
+      HealthManager::Droplet.flapping_timeout = 3456
+      HealthManager::Droplet.flapping_death = 1
+      droplet.process_exit_crash(make_crash_message(droplet))
+      droplet.instance_variable_set(:@state, droplet_state)
       beat['droplets'].each do |b|
-        app_state.process_heartbeat(b)
+        droplet.process_heartbeat(b)
       end
-      app_state.analyze
+      droplet.analyze
     end
 
     it "increments the total apps on varz" do
@@ -303,7 +303,7 @@ describe HealthManager::AppState do
     end
 
     context "when the droplet is not supposed to be started" do
-      let(:app_state_state) { HealthManager::STOPPED }
+      let(:droplet_state) { HealthManager::STOPPED }
 
       it "does not increment the running apps" do
         expect { update_realtime_varz }.not_to change { varz[:running][:apps] }

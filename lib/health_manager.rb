@@ -14,7 +14,7 @@ require 'vcap/priority_queue'
 
 require 'health_manager/constants'
 require 'health_manager/common'
-require 'health_manager/app_state'
+require 'health_manager/droplet'
 require 'health_manager/actual_state'
 require 'health_manager/desired_state'
 require 'health_manager/droplet_registry'

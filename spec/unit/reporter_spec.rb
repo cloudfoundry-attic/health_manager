@@ -24,16 +24,15 @@ describe HealthManager::Reporter do
 
 
   let(:reply_to) { '_INBOX.1234' }
-  let(:app_state) { HealthManager::AppState.new('some_droplet_id') }
+  let(:droplet) { HealthManager::Droplet.new('some_droplet_id') }
 
-  let(:message) { {:droplets => [{:droplet => app_state.id}]} }
+  let(:message) { {:droplets => [{:droplet => droplet.id}]} }
   let(:message_str) { manager.encode_json(message) }
 
   it "should publish a response to droplet request" do
-
     provider.stub(:include? => true)
-    provider.stub(:[] => app_state)
-    publisher.should_receive(:publish).with(reply_to, manager.encode_json(app_state))
+    provider.stub(:[] => droplet)
+    publisher.should_receive(:publish).with(reply_to, manager.encode_json(droplet))
     subject.process_droplet_message(message_str, reply_to)
   end
 end

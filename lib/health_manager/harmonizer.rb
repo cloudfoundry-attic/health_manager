@@ -20,8 +20,8 @@ module HealthManager
     end
 
     def add_logger_listener(event)
-      AppState.add_listener(event) do |*args|
-        logger.debug { "app_state: event: #{event}: #{args}" }
+      Droplet.add_listener(event) do |*args|
+        logger.debug { "droplet: event: #{event}: #{args}" }
       end
     end
 
@@ -29,78 +29,78 @@ module HealthManager
       logger.debug { "harmonizer: #prepare" }
 
       #set system-wide configurations
-      AppState.heartbeat_deadline = interval(:droplet_lost)
-      AppState.desired_state_update_deadline = interval(:desired_state_lost)
-      AppState.flapping_timeout = interval(:flapping_timeout)
-      AppState.flapping_death = interval(:flapping_death)
-      AppState.droplet_gc_grace_period = interval(:droplet_gc_grace_period)
+      Droplet.heartbeat_deadline = interval(:droplet_lost)
+      Droplet.desired_state_update_deadline = interval(:desired_state_lost)
+      Droplet.flapping_timeout = interval(:flapping_timeout)
+      Droplet.flapping_death = interval(:flapping_death)
+      Droplet.droplet_gc_grace_period = interval(:droplet_gc_grace_period)
 
-      AppState.add_listener(:extra_app) do |app_state|
-        on_extra_app(app_state)
+      Droplet.add_listener(:extra_app) do |droplet|
+        on_extra_app(droplet)
       end
 
       #set up listeners for anomalous events to respond with correcting actions
-      AppState.add_listener(:missing_instances) do |app_state, missing_indices|
+      Droplet.add_listener(:missing_instances) do |droplet, missing_indices|
         unless actual_state.available?
           logger.info { "harmonizer: actual state was not available." }
           next
         end
 
-        if app_state.desired_state_update_required?
-          logger.info { "harmonizer: desired_state_update_required: missing_instances ignored app_id=#{app_state.id} indices=#{missing_indices}" }
+        if droplet.desired_state_update_required?
+          logger.info { "harmonizer: desired_state_update_required: missing_instances ignored app_id=#{droplet.id} indices=#{missing_indices}" }
           next
         end
 
         logger.debug { "harmonizer: missing_instances"}
         missing_indices.each do |index|
-          instance = app_state.get_instance(index)
+          instance = droplet.get_instance(index)
           if flapping?(instance)
-            execute_flapping_policy(app_state, index, instance, false)
+            execute_flapping_policy(droplet, index, instance, false)
           else
-            nudger.start_instance(app_state, index, NORMAL_PRIORITY)
+            nudger.start_instance(droplet, index, NORMAL_PRIORITY)
           end
         end
       end
 
-      AppState.add_listener(:extra_instances) do |app_state, extra_instances|
-        if app_state.desired_state_update_required?
+      Droplet.add_listener(:extra_instances) do |droplet, extra_instances|
+        if droplet.desired_state_update_required?
           logger.info { "harmonizer: desired_state_update_required: extra_instances ignored: #{extra_instances}" }
           next
         end
 
         logger.debug { "harmonizer: extra_instances"}
-        nudger.stop_instances_immediately(app_state, extra_instances)
+        nudger.stop_instances_immediately(droplet, extra_instances)
       end
 
-      AppState.add_listener(:exit_dea) do |app_state, message|
+      Droplet.add_listener(:exit_dea) do |droplet, message|
         index = message['index']
 
-        logger.info { "harmonizer: exit_dea: app_id=#{app_state.id} index=#{index}" }
-        nudger.start_instance(app_state, index, HIGH_PRIORITY)
+        logger.info { "harmonizer: exit_dea: app_id=#{droplet.id} index=#{index}" }
+        nudger.start_instance(droplet, index, HIGH_PRIORITY)
       end
 
-      AppState.add_listener(:exit_crashed) do |app_state, message|
+      Droplet.add_listener(:exit_crashed) do |droplet, message|
         logger.debug { "harmonizer: exit_crashed" }
 
         index = message['index']
-        instance = app_state.get_instance(message['version'], message['index'])
+        instance = droplet.get_instance(message['version'], message['index'])
 
         if flapping?(instance)
-          execute_flapping_policy(app_state, index, instance, true)
+          execute_flapping_policy(droplet, index, instance, true)
         else
-          nudger.start_instance(app_state, index, LOW_PRIORITY)
+          nudger.start_instance(droplet, index, LOW_PRIORITY)
         end
       end
 
-      AppState.add_listener(:exit_stopped) do |app_state, message|
+      Droplet.add_listener(:exit_stopped) do |droplet, message|
         logger.info { "harmonizer: exit_stopped: #{message}" }
         # NOOP
       end
 
-      AppState.add_listener(:droplet_updated) do |app_state, message|
+      Droplet.add_listener(:droplet_updated) do |droplet, message|
         logger.info { "harmonizer: droplet_updated: #{message}" }
-        app_state.desired_state_update_required = true
-        abort_all_pending_delayed_restarts(app_state)
+        droplet.desired_state_update_required = true
+        abort_all_pending_delayed_restarts(droplet)
         update_desired_state
       end
 
@@ -139,10 +139,10 @@ module HealthManager
 
     # Currently we do not check that desired state
     # is available; therefore, HM can be overly aggressive stopping apps.
-    def on_extra_app(app_state)
+    def on_extra_app(droplet)
       return unless desired_state.available?
-      instance_ids_with_reasons = app_state.all_instances.map { |i| [i["instance"], "Extra app"] }
-      nudger.stop_instances_immediately(app_state, instance_ids_with_reasons)
+      instance_ids_with_reasons = droplet.all_instances.map { |i| [i["instance"], "Extra app"] }
+      nudger.stop_instances_immediately(droplet, instance_ids_with_reasons)
     end
 
     # ------------------------------------------------------------
@@ -153,14 +153,14 @@ module HealthManager
     # crashes, predicate methods, etc.  Consider making "instance"
     # into a full-fledged object
 
-    def execute_flapping_policy(app_state, index, instance, chatty)
-      unless app_state.restart_pending?(index)
+    def execute_flapping_policy(droplet, index, instance, chatty)
+      unless droplet.restart_pending?(index)
         instance['last_action'] = now
         if giveup_restarting?(instance)
-          logger.info { "given up on restarting: app_id=#{app_state.id} index=#{index}" } if chatty
+          logger.info { "given up on restarting: app_id=#{droplet.id} index=#{index}" } if chatty
         else
           delay = calculate_delay(instance)
-          schedule_delayed_restart(app_state, instance, index, delay)
+          schedule_delayed_restart(droplet, instance, index, delay)
         end
       end
     end
@@ -194,20 +194,20 @@ module HealthManager
       result
     end
 
-    def schedule_delayed_restart(app_state, instance, index, delay)
+    def schedule_delayed_restart(droplet, instance, index, delay)
       receipt = scheduler.after(delay) do
-        app_state.remove_pending_restart(index)
+        droplet.remove_pending_restart(index)
         instance['last_action'] = now
-        nudger.start_flapping_instance_immediately(app_state, index)
+        nudger.start_flapping_instance_immediately(droplet, index)
       end
-      app_state.add_pending_restart(index, receipt)
+      droplet.add_pending_restart(index, receipt)
     end
 
-    def abort_all_pending_delayed_restarts(app_state)
-      app_state.pending_restarts.each do |_, receipt|
+    def abort_all_pending_delayed_restarts(droplet)
+      droplet.pending_restarts.each do |_, receipt|
         scheduler.cancel(receipt)
       end
-      app_state.pending_restarts.clear
+      droplet.pending_restarts.clear
     end
 
     # Flapping-related code ENDS

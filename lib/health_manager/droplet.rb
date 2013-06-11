@@ -2,7 +2,7 @@ require 'set'
 
 module HealthManager
   #this class provides answers about droplet's State
-  class AppState
+  class Droplet
     include HealthManager::Common
 
     class << self
@@ -31,12 +31,12 @@ module HealthManager
         @listeners[event_type] << block
       end
 
-      def notify_listener(event_type, app_state, *args)
+      def notify_listener(event_type, droplet, *args)
         check_event_type(event_type)
         return unless @listeners && @listeners[event_type]
         listeners = @listeners[event_type]
         listeners.each do |block|
-          block.call(app_state, *args)
+          block.call(droplet, *args)
         end
       end
 
@@ -73,7 +73,7 @@ module HealthManager
     end
 
     def ripe_for_gc?
-      timestamp_older_than?(@desired_state_update_timestamp, AppState.droplet_gc_grace_period)
+      timestamp_older_than?(@desired_state_update_timestamp, Droplet.droplet_gc_grace_period)
     end
 
     def set_desired_state(desired_droplet)
@@ -156,7 +156,7 @@ module HealthManager
       @versions.each do |version, version_entry |
         version_entry['instances'].delete_if do |index, instance|  # deleting extra instances
 
-          if running_state?(instance) && timestamp_older_than?(instance['timestamp'], AppState.heartbeat_deadline)
+          if running_state?(instance) && timestamp_older_than?(instance['timestamp'], Droplet.heartbeat_deadline)
             instance['state'] = DOWN
             instance['state_timestamp'] = now
           end
@@ -211,14 +211,14 @@ module HealthManager
         [
          instance['state'] == CRASHED,
          lhb.nil?,
-         lhb && timestamp_older_than?(lhb, AppState.heartbeat_deadline)
+         lhb && timestamp_older_than?(lhb, Droplet.heartbeat_deadline)
         ].any? && !restart_pending?(i)
       end
     end
 
     def prune_crashes
       @crashes.delete_if { |_, crash|
-        timestamp_older_than?(crash['timestamp'], AppState.flapping_timeout)
+        timestamp_older_than?(crash['timestamp'], Droplet.flapping_timeout)
       }
     end
 
@@ -241,7 +241,7 @@ module HealthManager
     end
 
     def reset_recently?
-      timestamp_fresher_than?(@reset_timestamp, AppState.heartbeat_deadline || 0)
+      timestamp_fresher_than?(@reset_timestamp, Droplet.heartbeat_deadline || 0)
     end
 
     def desired_state_update_required?
@@ -267,11 +267,11 @@ module HealthManager
         logger.warn { "unexpected instance_id: #{message['instance']}, desired: #{instance['instance']}" }
       end
 
-      instance['crashes'] = 0 if timestamp_older_than?(instance['crash_timestamp'], AppState.flapping_timeout)
+      instance['crashes'] = 0 if timestamp_older_than?(instance['crash_timestamp'], Droplet.flapping_timeout)
       instance['crashes'] += 1
       instance['crash_timestamp'] = message['crash_timestamp']
 
-      if instance['crashes'] > AppState.flapping_death
+      if instance['crashes'] > Droplet.flapping_death
         instance['state'] = FLAPPING
       end
 
@@ -356,7 +356,7 @@ module HealthManager
     def desired_state_update_overdue?
       timestamp_older_than?(
         @desired_state_update_timestamp,
-        AppState.desired_state_update_deadline,
+        Droplet.desired_state_update_deadline,
       )
     end
 
