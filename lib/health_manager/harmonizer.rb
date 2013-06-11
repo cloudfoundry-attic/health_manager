@@ -20,12 +20,6 @@ module HealthManager
       @current_analysis_slice = 0
     end
 
-    def add_logger_listener(event)
-      Droplet.add_listener(event) do |*args|
-        logger.debug { "droplet: event: #{event}: #{args}" }
-      end
-    end
-
     def prepare
       logger.debug { "harmonizer: #prepare" }
 
@@ -248,19 +242,6 @@ module HealthManager
       end
       @droplet_registry.each do |droplet_id, _|
         @droplet_registry.delete_if { !droplet_ids.include?(droplet_id) }
-      end
-    end
-
-    def postpone_desired_state_update
-      if @postponed
-        logger.info("harmonizer: update_desired_state is currently running, and a postponed one is already scheduled.  Ignoring.")
-      else
-        logger.info("harmonizer: postponing desired_state_update")
-        @postponed = scheduler.after_interval :postpone_update do
-          logger.info("harmonizer: starting postponed desired_state_update")
-          @postponed = nil
-          update_desired_state
-        end
       end
     end
 

@@ -28,10 +28,6 @@ module HealthManager
       receipt
     end
 
-    def after_interval(interval_name, &block)
-      after(interval(interval_name), &block)
-    end
-
     def at_interval(interval_name, &block)
       every(interval(interval_name), &block)
     end
@@ -71,23 +67,6 @@ module HealthManager
       else
         @schedule.reject! { |_, _, r|  (r == receipt) }
       end
-    end
-
-    def quantize_task(task, &block)
-      ITERATIONS_PER_QUANTUM.times do
-        if !yield
-          mark_task_stopped(task)
-          return
-        end
-      end
-
-      EM.next_tick { quantize_task( task, &block) }
-    end
-
-    def start_task(task, &block)
-      return if task_running?(task)
-      mark_task_started(task)
-      quantize_task(task, &block)
     end
 
     def mark_task_started(task)

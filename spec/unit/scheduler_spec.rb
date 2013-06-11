@@ -115,25 +115,4 @@ describe HealthManager::Scheduler do
     cancelled_flag.should be_false
     flag.should be_true
   end
-
-  it 'should be able to start/stop/quantize tasks' do
-
-    iters = 0
-    subject.after 0.1 do
-      subject.start_task(:boo) do
-        iters += 1
-        subject.task_running?(:boo).should be_true
-        iters < 5 #continuation condition
-      end
-    end
-
-    subject.after 0.2 do
-      subject.stop
-    end
-
-    subject.task_running?(:boo).should be_false
-    subject.start
-    iters.should == 5
-    subject.task_running?(:boo).should be_false
-  end
 end
