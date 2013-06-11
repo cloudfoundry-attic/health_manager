@@ -8,6 +8,7 @@ module HealthManager
       @last_receipt = 0
       @receipt_to_timer = {}
       @running_tasks = {}
+      @starting_times = {}
       @run_loop_interval = get_param_from_config_or_default(:run_loop_interval, @config)
     end
 
@@ -45,6 +46,14 @@ module HealthManager
 
     def immediately(&block)
       EM.next_tick(&block)
+    end
+
+    def set_start_time(task)
+      @starting_times[task] = Time.now
+    end
+
+    def elapsed_time(task)
+      Time.now - @starting_times[task]
     end
 
     def run

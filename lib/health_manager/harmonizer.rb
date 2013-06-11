@@ -17,6 +17,7 @@ module HealthManager
       @actual_state = actual_state
       @desired_state = desired_state
       @droplet_registry = droplet_registry
+      @current_analysis_slice = 0
     end
 
     def add_logger_listener(event)
@@ -116,10 +117,8 @@ module HealthManager
         update_desired_state
       end
 
-      scheduler.after_interval :droplet_lost do
-        scheduler.at_interval :droplets_analysis do
-          analyze_all_apps
-        end
+      scheduler.at_interval :droplets_analysis do
+        analyze_apps
       end
 
       scheduler.at_interval :droplet_gc do
@@ -220,43 +219,23 @@ module HealthManager
       logger.info("harmonizer: droplet GC ran. Number of droplets before: #{before}, after: #{after}. #{before-after} droplets removed")
     end
 
-    def analyze_all_apps
+    def analyze_apps
       if scheduler.task_running? :droplets_analysis
-        logger.warn("Droplet analysis still in progress.  Consider increasing droplets_analysis interval.")
+        logger.warn("Droplet analysis still in progress. Consider increasing droplets_analysis interval.")
         return
       end
 
       return unless desired_state.available?
 
-      start_at = Time.now
-      logger.debug { "harmonizer: droplets_analysis" }
+      scheduler.mark_task_started(:droplets_analysis)
 
-      varz.reset_realtime!
-      scheduler.start_task :droplets_analysis do
-        @droplet_registry.each do |_, droplet|
-          if droplet
-            droplet.analyze
-            droplet.update_realtime_varz(varz)
-            true
-          else # no more droplets to iterate through, finish up
-            if @droplet_registry.size <= interval(:max_droplets_in_varz)
-              varz[:droplets] = @droplet_registry
-            else
-              varz[:droplets] = {}
-            end
-            varz.publish
-
-            elapsed = Time.now - start_at
-            varz[:analysis_loop_duration] = elapsed
-
-            logger.info ["harmonizer: Analyzed #{varz[:running_instances]} running ",
-              "#{varz[:missing_instances]} missing instances. ",
-              "Elapsed time: #{elapsed}"
-            ].join
-            false #signal :droplets_analysis task completion to the scheduler
-          end
-        end
+      if @current_analysis_slice == 0
+        scheduler.set_start_time(:droplets_analysis)
+        logger.debug { "harmonizer: droplets_analysis" }
+        varz.reset_realtime!
       end
+
+      droplets_analysis_for_slice
     end
 
     def update_desired_state
@@ -277,6 +256,45 @@ module HealthManager
           @postponed = nil
           update_desired_state
         end
+      end
+    end
+
+    private
+
+    def finish_droplet_analysis
+      if @droplet_registry.size <= interval(:max_droplets_in_varz)
+        varz[:droplets] = @droplet_registry
+      else
+        varz[:droplets] = {}
+      end
+      varz.publish
+
+      elapsed = scheduler.elapsed_time(:droplets_analysis)
+      varz[:analysis_loop_duration] = elapsed
+
+      logger.info ["harmonizer: Analyzed #{varz[:running_instances]} running ",
+        "#{varz[:missing_instances]} missing instances. ",
+        "Elapsed time: #{elapsed}"
+      ].join
+
+      scheduler.mark_task_stopped(:droplets_analysis)
+    end
+
+    def droplets_analysis_for_slice
+      droplets = @droplet_registry.values.slice(@current_analysis_slice, ITERATIONS_PER_QUANTUM)
+
+      if droplets && droplets.any?
+        droplets.each do |droplet|
+          droplet.analyze
+          droplet.update_realtime_varz(varz)
+        end
+      end
+
+      @current_analysis_slice += ITERATIONS_PER_QUANTUM
+
+      if droplets.nil? || droplets.size < ITERATIONS_PER_QUANTUM
+        @current_analysis_slice = 0
+        finish_droplet_analysis
       end
     end
   end
