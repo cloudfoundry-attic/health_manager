@@ -76,3 +76,15 @@ def make_exited_message(app, options={})
     'cc_partition' => 'default',
   }.merge(options)
 end
+
+def make_update_message(app, options={})
+  index = options['index'] || 0
+  {
+    'droplet' => app.id,
+    'version' => app.live_version,
+    'instance' => app.get_instance(index)['instance'] || "instance_id_#{index}",
+    'index' => index,
+    'reason' => 'RUNNING',
+    'cc_partition' => 'default',
+  }.merge(options)
+end

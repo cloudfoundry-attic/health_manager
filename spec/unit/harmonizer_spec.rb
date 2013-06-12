@@ -60,33 +60,6 @@ module HealthManager
         droplet
       end
 
-      describe "listeners" do
-        before { subject.prepare }
-        after { Droplet.remove_all_listeners }
-
-        describe "on droplet update" do
-          def test_listener
-            Droplet.notify_listener(:droplet_updated, droplet)
-          end
-
-          it "aborts all_pending_delayed_restarts" do
-            subject.should_receive(:abort_all_pending_delayed_restarts).with(droplet)
-            test_listener
-          end
-
-          it "updates desired state" do
-            subject.should_receive(:update_desired_state)
-            test_listener
-          end
-
-          it "sets desired_state_update_required" do
-            # TODO: seems like listeners cause this to be called random number of times
-            droplet.should_receive(:desired_state_update_required=).with(true).any_number_of_times
-            test_listener
-          end
-        end
-      end
-
       describe "scheduler" do
         it "sets a schedule for droplets_analysis" do
           scheduler.should_receive(:at_interval).with(:droplets_analysis)
@@ -337,6 +310,24 @@ module HealthManager
       it "tells nudger to start instance" do
         nudger.should_receive(:start_instance).with(droplet, 1, HealthManager::HIGH_PRIORITY)
         harmonizer.on_exit_dea(droplet, {"index" => 1})
+      end
+    end
+
+    describe "on_droplet_updated" do
+      let(:droplet) { double(:pending_restarts => [], :desired_state_update_required= => nil) }
+      it "sets droplet desired state updated" do
+        droplet.should_receive(:desired_state_update_required=).with(true)
+        harmonizer.on_droplet_updated(droplet, {})
+      end
+
+      it "aborts all pending delayed restarts" do
+        harmonizer.should_receive(:abort_all_pending_delayed_restarts).with(droplet)
+        harmonizer.on_droplet_updated(droplet, {})
+      end
+
+      it "updates desired state" do
+        harmonizer.should_receive(:update_desired_state).with(no_args)
+        harmonizer.on_droplet_updated(droplet, {})
       end
     end
   end

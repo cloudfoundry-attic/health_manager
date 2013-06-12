@@ -100,7 +100,9 @@ module HealthManager
 
       logger.debug { "Actual: #process_droplet_updated: #{message_str}" }
       varz[:droplet_updated_msgs_received] += 1
-      get_droplet(message).process_droplet_updated(message)
+      droplet = get_droplet(message)
+      droplet.reset_missing_indices
+      harmonizer.on_droplet_updated(droplet, message)
     end
 
     def get_droplet(message)

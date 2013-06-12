@@ -249,11 +249,6 @@ module HealthManager
       }
     end
 
-    def process_droplet_updated(message)
-      reset_missing_indices
-      notify(:droplet_updated, message)
-    end
-
     def mark_instance_as_down(version, index, instance_id)
       instance = get_instance(version, index)
       if instance['instance'] == instance_id

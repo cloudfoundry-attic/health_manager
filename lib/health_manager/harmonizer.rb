@@ -31,13 +31,6 @@ module HealthManager
       Droplet.flapping_death = interval(:flapping_death)
       Droplet.droplet_gc_grace_period = interval(:droplet_gc_grace_period)
 
-      Droplet.add_listener(:droplet_updated) do |droplet, message|
-        logger.info { "harmonizer: droplet_updated: #{message}" }
-        droplet.desired_state_update_required = true
-        abort_all_pending_delayed_restarts(droplet)
-        update_desired_state
-      end
-
       #schedule time-based actions
 
       scheduler.immediately { update_desired_state }
@@ -67,6 +60,13 @@ module HealthManager
           shadower.check_shadowing
         end
       end
+    end
+
+    def on_droplet_updated(droplet, message)
+      logger.info { "harmonizer: droplet_updated: #{message}" }
+      droplet.desired_state_update_required = true
+      abort_all_pending_delayed_restarts(droplet)
+      update_desired_state
     end
 
     def on_exit_crashed(droplet, message)

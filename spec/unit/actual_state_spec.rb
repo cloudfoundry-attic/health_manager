@@ -79,6 +79,11 @@ describe HealthManager::ActualState do
       @actual_state.send(:process_droplet_exited, encode_json(msg))
     end
 
+    def make_and_send_update_message(options = {})
+      msg = make_update_message(@droplet, options)
+      @actual_state.send(:process_droplet_updated, encode_json(msg))
+    end
+
     def check_instance_state(state='RUNNING')
       instance = @droplet.get_instance(@droplet.live_version, 0)
       instance['state'].should == state
@@ -86,13 +91,25 @@ describe HealthManager::ActualState do
     end
 
     it 'should forward heartbeats' do
-      harmonizer.should_receive(:on_extra_instances).with(instance_of(HealthManager::Droplet), [])
+      harmonizer.should_receive(:on_extra_instances).with(@droplet, [])
       make_and_send_heartbeat
       check_instance_state
     end
 
+    it "processes droplet update" do
+      harmonizer.should_receive(:on_droplet_updated).with(@droplet, hash_including("droplet" => @droplet.id))
+      @droplet.should_receive(:reset_missing_indices)
+      make_and_send_update_message
+    end
+
+    it "does not update droplet partition does not match" do
+      harmonizer.should_not_receive(:on_droplet_updated)
+      @droplet.should_not_receive(:reset_missing_indices)
+      make_and_send_update_message(:cc_partition => "OTHER")
+    end
+
     it 'should mark instances that crashed as CRASHED' do
-      harmonizer.should_receive(:on_exit_crashed).with(instance_of(HealthManager::Droplet), hash_including("reason" => "CRASHED"))
+      harmonizer.should_receive(:on_exit_crashed).with(@droplet, hash_including("reason" => "CRASHED"))
       make_and_send_heartbeat
       check_instance_state('RUNNING')
 
@@ -117,13 +134,13 @@ describe HealthManager::ActualState do
     end
 
     it "calls harmonizer.on_exit_dea when the DEA shuts down" do
-      harmonizer.should_receive(:on_exit_dea).with(instance_of(HealthManager::Droplet), hash_including("reason" => "DEA_SHUTDOWN"))
+      harmonizer.should_receive(:on_exit_dea).with(@droplet, hash_including("reason" => "DEA_SHUTDOWN"))
       make_and_send_heartbeat
       make_and_send_exited_message("DEA_SHUTDOWN")
     end
 
     it "calls harmonizer.on_exit_dea when the DEA evacuates" do
-      harmonizer.should_receive(:on_exit_dea).with(instance_of(HealthManager::Droplet), hash_including("reason" => "DEA_EVACUATION"))
+      harmonizer.should_receive(:on_exit_dea).with(@droplet, hash_including("reason" => "DEA_EVACUATION"))
       make_and_send_heartbeat
       make_and_send_exited_message("DEA_EVACUATION")
     end
