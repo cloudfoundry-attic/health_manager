@@ -7,7 +7,6 @@ module HealthManager
       @schedule = []
       @last_receipt = 0
       @receipt_to_timer = {}
-      @running_tasks = {}
       @starting_times = {}
       @run_loop_interval = get_param_from_config_or_default(:run_loop_interval, @config)
     end
@@ -67,18 +66,6 @@ module HealthManager
       else
         @schedule.reject! { |_, _, r|  (r == receipt) }
       end
-    end
-
-    def mark_task_started(task)
-      @running_tasks[task] = :started
-    end
-
-    def mark_task_stopped(task)
-      raise ArgumentError, "task #{task} not started" unless @running_tasks.delete(task)
-    end
-
-    def task_running?(task)
-      @running_tasks[task] == :started
     end
 
     def start

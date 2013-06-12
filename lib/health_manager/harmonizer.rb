@@ -214,17 +214,10 @@ module HealthManager
     end
 
     def analyze_apps
-      if scheduler.task_running? :droplets_analysis
-        logger.warn("Droplet analysis still in progress. Consider increasing droplets_analysis interval.")
-        return
-      end
-
       unless desired_state.available?
         logger.warn("Droplet analysis interrupted. Desired state is not available")
         return
       end
-
-      scheduler.mark_task_started(:droplets_analysis)
 
       if @current_analysis_slice == 0
         scheduler.set_start_time(:droplets_analysis)
@@ -233,8 +226,6 @@ module HealthManager
       end
 
       droplets_analysis_for_slice
-
-      scheduler.mark_task_stopped(:droplets_analysis)
     end
 
     def update_desired_state
