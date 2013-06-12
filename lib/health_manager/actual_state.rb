@@ -74,7 +74,8 @@ module HealthManager
         droplet.reset_missing_indices
         harmonizer.on_exit_dea(droplet, message)
       when STOPPED
-        droplet.process_exit_stopped(message)
+        droplet.reset_missing_indices
+        harmonizer.on_exit_stopped(message)
       end
     end
 

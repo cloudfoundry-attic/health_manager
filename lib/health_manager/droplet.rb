@@ -226,11 +226,6 @@ module HealthManager
       @desired_state_update_required
     end
 
-    def process_exit_stopped(message)
-      reset_missing_indices
-      notify(:exit_stopped, message)
-    end
-
     def process_exit_crash(message)
       instance = get_instance(message['version'], message['index'])
       instance['state'] = CRASHED

@@ -103,7 +103,7 @@ describe HealthManager::ActualState do
     end
 
     it 'should mark instances that were stopped or evacuated as DOWN' do
-      harmonizer.stub(:on_exit_dea)
+      harmonizer.stub(:on_exit_dea => nil, :on_exit_stopped => nil)
       make_and_send_heartbeat
       check_instance_state('RUNNING')
 
@@ -116,15 +116,21 @@ describe HealthManager::ActualState do
     end
 
     it "calls harmonizer.on_exit_dea when the DEA shuts down" do
-      harmonizer.should_receive(:on_exit_dea)
+      harmonizer.should_receive(:on_exit_dea).with(instance_of(HealthManager::Droplet), hash_including("reason" => "DEA_SHUTDOWN"))
       make_and_send_heartbeat
       make_and_send_exited_message("DEA_SHUTDOWN")
     end
 
     it "calls harmonizer.on_exit_dea when the DEA evacuates" do
-      harmonizer.should_receive(:on_exit_dea)
+      harmonizer.should_receive(:on_exit_dea).with(instance_of(HealthManager::Droplet), hash_including("reason" => "DEA_EVACUATION"))
       make_and_send_heartbeat
       make_and_send_exited_message("DEA_EVACUATION")
+    end
+
+    it "calls harmonizer.on_exit_stopped when it receives the message dea.stop" do
+      harmonizer.should_receive(:on_exit_stopped).with(hash_including("reason" => "STOPPED"))
+      make_and_send_heartbeat
+      make_and_send_exited_message("STOPPED")
     end
   end
 

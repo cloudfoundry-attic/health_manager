@@ -44,11 +44,6 @@ module HealthManager
         end
       end
 
-      Droplet.add_listener(:exit_stopped) do |droplet, message|
-        logger.info { "harmonizer: exit_stopped: #{message}" }
-        # NOOP
-      end
-
       Droplet.add_listener(:droplet_updated) do |droplet, message|
         logger.info { "harmonizer: droplet_updated: #{message}" }
         droplet.desired_state_update_required = true
@@ -85,6 +80,10 @@ module HealthManager
           shadower.check_shadowing
         end
       end
+    end
+
+    def on_exit_stopped(message)
+      logger.info { "harmonizer: exit_stopped: #{message}" }
     end
 
     def on_exit_dea(droplet, message)
