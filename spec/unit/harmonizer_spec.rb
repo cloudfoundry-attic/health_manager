@@ -64,17 +64,6 @@ module HealthManager
         before { subject.prepare }
         after { Droplet.remove_all_listeners }
 
-        describe "on extra_instances" do
-          context "when desired state update is required" do
-            before { droplet.desired_state_update_required = false }
-
-            it "stops instances immediately" do
-              nudger.should_receive(:stop_instances_immediately).with(droplet, [1, 2])
-              Droplet.notify_listener(:extra_instances, droplet, [1, 2])
-            end
-          end
-        end
-
         describe "on exit dea" do
           it "starts instance with high priority" do
             nudger.should_receive(:start_instance).with(droplet, 5, HIGH_PRIORITY)
@@ -192,7 +181,11 @@ module HealthManager
       let(:droplet) { double }
 
       before do
-        droplet.stub(:is_extra? => false, :has_missing_indices? => false, :extra_instances => [], :prune_crashes => nil)
+        droplet.stub(:is_extra? => false,
+          :has_missing_indices? => false,
+          :extra_instances => [],
+          :update_extra_instances => nil,
+          :prune_crashes => nil)
       end
 
       it "calls on_extra_app if the droplet is extra" do
@@ -219,7 +212,9 @@ module HealthManager
       end
 
       it "calls on_extra_instances if the droplet has extra_instances" do
+        droplet.should_receive(:update_extra_instances)
         droplet.stub(:extra_instances => [1, 2, 3])
+
         harmonizer.should_receive(:on_extra_instances).with(droplet, [1, 2, 3])
         harmonizer.analyze_droplet(droplet)
       end

@@ -15,6 +15,7 @@ module HealthManager
       @nudger = nudger
       @scheduler = scheduler
       @actual_state = actual_state
+      actual_state.harmonizer = self
       @desired_state = desired_state
       @droplet_registry = droplet_registry
       @current_analysis_slice = 0
@@ -29,10 +30,6 @@ module HealthManager
       Droplet.flapping_timeout = interval(:flapping_timeout)
       Droplet.flapping_death = interval(:flapping_death)
       Droplet.droplet_gc_grace_period = interval(:droplet_gc_grace_period)
-
-      Droplet.add_listener(:extra_instances) do |droplet, extra_instances|
-        on_extra_instances(droplet, extra_instances)
-      end
 
       Droplet.add_listener(:exit_dea) do |droplet, message|
         index = message['index']
@@ -120,14 +117,14 @@ module HealthManager
     end
 
     def on_extra_instances(droplet, extra_instances)
-        logger.info("extra instances: #{extra_instances.inspect}")
-        if droplet.desired_state_update_required?
-          logger.info { "harmonizer: desired_state_update_required: extra_instances ignored: #{extra_instances}" }
-          return
-        end
+      logger.info("extra instances: #{extra_instances.inspect}")
+      if droplet.desired_state_update_required?
+        logger.info { "harmonizer: desired_state_update_required: extra_instances ignored: #{extra_instances}" }
+        return
+      end
 
-        logger.debug { "harmonizer: extra_instances"}
-        nudger.stop_instances_immediately(droplet, extra_instances)
+      logger.debug { "harmonizer: extra_instances"}
+      nudger.stop_instances_immediately(droplet, extra_instances)
     end
 
     # Currently we do not check that desired state
@@ -249,9 +246,9 @@ module HealthManager
         droplet.reset_missing_indices
       end
 
-      extra_instances = droplet.extra_instances
-      unless extra_instances.empty?
-        on_extra_instances(droplet, extra_instances)
+      droplet.update_extra_instances
+      unless droplet.extra_instances.empty?
+        on_extra_instances(droplet, droplet.extra_instances)
       end
 
       droplet.prune_crashes

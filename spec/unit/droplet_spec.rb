@@ -113,6 +113,7 @@ describe HealthManager::Droplet do
     hbs.first['index'] = 4
 
     hbs.each { |hb| app.process_heartbeat(hb) }
+    app.update_extra_instances
     expect(app.extra_instances.size).to be > 0
   end
 
@@ -308,6 +309,59 @@ describe HealthManager::Droplet do
 
       it 'should not increment running flapping_instances for each flapping instance' do
         expect { update_realtime_varz }.not_to change { varz[:running][:flapping_instances] }
+      end
+    end
+  end
+
+  describe "update_extra_instances" do
+    let(:versions) do
+      {
+        "123" => {
+          "instances" => {
+            0 => {
+              "state" => HealthManager::RUNNING,
+              "version" => "123",
+              "timestamp" => Time.now.to_i
+            },
+            1 => {
+              "state" => HealthManager::RUNNING,
+              "version" => "123",
+              "timestamp" => Time.now.to_i
+            }
+          }
+        }
+      }
+    end
+    let(:droplet) do
+      droplet = HealthManager::Droplet.new(2)
+      droplet.instance_variable_set(:@versions, versions)
+      droplet.stub(:state) { HealthManager::RUNNING }
+      droplet.stub(:num_instances) { 2 }
+      droplet.stub(:live_version) { "123" }
+      droplet
+    end
+
+    context "if the droplet was stopped" do
+      before { droplet.stub(:state) { HealthManager::STOPPED } }
+      it "removes instances" do
+        droplet.update_extra_instances
+        expect(droplet.versions).to eql({})
+      end
+    end
+
+    context "if there are extra instances" do
+      before { droplet.stub(:num_instances) { 1 } }
+      it "removes instances" do
+        droplet.update_extra_instances
+        expect(droplet.versions["123"]["instances"].size).to eql(1)
+      end
+    end
+
+    context "if their version don't match live version" do
+      before { droplet.stub(:live_version) { "456" } }
+      it "removes instances" do
+        droplet.update_extra_instances
+        expect(droplet.versions.size).to eql(0)
       end
     end
   end

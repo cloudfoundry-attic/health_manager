@@ -35,12 +35,13 @@ describe HealthManager do
       end
     end
 
-    it 'should construct appropriate dependecies' do
+    it 'should construct appropriate dependencies' do
       manager.harmonizer.should be_a_kind_of HealthManager::Harmonizer
       manager.harmonizer.varz.should be_a_kind_of HealthManager::Varz
       manager.harmonizer.desired_state.should be_a_kind_of HealthManager::DesiredState
       manager.harmonizer.nudger.should be_a_kind_of HealthManager::Nudger
       manager.nudger.publisher.should eq manager.publisher
+      manager.actual_state.harmonizer.should eq manager.harmonizer
     end
 
     it "registers a log counter with the component" do

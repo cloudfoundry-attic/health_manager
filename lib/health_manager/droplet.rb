@@ -55,7 +55,7 @@ module HealthManager
     attr_reader :num_instances
     attr_reader :package_state
     attr_reader :last_updated
-    attr_reader :versions, :crashes
+    attr_reader :versions, :crashes, :extra_instances
     attr_reader :pending_restarts
     attr_accessor :desired_state_update_required
 
@@ -65,6 +65,7 @@ module HealthManager
       @versions = {}
       @crashes = {}
       @pending_restarts = {}
+      @extra_instances = []
       reset_missing_indices
 
       # start out as stale until desired state is set
@@ -122,8 +123,8 @@ module HealthManager
 
       if running_state?(beat)
         if instance['state'] == RUNNING && instance['instance'] != beat['instance']
-          notify(:extra_instances, [[beat['instance'],
-                                     "Instance mismatch, actual: #{beat['instance']}, desired: #{instance['instance']}"]])
+          @extra_instances << [beat['instance'],
+            "Instance mismatch, actual: #{beat['instance']}, desired: #{instance['instance']}"]
         else
           instance['last_heartbeat'] = now
           instance['timestamp'] = now
@@ -144,11 +145,11 @@ module HealthManager
       !reset_recently? && !missing_indices.empty?
     end
 
-    def extra_instances
-      extra_instances = []
+    def update_extra_instances
+      @extra_instances = []
 
       # first, go through each version and prune indices
-      @versions.each do |version, version_entry|
+      versions.each do |version, version_entry|
         version_entry['instances'].delete_if do |index, instance|  # deleting extra instances
 
           if running_state?(instance) && timestamp_older_than?(instance['timestamp'], Droplet.heartbeat_deadline)
@@ -156,16 +157,16 @@ module HealthManager
             instance['state_timestamp'] = now
           end
 
-          prune_reason = [[@state == STOPPED, 'Droplet state is STOPPED'],
-                          [index >= @num_instances, 'Extra instance'],
-                          [version != @live_version, 'Live version mismatch']
+          prune_reason = [[state == STOPPED, 'Droplet state is STOPPED'],
+                          [index >= num_instances, 'Extra instance'],
+                          [version != live_version, 'Live version mismatch']
                          ].find { |condition, _| condition }
 
           if prune_reason
             logger.debug1 { "pruning: #{prune_reason.last}" }
             if running_state?(instance)
               reason = prune_reason.last
-              extra_instances << [instance['instance'], reason]
+              @extra_instances << [instance['instance'], reason]
             end
           end
 
@@ -173,14 +174,7 @@ module HealthManager
         end
       end
 
-      # now, prune versions
-      @versions.delete_if do |version, version_entry|
-        if version_entry['instances'].empty?
-          @state == STOPPED || version != @live_version
-        end
-      end
-
-      extra_instances
+      delete_versions_without_instances
     end
 
     def reset_missing_indices
@@ -336,6 +330,14 @@ module HealthManager
     end
 
     private
+
+    def delete_versions_without_instances
+      versions.delete_if do |version, version_entry|
+        if version_entry['instances'].empty?
+          @state == STOPPED || version != @live_version
+        end
+      end
+    end
 
     def desired_state_update_overdue?
       timestamp_older_than?(

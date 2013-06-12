@@ -2,6 +2,7 @@ module HealthManager
   class ActualState
     include HealthManager::Common
     attr_reader :varz
+    attr_accessor :harmonizer
 
     def initialize(config, varz, droplet_registry)
       @config = config
@@ -84,7 +85,11 @@ module HealthManager
 
       message['droplets'].each do |beat|
         next unless cc_partition_match?(beat)
-        get_droplet(beat).process_heartbeat(beat)
+        droplet = get_droplet(beat)
+        droplet.process_heartbeat(beat)
+        unless droplet.extra_instances.empty?
+          harmonizer.on_extra_instances(droplet, droplet.extra_instances)
+        end
       end
     end
 
