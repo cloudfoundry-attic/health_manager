@@ -88,9 +88,7 @@ module HealthManager
         next unless cc_partition_match?(beat)
         droplet = get_droplet(beat)
         droplet.process_heartbeat(beat)
-        unless droplet.extra_instances.empty?
-          harmonizer.on_extra_instances(droplet, droplet.extra_instances)
-        end
+        harmonizer.on_extra_instances(droplet, droplet.extra_instances)
       end
     end
 

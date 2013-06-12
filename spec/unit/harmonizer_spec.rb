@@ -204,7 +204,7 @@ module HealthManager
         harmonizer.analyze_droplet(droplet)
       end
 
-      it "calls on_extra_instances if the droplet has extra_instances" do
+      it "calls on_extra_instances" do
         droplet.should_receive(:update_extra_instances)
         droplet.stub(:extra_instances => [1, 2, 3])
 
@@ -212,14 +212,33 @@ module HealthManager
         harmonizer.analyze_droplet(droplet)
       end
 
-      it "skips on_extra_instances if the droplet has no extra_instances" do
-        harmonizer.should_not_receive(:on_extra_instances)
-        harmonizer.analyze_droplet(droplet)
-      end
-
       it "prunes crashes" do
         droplet.should_receive(:prune_crashes)
         harmonizer.analyze_droplet(droplet)
+      end
+    end
+
+    describe "#on_extra_instances" do
+      let(:droplet) { double(:desired_state_update_required? => false) }
+      let(:extra_instances) { [1, 2, 3] }
+      it "tells the nudger to stop instances immediately" do
+        nudger.should_receive(:stop_instances_immediately).with(droplet, extra_instances)
+
+        harmonizer.on_extra_instances(droplet, extra_instances)
+      end
+
+      it "does not tell the nudger to stop instances immediately if a desired state update is required" do
+        droplet.stub(:desired_state_update_required? => true)
+
+        nudger.should_not_receive(:stop_instances_immediately)
+
+        harmonizer.on_extra_instances(droplet, extra_instances)
+      end
+
+      it "does not tell the nudger to stop instances immediately if there are no extra instances" do
+        nudger.should_not_receive(:stop_instances_immediately)
+
+        harmonizer.on_extra_instances(droplet, [])
       end
     end
 

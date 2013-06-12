@@ -117,6 +117,8 @@ module HealthManager
     end
 
     def on_extra_instances(droplet, extra_instances)
+      return if extra_instances.empty?
+
       logger.info("extra instances: #{extra_instances.inspect}")
       if droplet.desired_state_update_required?
         logger.info { "harmonizer: desired_state_update_required: extra_instances ignored: #{extra_instances}" }
@@ -247,9 +249,7 @@ module HealthManager
       end
 
       droplet.update_extra_instances
-      unless droplet.extra_instances.empty?
-        on_extra_instances(droplet, droplet.extra_instances)
-      end
+      on_extra_instances(droplet, droplet.extra_instances)
 
       droplet.prune_crashes
     end

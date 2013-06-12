@@ -2,11 +2,11 @@ require 'spec_helper'
 
 describe HealthManager::ActualState do
   let(:droplet_registry) { HealthManager::DropletRegistry.new }
-
+  let(:harmonizer) { double }
   before do
     HealthManager::Droplet.flapping_death = 3
     @actual_state = HealthManager::ActualState.new({}, HealthManager::Varz.new, droplet_registry)
-    @actual_state.harmonizer = double
+    @actual_state.harmonizer = harmonizer
   end
 
   after do
@@ -66,6 +66,7 @@ describe HealthManager::ActualState do
       instance = @droplet.get_instance(@droplet.live_version, 0)
       instance['state'].should == 'DOWN'
       instance['last_heartbeat'].should be_nil
+      harmonizer.stub(:on_extra_instances)
     end
 
     def make_and_send_heartbeat
@@ -85,6 +86,7 @@ describe HealthManager::ActualState do
     end
 
     it 'should forward heartbeats' do
+      harmonizer.should_receive(:on_extra_instances)
       make_and_send_heartbeat
       check_instance_state
     end
@@ -101,7 +103,7 @@ describe HealthManager::ActualState do
     end
 
     it 'should mark instances that were stopped or evacuated as DOWN' do
-      @actual_state.harmonizer.stub(:on_exit_dea)
+      harmonizer.stub(:on_exit_dea)
       make_and_send_heartbeat
       check_instance_state('RUNNING')
 
@@ -114,13 +116,13 @@ describe HealthManager::ActualState do
     end
 
     it "calls harmonizer.on_exit_dea when the DEA shuts down" do
-      @actual_state.harmonizer.should_receive(:on_exit_dea)
+      harmonizer.should_receive(:on_exit_dea)
       make_and_send_heartbeat
       make_and_send_exited_message("DEA_SHUTDOWN")
     end
 
     it "calls harmonizer.on_exit_dea when the DEA evacuates" do
-      @actual_state.harmonizer.should_receive(:on_exit_dea)
+      harmonizer.should_receive(:on_exit_dea)
       make_and_send_heartbeat
       make_and_send_exited_message("DEA_EVACUATION")
     end
