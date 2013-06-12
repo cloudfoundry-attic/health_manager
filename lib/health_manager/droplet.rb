@@ -11,42 +11,6 @@ module HealthManager
       attr_accessor :flapping_timeout
       attr_accessor :flapping_death
       attr_accessor :droplet_gc_grace_period
-
-      def known_event_types
-        [
-          :extra_app,
-          :missing_instances,
-          :extra_instances,
-          :exit_crashed,
-          :exit_stopped,
-          :exit_dea,
-          :droplet_updated,
-        ]
-      end
-
-      def add_listener(event_type, &block)
-        check_event_type(event_type)
-        @listeners ||= {}
-        @listeners[event_type] ||= []
-        @listeners[event_type] << block
-      end
-
-      def notify_listener(event_type, droplet, *args)
-        check_event_type(event_type)
-        return unless @listeners && @listeners[event_type]
-        listeners = @listeners[event_type]
-        listeners.each do |block|
-          block.call(droplet, *args)
-        end
-      end
-
-      def check_event_type(event_type)
-        raise ArgumentError, "Unknown event type: #{event_type}" unless known_event_types.include?(event_type)
-      end
-
-      def remove_all_listeners
-        @listeners = {}
-      end
     end
 
     attr_reader :id
@@ -94,10 +58,6 @@ module HealthManager
 
       @desired_state_update_required = false
       @desired_state_update_timestamp = now
-    end
-
-    def notify(event_type, *args)
-      self.class.notify_listener(event_type, self, *args)
     end
 
     def to_json(*a)

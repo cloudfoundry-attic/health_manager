@@ -9,10 +9,6 @@ describe HealthManager::ActualState do
     @actual_state.harmonizer = harmonizer
   end
 
-  after do
-    HealthManager::Droplet.remove_all_listeners
-  end
-
   describe "check_availability" do
     context "when not connected to nats" do
       before do

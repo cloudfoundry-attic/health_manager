@@ -2,14 +2,11 @@ require 'spec_helper'
 
 describe HealthManager::Droplet do
   before do
-    HealthManager::Droplet.remove_all_listeners
     HealthManager::Droplet.heartbeat_deadline = 10
     HealthManager::Droplet.flapping_death = 1
     HealthManager::Droplet.droplet_gc_grace_period = 60
     HealthManager::Droplet.desired_state_update_deadline = 50
   end
-
-  after { HealthManager::Droplet.remove_all_listeners }
 
   describe "process_heartbeat" do
     let(:droplet) { HealthManager::Droplet.new(2) }
