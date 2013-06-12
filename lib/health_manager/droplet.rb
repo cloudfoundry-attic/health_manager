@@ -247,7 +247,6 @@ module HealthManager
         'timestamp' => now,
         'crash_timestamp' => message['crash_timestamp']
       }
-      notify(:exit_crashed, message)
     end
 
     def process_droplet_updated(message)

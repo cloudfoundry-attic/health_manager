@@ -64,22 +64,6 @@ module HealthManager
         before { subject.prepare }
         after { Droplet.remove_all_listeners }
 
-        describe "on exit_crashed" do
-          context "when instance is flapping" do
-            it "executes flapping policy" do
-              subject.should_receive(:execute_flapping_policy).with(droplet, 0, {"state" => "FLAPPING"}, true)
-              Droplet.notify_listener(:exit_crashed, droplet, {"version" => 0, "index" => 0})
-            end
-          end
-
-          context "when instance is NOT flapping" do
-            it "executes NOT flapping policy" do
-              nudger.should_receive(:start_instance).with(droplet, 1, LOW_PRIORITY)
-              Droplet.notify_listener(:exit_crashed, droplet, {"version" => 1, "index" => 1})
-            end
-          end
-        end
-
         describe "on droplet update" do
           def test_listener
             Droplet.notify_listener(:droplet_updated, droplet)
@@ -239,6 +223,22 @@ module HealthManager
         nudger.should_not_receive(:stop_instances_immediately)
 
         harmonizer.on_extra_instances(droplet, [])
+      end
+    end
+
+    describe "on_exit_crashed" do
+      let(:instance) { {} }
+      let(:droplet) { double(:get_instance => instance) }
+
+      it "executes flapping policy if instance is flapping" do
+        instance["state"] = FLAPPING
+        harmonizer.should_receive(:execute_flapping_policy).with(droplet, 1, instance, true)
+        harmonizer.on_exit_crashed(droplet, {"index" => 1})
+      end
+
+      it "tells the nudger to start the instance" do
+        nudger.should_receive(:start_instance).with(droplet, 1, HealthManager::LOW_PRIORITY)
+        harmonizer.on_exit_crashed(droplet, {"index" => 1})
       end
     end
 

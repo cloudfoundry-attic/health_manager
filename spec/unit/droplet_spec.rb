@@ -69,12 +69,8 @@ describe HealthManager::Droplet do
     app, _ = make_app
     invoked = false
 
-    HealthManager::Droplet.add_listener :exit_crashed do
-      invoked = true
-    end
     message = make_crash_message(app)
     app.process_exit_crash(message)
-    invoked.should be_true
 
     app.crashes.should have_key(message['instance'])
   end

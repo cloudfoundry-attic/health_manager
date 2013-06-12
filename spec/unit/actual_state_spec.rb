@@ -86,12 +86,13 @@ describe HealthManager::ActualState do
     end
 
     it 'should forward heartbeats' do
-      harmonizer.should_receive(:on_extra_instances)
+      harmonizer.should_receive(:on_extra_instances).with(instance_of(HealthManager::Droplet), [])
       make_and_send_heartbeat
       check_instance_state
     end
 
     it 'should mark instances that crashed as CRASHED' do
+      harmonizer.should_receive(:on_exit_crashed).with(instance_of(HealthManager::Droplet), hash_including("reason" => "CRASHED"))
       make_and_send_heartbeat
       check_instance_state('RUNNING')
 

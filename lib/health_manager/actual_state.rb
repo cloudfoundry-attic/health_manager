@@ -70,6 +70,7 @@ module HealthManager
       when CRASHED
         varz[:crashed_instances] += 1
         droplet.process_exit_crash(message)
+        harmonizer.on_exit_crashed(droplet, message)
       when DEA_SHUTDOWN, DEA_EVACUATION
         droplet.reset_missing_indices
         harmonizer.on_exit_dea(droplet, message)

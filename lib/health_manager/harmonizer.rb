@@ -31,19 +31,6 @@ module HealthManager
       Droplet.flapping_death = interval(:flapping_death)
       Droplet.droplet_gc_grace_period = interval(:droplet_gc_grace_period)
 
-      Droplet.add_listener(:exit_crashed) do |droplet, message|
-        logger.debug { "harmonizer: exit_crashed" }
-
-        index = message['index']
-        instance = droplet.get_instance(message['version'], message['index'])
-
-        if flapping?(instance)
-          execute_flapping_policy(droplet, index, instance, true)
-        else
-          nudger.start_instance(droplet, index, LOW_PRIORITY)
-        end
-      end
-
       Droplet.add_listener(:droplet_updated) do |droplet, message|
         logger.info { "harmonizer: droplet_updated: #{message}" }
         droplet.desired_state_update_required = true
@@ -79,6 +66,19 @@ module HealthManager
         scheduler.at_interval :check_shadowing do
           shadower.check_shadowing
         end
+      end
+    end
+
+    def on_exit_crashed(droplet, message)
+      logger.debug { "harmonizer: exit_crashed" }
+
+      index = message['index']
+      instance = droplet.get_instance(message['version'], message['index'])
+
+      if flapping?(instance)
+        execute_flapping_policy(droplet, index, instance, true)
+      else
+        nudger.start_instance(droplet, index, LOW_PRIORITY)
       end
     end
 
