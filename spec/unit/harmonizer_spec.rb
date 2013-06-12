@@ -35,7 +35,7 @@ module HealthManager
       }
     end
 
-    subject do
+    subject(:harmonizer) do
       Harmonizer.new(config, varz, nudger, scheduler, actual_state, desired_state, droplet_registry)
     end
 
@@ -63,26 +63,6 @@ module HealthManager
       describe "listeners" do
         before { subject.prepare }
         after { Droplet.remove_all_listeners }
-
-        describe "on missing instances" do
-          context "when desired state update is required" do
-            before { droplet.desired_state_update_required = false }
-
-            context "when instance is flapping" do
-              it "executes flapping policy" do
-                subject.should_receive(:execute_flapping_policy).with(droplet, 0, {"state" => "FLAPPING"}, false)
-                Droplet.notify_listener(:missing_instances, droplet, [0])
-              end
-            end
-
-            context "when instance is NOT flapping" do
-              it "executes NOT flapping policy" do
-                nudger.should_receive(:start_instance).with(droplet, 1, NORMAL_PRIORITY)
-                Droplet.notify_listener(:missing_instances, droplet, [1])
-              end
-            end
-          end
-        end
 
         describe "on extra_instances" do
           context "when desired state update is required" do
@@ -173,9 +153,91 @@ module HealthManager
       end
     end
 
+    describe "on_missing_instances" do
+      let(:droplet) do
+        droplet = Droplet.new("app-id")
+        droplet.stub(:get_instance) do |ind|
+          instances = [
+            {"state" => "FLAPPING"},
+            {"state" => "RUNNING"}
+          ]
+          instances[ind]
+        end
+        droplet
+      end
+
+      context "when desired state update is required" do
+        before { droplet.desired_state_update_required = false }
+
+        context "when instance is flapping" do
+          before { droplet.stub(:missing_indices).and_return([0]) }
+          it "executes flapping policy" do
+            subject.should_receive(:execute_flapping_policy).with(droplet, 0, {"state" => "FLAPPING"}, false)
+            harmonizer.on_missing_instances(droplet)
+          end
+        end
+
+        context "when instance is NOT flapping" do
+          before { droplet.stub(:missing_indices).and_return([1]) }
+          it "executes NOT flapping policy" do
+            nudger.should_receive(:start_instance).with(droplet, 1, NORMAL_PRIORITY)
+            harmonizer.on_missing_instances(droplet)
+          end
+        end
+      end
+    end
+
+    describe "#analyze_droplet" do
+      let(:droplet) { double }
+
+      before do
+        droplet.stub(:is_extra? => false, :has_missing_indices? => false, :extra_instances => [], :prune_crashes => nil)
+      end
+
+      it "calls on_extra_app if the droplet is extra" do
+        droplet.stub(:is_extra? => true)
+        harmonizer.should_receive(:on_extra_app).with(droplet)
+        harmonizer.analyze_droplet(droplet)
+      end
+
+      it "skips on_extra_app if the droplet is not extra" do
+        harmonizer.should_not_receive(:on_extra_app)
+        harmonizer.analyze_droplet(droplet)
+      end
+
+      it "calls on_missing_instances if the droplet has missing instances" do
+        droplet.stub(:has_missing_indices? => true)
+        harmonizer.should_receive(:on_missing_instances).with(droplet)
+        droplet.should_receive(:reset_missing_indices)
+        harmonizer.analyze_droplet(droplet)
+      end
+
+      it "skips on_missing_instances if the droplet does not have missing instances" do
+        harmonizer.should_not_receive(:on_missing_instances)
+        harmonizer.analyze_droplet(droplet)
+      end
+
+      it "calls on_extra_instances if the droplet has extra_instances" do
+        droplet.stub(:extra_instances => [1, 2, 3])
+        harmonizer.should_receive(:on_extra_instances).with(droplet, [1, 2, 3])
+        harmonizer.analyze_droplet(droplet)
+      end
+
+      it "skips on_extra_instances if the droplet has no extra_instances" do
+        harmonizer.should_not_receive(:on_extra_instances)
+        harmonizer.analyze_droplet(droplet)
+      end
+
+      it "prunes crashes" do
+        droplet.should_receive(:prune_crashes)
+        harmonizer.analyze_droplet(droplet)
+      end
+    end
+
     describe "#analyze_apps" do
       before do
         scheduler.stub(:task_running?) { false }
+        subject.stub(:analyze_droplet)
         desired_state.stub(:available?) { true }
       end
 
@@ -186,7 +248,7 @@ module HealthManager
 
       it "when called in a row only analyizes the droplets once" do
         (ITERATIONS_PER_QUANTUM + 1).times do |i|
-          droplet_registry.get(i).should_receive(:analyze).once
+          subject.should_receive(:analyze_droplet).with(droplet_registry.get(i)).once
         end
 
         subject.analyze_apps
@@ -213,10 +275,10 @@ module HealthManager
 
         it "starts with the next slice" do
           (ITERATIONS_PER_QUANTUM).times do |i|
-            droplet_registry.get(i).should_not_receive(:analyze)
+            subject.should_not_receive(:analyze_droplet).with(droplet_registry.get(i))
             droplet_registry.get(i).should_not_receive(:update_realtime_varz)
           end
-          droplet_registry.get(ITERATIONS_PER_QUANTUM).should_receive(:analyze)
+          subject.should_receive(:analyze_droplet).with(droplet_registry.get(ITERATIONS_PER_QUANTUM))
           droplet_registry.get(ITERATIONS_PER_QUANTUM).should_receive(:update_realtime_varz)
           subject.analyze_apps
         end
@@ -241,7 +303,7 @@ module HealthManager
           end
 
           it "resets current slice for next run" do
-            droplet_registry.get(0).should_receive(:analyze)
+            subject.should_receive(:analyze_droplet).with(droplet_registry.get(0))
             subject.analyze_apps
           end
         end

@@ -52,46 +52,6 @@ describe HealthManager::Droplet do
     end
   end
 
-  describe "#analyze" do
-    before { Timecop.freeze }
-    after { Timecop.return }
-
-    let!(:app) { described_class.new(1) }
-
-    before do
-      @called_extra_app = nil
-      HealthManager::Droplet.add_listener(:extra_app) do |app|
-        @called_extra_app = app
-      end
-    end
-
-    context "when desired was not updated" do
-      it "notifies of an extra app after desired state was not recently updated" do
-        Timecop.travel(HealthManager::Droplet.desired_state_update_deadline)
-        app.analyze
-        @called_extra_app.should be_nil
-
-        Timecop.travel(1)
-        app.analyze
-        @called_extra_app.should == app
-      end
-    end
-
-    context "when desired was updated" do
-      before { app.set_desired_state(make_desired_droplet) }
-
-      it "notifies of an extra app after desired state was not recently updated" do
-        Timecop.travel(HealthManager::Droplet.desired_state_update_deadline)
-        app.analyze
-        @called_extra_app.should be_nil
-
-        Timecop.travel(1)
-        app.analyze
-        @called_extra_app.should == app
-      end
-    end
-  end
-
   it 'should not invoke missing_instances for non-staged states' do
     app, _ = make_app('package_state' => 'PENDING')
     app.missing_indices.should == []
@@ -119,21 +79,13 @@ describe HealthManager::Droplet do
     app.crashes.should have_key(message['instance'])
   end
 
-  it 'should invoke missing_instances event handler' do
-    future_answer = [1, 3]
-    event_handler_invoked = false
+  it 'should have missing indices' do
+    missing_indices = [1, 3]
     app, _ = make_app
 
     #no heartbeats arrived yet, so all instances are assumed missing
     app.missing_indices.should == [0, 1, 2, 3]
 
-    HealthManager::Droplet.add_listener :missing_instances do |a, indices|
-      a.should == app
-      indices.should == future_answer
-      event_handler_invoked = true
-    end
-
-    event_handler_invoked.should be_false
     hbs = make_heartbeat([app])['droplets']
 
     hbs.delete_at(3)
@@ -143,20 +95,10 @@ describe HealthManager::Droplet do
       app.process_heartbeat(hb)
     }
 
-    app.missing_indices.should == future_answer
-    event_handler_invoked.should be_false
-
-    app.analyze
-
-    event_handler_invoked.should be_false
-
-    HealthManager::Droplet.heartbeat_deadline = 0
-    app.analyze
-
-    event_handler_invoked.should be_true
+    expect(app.missing_indices).to eql(missing_indices)
   end
 
-  it 'should invoke extra_instances event handler' do
+  it 'should have extra instances' do
     app, desired = make_app
     extra_instance_id = desired['version'] + "-0"
 
@@ -165,22 +107,13 @@ describe HealthManager::Droplet do
 
     #no heartbeats arrived yet, so all instances are assumed missing
 
-    HealthManager::Droplet.add_listener :extra_instances do |a, indices|
-      a.should == app
-      indices.should == future_answer
-      event_handler_invoked = true
-    end
-
-    event_handler_invoked.should be_false
     hbs = make_heartbeat([app])['droplets']
 
     hbs << hbs.first.dup
     hbs.first['index'] = 4
 
     hbs.each { |hb| app.process_heartbeat(hb) }
-    event_handler_invoked.should be_false
-    app.analyze
-    event_handler_invoked.should be_true
+    expect(app.extra_instances.size).to be > 0
   end
 
   describe "#ripe_for_gc?" do
@@ -294,7 +227,6 @@ describe HealthManager::Droplet do
       beat['droplets'].each do |b|
         droplet.process_heartbeat(b)
       end
-      droplet.analyze
     end
 
     it "increments the total apps on varz" do

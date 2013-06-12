@@ -139,17 +139,12 @@ module HealthManager
       end
     end
 
-    def check_for_missing_indices
-      unless reset_recently?
-        indices = missing_indices
-        unless indices.empty?
-          notify(:missing_instances, indices)
-          reset_missing_indices
-        end
-      end
+    def has_missing_indices?
+      # TODO: add test
+      !reset_recently? && !missing_indices.empty?
     end
 
-    def check_and_prune_extra_indices
+    def extra_instances
       extra_instances = []
 
       # first, go through each version and prune indices
@@ -185,10 +180,7 @@ module HealthManager
         end
       end
 
-      unless extra_instances.empty?
-        logger.info("extra instances: #{extra_instances.inspect}")
-        notify(:extra_instances, extra_instances)
-      end
+      extra_instances
     end
 
     def reset_missing_indices
@@ -226,14 +218,6 @@ module HealthManager
       @num_instances = val
       reset_missing_indices
       @num_instances
-    end
-
-    #check for all anomalies and trigger appropriate events so that listeners can take action
-    def analyze
-      check_if_extra
-      check_for_missing_indices
-      check_and_prune_extra_indices
-      prune_crashes
     end
 
     def running_state?(instance)
@@ -347,11 +331,11 @@ module HealthManager
       end
     end
 
-    private
-
-    def check_if_extra
-      notify(:extra_app) if desired_state_update_overdue?
+    def is_extra?
+      desired_state_update_overdue?
     end
+
+    private
 
     def desired_state_update_overdue?
       timestamp_older_than?(

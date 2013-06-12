@@ -30,41 +30,8 @@ module HealthManager
       Droplet.flapping_death = interval(:flapping_death)
       Droplet.droplet_gc_grace_period = interval(:droplet_gc_grace_period)
 
-      Droplet.add_listener(:extra_app) do |droplet|
-        on_extra_app(droplet)
-      end
-
-      #set up listeners for anomalous events to respond with correcting actions
-      Droplet.add_listener(:missing_instances) do |droplet, missing_indices|
-        unless actual_state.available?
-          logger.info { "harmonizer: actual state was not available." }
-          next
-        end
-
-        if droplet.desired_state_update_required?
-          logger.info { "harmonizer: desired_state_update_required: missing_instances ignored app_id=#{droplet.id} indices=#{missing_indices}" }
-          next
-        end
-
-        logger.debug { "harmonizer: missing_instances"}
-        missing_indices.each do |index|
-          instance = droplet.get_instance(index)
-          if flapping?(instance)
-            execute_flapping_policy(droplet, index, instance, false)
-          else
-            nudger.start_instance(droplet, index, NORMAL_PRIORITY)
-          end
-        end
-      end
-
       Droplet.add_listener(:extra_instances) do |droplet, extra_instances|
-        if droplet.desired_state_update_required?
-          logger.info { "harmonizer: desired_state_update_required: extra_instances ignored: #{extra_instances}" }
-          next
-        end
-
-        logger.debug { "harmonizer: extra_instances"}
-        nudger.stop_instances_immediately(droplet, extra_instances)
+        on_extra_instances(droplet, extra_instances)
       end
 
       Droplet.add_listener(:exit_dea) do |droplet, message|
@@ -128,6 +95,39 @@ module HealthManager
           shadower.check_shadowing
         end
       end
+    end
+
+    def on_missing_instances(droplet)
+      unless actual_state.available?
+        logger.info { "harmonizer: actual state was not available." }
+        return
+      end
+
+      if droplet.desired_state_update_required?
+        logger.info { "harmonizer: desired_state_update_required: missing_instances ignored app_id=#{droplet.id} indices=#{missing_indices}" }
+        return
+      end
+
+      logger.debug { "harmonizer: missing_instances"}
+      droplet.missing_indices.each do |index|
+        instance = droplet.get_instance(index)
+        if flapping?(instance)
+          execute_flapping_policy(droplet, index, instance, false)
+        else
+          nudger.start_instance(droplet, index, NORMAL_PRIORITY)
+        end
+      end
+    end
+
+    def on_extra_instances(droplet, extra_instances)
+        logger.info("extra instances: #{extra_instances.inspect}")
+        if droplet.desired_state_update_required?
+          logger.info { "harmonizer: desired_state_update_required: extra_instances ignored: #{extra_instances}" }
+          return
+        end
+
+        logger.debug { "harmonizer: extra_instances"}
+        nudger.stop_instances_immediately(droplet, extra_instances)
     end
 
     # Currently we do not check that desired state
@@ -245,6 +245,22 @@ module HealthManager
       end
     end
 
+    def analyze_droplet(droplet)
+      on_extra_app(droplet) if droplet.is_extra?
+
+      if droplet.has_missing_indices?
+        on_missing_instances(droplet)
+        droplet.reset_missing_indices
+      end
+
+      extra_instances = droplet.extra_instances
+      unless extra_instances.empty?
+        on_extra_instances(droplet, extra_instances)
+      end
+
+      droplet.prune_crashes
+    end
+
     private
 
     def finish_droplet_analysis
@@ -271,7 +287,7 @@ module HealthManager
 
       if droplets && droplets.any?
         droplets.each do |droplet|
-          droplet.analyze
+          analyze_droplet(droplet)
           droplet.update_realtime_varz(varz)
         end
       end
