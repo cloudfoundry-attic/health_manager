@@ -226,11 +226,6 @@ module HealthManager
       @desired_state_update_required
     end
 
-    def process_exit_dea(message)
-      reset_missing_indices
-      notify(:exit_dea, message)
-    end
-
     def process_exit_stopped(message)
       reset_missing_indices
       notify(:exit_stopped, message)

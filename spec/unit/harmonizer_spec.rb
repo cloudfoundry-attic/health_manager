@@ -64,13 +64,6 @@ module HealthManager
         before { subject.prepare }
         after { Droplet.remove_all_listeners }
 
-        describe "on exit dea" do
-          it "starts instance with high priority" do
-            nudger.should_receive(:start_instance).with(droplet, 5, HIGH_PRIORITY)
-            Droplet.notify_listener(:exit_dea, droplet, {"index" => 5})
-          end
-        end
-
         describe "on exit_crashed" do
           context "when instance is flapping" do
             it "executes flapping policy" do
@@ -317,6 +310,14 @@ module HealthManager
         droplet = droplet_registry.get(4)
         subject.update_desired_state
         expect(droplet_registry).to_not include(droplet)
+      end
+    end
+
+    describe "on_exit_dea" do
+      let(:droplet) { Droplet.new(2) }
+      it "tells nudger to start instance" do
+        nudger.should_receive(:start_instance).with(droplet, 1, HealthManager::HIGH_PRIORITY)
+        harmonizer.on_exit_dea(droplet, {"index" => 1})
       end
     end
   end

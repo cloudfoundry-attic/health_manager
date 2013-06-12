@@ -71,7 +71,8 @@ module HealthManager
         varz[:crashed_instances] += 1
         droplet.process_exit_crash(message)
       when DEA_SHUTDOWN, DEA_EVACUATION
-        droplet.process_exit_dea(message)
+        droplet.reset_missing_indices
+        harmonizer.on_exit_dea(droplet, message)
       when STOPPED
         droplet.process_exit_stopped(message)
       end

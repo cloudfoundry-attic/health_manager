@@ -31,13 +31,6 @@ module HealthManager
       Droplet.flapping_death = interval(:flapping_death)
       Droplet.droplet_gc_grace_period = interval(:droplet_gc_grace_period)
 
-      Droplet.add_listener(:exit_dea) do |droplet, message|
-        index = message['index']
-
-        logger.info { "harmonizer: exit_dea: app_id=#{droplet.id} index=#{index}" }
-        nudger.start_instance(droplet, index, HIGH_PRIORITY)
-      end
-
       Droplet.add_listener(:exit_crashed) do |droplet, message|
         logger.debug { "harmonizer: exit_crashed" }
 
@@ -92,6 +85,13 @@ module HealthManager
           shadower.check_shadowing
         end
       end
+    end
+
+    def on_exit_dea(droplet, message)
+      index = message['index']
+
+      logger.info { "harmonizer: exit_dea: app_id=#{droplet.id} index=#{index}" }
+      nudger.start_instance(droplet, index, HIGH_PRIORITY)
     end
 
     def on_missing_instances(droplet)

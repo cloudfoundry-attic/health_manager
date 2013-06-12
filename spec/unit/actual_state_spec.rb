@@ -6,6 +6,7 @@ describe HealthManager::ActualState do
   before do
     HealthManager::Droplet.flapping_death = 3
     @actual_state = HealthManager::ActualState.new({}, HealthManager::Varz.new, droplet_registry)
+    @actual_state.harmonizer = double
   end
 
   after do
@@ -100,6 +101,7 @@ describe HealthManager::ActualState do
     end
 
     it 'should mark instances that were stopped or evacuated as DOWN' do
+      @actual_state.harmonizer.stub(:on_exit_dea)
       make_and_send_heartbeat
       check_instance_state('RUNNING')
 
@@ -109,6 +111,18 @@ describe HealthManager::ActualState do
         make_and_send_heartbeat
         check_instance_state('RUNNING')
       end
+    end
+
+    it "calls harmonizer.on_exit_dea when the DEA shuts down" do
+      @actual_state.harmonizer.should_receive(:on_exit_dea)
+      make_and_send_heartbeat
+      make_and_send_exited_message("DEA_SHUTDOWN")
+    end
+
+    it "calls harmonizer.on_exit_dea when the DEA evacuates" do
+      @actual_state.harmonizer.should_receive(:on_exit_dea)
+      make_and_send_heartbeat
+      make_and_send_exited_message("DEA_EVACUATION")
     end
   end
 
