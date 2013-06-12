@@ -219,7 +219,10 @@ module HealthManager
         return
       end
 
-      return unless desired_state.available?
+      unless desired_state.available?
+        logger.warn("Droplet analysis interrupted. Desired state is not available")
+        return
+      end
 
       scheduler.mark_task_started(:droplets_analysis)
 
