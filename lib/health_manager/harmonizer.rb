@@ -233,6 +233,8 @@ module HealthManager
       end
 
       droplets_analysis_for_slice
+
+      scheduler.mark_task_stopped(:droplets_analysis)
     end
 
     def update_desired_state
@@ -281,8 +283,6 @@ module HealthManager
         "#{varz[:missing_instances]} missing instances. ",
         "Elapsed time: #{elapsed}"
       ].join
-
-      scheduler.mark_task_stopped(:droplets_analysis)
     end
 
     def droplets_analysis_for_slice

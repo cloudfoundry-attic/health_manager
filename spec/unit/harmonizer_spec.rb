@@ -242,7 +242,8 @@ module HealthManager
       end
 
       it "marks droplets_analysis task as running" do
-        scheduler.should_receive(:mark_task_started).with(:droplets_analysis)
+        scheduler.should_receive(:mark_task_started).with(:droplets_analysis).ordered
+        scheduler.should_receive(:mark_task_stopped).with(:droplets_analysis).ordered
         subject.analyze_apps
       end
 
