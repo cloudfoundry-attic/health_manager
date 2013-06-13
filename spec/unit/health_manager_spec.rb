@@ -69,7 +69,13 @@ describe HealthManager do
       @actual_state = manager.actual_state
       manager.droplet_registry.size.should == 0
 
-      HealthManager::Droplet.droplet_gc_grace_period = GRACE_PERIOD
+      HealthManager::Droplet.any_instance.stub(:config) do
+        {
+          :intervals => {
+            :droplet_gc_grace_period => GRACE_PERIOD
+          }
+        }
+      end
     end
 
     it 'should not GC when a recent h/b arrives' do
