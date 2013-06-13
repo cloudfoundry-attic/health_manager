@@ -1,11 +1,19 @@
 module HealthManager::Common
 
+  def load_config(config)
+    @config = config
+  end
+
+  def config
+    @config || {}
+  end
+
   def interval(name)
-    get_interval_from_config_or_default(name, @config)
+    get_interval_from_config_or_default(name, config)
   end
 
   def cc_partition
-    @cc_partition ||= get_param_from_config_or_default(:cc_partition, @config)
+    @cc_partition ||= get_param_from_config_or_default(:cc_partition, config)
   end
 
   def get_interval_from_config_or_default(name, config)
@@ -27,7 +35,7 @@ module HealthManager::Common
   def should_shadow?
     #do NOT shadow by default
     ENV[HealthManager::HM_SHADOW] == 'true' ||
-      get_param_from_config_or_default('shadow_mode', @config) == 'enable'
+      get_param_from_config_or_default('shadow_mode', config) == 'enable'
   end
 
   def logger

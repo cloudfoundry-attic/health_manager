@@ -19,7 +19,7 @@ describe HealthManager::DesiredState do
   }
   let(:manager) { HealthManager::Manager.new(config) }
   let(:varz) { manager.varz }
-  let(:provider) { manager.desired_state }
+  let(:provider) { manager.desired_state.tap { |o| o.stub(:config => config) } }
 
   describe "bulk_url" do
     context "when url starts with https" do
@@ -367,7 +367,11 @@ describe HealthManager::DesiredState do
   end
 
   describe "#bulk_url" do
-    subject { described_class.new(config, varz) }
+    subject do
+      desired_state = described_class.new(varz)
+      desired_state.stub(:config) { config }
+      desired_state
+    end
 
     context "with no scheme configured" do
       let(:bulk_api_host) { "api.vcap.me" }

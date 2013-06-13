@@ -4,8 +4,7 @@ module HealthManager
     attr_reader :varz
     attr_accessor :harmonizer
 
-    def initialize(config, varz, droplet_registry)
-      @config = config
+    def initialize(varz, droplet_registry)
       @droplet_registry = droplet_registry
       @varz = varz
     end

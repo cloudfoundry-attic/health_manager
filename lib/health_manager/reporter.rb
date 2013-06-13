@@ -6,8 +6,7 @@ module HealthManager
 
     attr_reader :varz, :droplet_registry, :publisher
 
-    def initialize(config = {}, varz, droplet_registry, publisher)
-      @config = config
+    def initialize(varz, droplet_registry, publisher)
       @varz = varz
       @droplet_registry = droplet_registry
       @publisher = publisher

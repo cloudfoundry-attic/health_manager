@@ -32,7 +32,7 @@ module HealthManager
     attr_reader :varz, :actual_state, :desired_state, :droplet_registry, :reporter, :nudger, :publisher, :harmonizer
 
     def initialize(config = {})
-      @config = config
+      load_config(config)
 
       @log_counter = Steno::Sink::Counter.new
 
@@ -43,31 +43,31 @@ module HealthManager
 
       logger.info("HealthManager: initializing")
 
-      @varz = Varz.new(@config)
+      @varz = Varz.new
 
       @publisher = if should_shadow?
-        @shadower = Shadower.new(@config)
+        @shadower = Shadower.new
       else
         NATS
       end
 
-      @scheduler = Scheduler.new(@config)
+      @scheduler = Scheduler.new
       @droplet_registry = DropletRegistry.new
-      @actual_state = ActualState.new(@config, @varz, @droplet_registry)
-      @desired_state = DesiredState.new(@config, @varz)
-      @nudger = Nudger.new(@config, @varz, @publisher)
-      @harmonizer = Harmonizer.new(@config, @varz, @nudger, @scheduler, @actual_state, @desired_state, @droplet_registry)
-      @reporter = Reporter.new(@config, @varz, @droplet_registry, @publisher)
+      @actual_state = ActualState.new(@varz, @droplet_registry)
+      @desired_state = DesiredState.new(@varz)
+      @nudger = Nudger.new(@varz, @publisher)
+      @harmonizer = Harmonizer.new(@varz, @nudger, @scheduler, @actual_state, @desired_state, @droplet_registry)
+      @reporter = Reporter.new(@varz, @droplet_registry, @publisher)
     end
 
     def register_as_vcap_component
       logger.info("registering VCAP component")
       logger.debug("config: #{sanitized_config}")
 
-      status_config = @config['status'] || {}
+      status_config = config['status'] || {}
       VCAP::Component.register(:type => 'HealthManager',
-                               :host => VCAP.local_ip(@config['local_route']),
-                               :index => @config['index'] || 0,
+                               :host => VCAP.local_ip(config['local_route']),
+                               :index => config['index'] || 0,
                                :config => sanitized_config,
                                :nats => @publisher,
                                :port => status_config['port'],
@@ -110,9 +110,9 @@ module HealthManager
     end
 
     def sanitized_config
-      config = @config.dup
-      config.delete(:health_manager_component_registry)
-      config
+      sanitized_config = config.dup
+      sanitized_config.delete(:health_manager_component_registry)
+      sanitized_config
     end
 
     def shutdown
@@ -122,7 +122,7 @@ module HealthManager
     end
 
     def get_nats_uri
-      ENV[NATS_URI] || @config['mbus']
+      ENV[NATS_URI] || config['mbus']
     end
 
     def self.now
