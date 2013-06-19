@@ -223,12 +223,10 @@ module HealthManager
       varz.reset_desired!
       droplet_ids = []
       desired_state.each_droplet do |droplet_id, desired_droplet|
-        droplet_ids << droplet_id
+        droplet_ids << droplet_id.to_s
         @droplet_registry.get(droplet_id).set_desired_state(desired_droplet)
       end
-      @droplet_registry.each do |droplet_id, _|
-        @droplet_registry.delete_if { !droplet_ids.include?(droplet_id) }
-      end
+      @droplet_registry.delete_if { |id, _| !droplet_ids.include?(id) }
     end
 
     def analyze_droplet(droplet)

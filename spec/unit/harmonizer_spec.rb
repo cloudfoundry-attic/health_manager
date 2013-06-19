@@ -301,9 +301,21 @@ module HealthManager
       end
 
       it "removes from registry droplets that are not in desired state" do
-        droplet = droplet_registry.get(4)
+        desired_ids = []
+        desired_ids << droplet_registry.get(0).id
+        desired_ids << droplet_registry.get(1).id
+        desired_ids << droplet_registry.get(2).id
+        desired_ids << droplet_registry.get(3).id
+
+        undesired_droplet = droplet_registry.get(4)
         subject.update_desired_state
-        expect(droplet_registry).to_not include(droplet)
+
+
+        desired_ids.each do |id|
+          expect(droplet_registry[id]).not_to be_nil
+        end
+        expect(droplet_registry).to_not include(undesired_droplet)
+
       end
     end
 
