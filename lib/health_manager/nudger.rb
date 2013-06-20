@@ -4,10 +4,9 @@ module HealthManager
 
     attr_reader :varz, :publisher
 
-    def initialize(config, varz, publisher)
-      @config = config
+    def initialize(varz, publisher)
       @queue = VCAP::PrioritySet.new
-      @queue_batch_size = get_interval_from_config_or_default(:queue_batch_size, @config)
+      @queue_batch_size = get_interval_from_config_or_default(:queue_batch_size, config)
       @varz = varz
       @publisher = publisher
     end

@@ -5,7 +5,7 @@ describe HealthManager::ActualState do
   let(:harmonizer) { double }
   before do
     HealthManager::Droplet.flapping_death = 3
-    @actual_state = HealthManager::ActualState.new({}, HealthManager::Varz.new, droplet_registry)
+    @actual_state = HealthManager::ActualState.new(HealthManager::Varz.new, droplet_registry)
     @actual_state.harmonizer = harmonizer
   end
 

@@ -38,8 +38,8 @@ HEARTBEAT_INTERVAL = 10
 
 
 @world = {
-  :config => @config,
-  :apps => Array.new(@config[:apps_number]),
+  :config => config,
+  :apps => Array.new(config[:apps_number]),
   :deas => [],
 }
 
@@ -314,7 +314,7 @@ end
 trap('INT') { bail }
 trap('SIGTERM') { bail }
 
-populate_world(@config, @world)
+populate_world(config, @world)
 
 say "connecting to NATS"
 

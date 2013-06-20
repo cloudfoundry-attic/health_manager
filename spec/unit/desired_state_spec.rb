@@ -20,7 +20,7 @@ describe HealthManager::DesiredState do
   let(:manager) { HealthManager::Manager.new(config) }
   let(:varz) { manager.varz }
   let(:droplet_registry) { manager.droplet_registry }
-  let(:provider) { manager.desired_state }
+  let(:provider) { manager.desired_state.tap { |o| o.stub(:config => config) } }
 
   describe "bulk_url" do
     context "when url starts with https" do
