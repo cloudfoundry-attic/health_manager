@@ -1,12 +1,21 @@
 require 'spec_helper'
 
 describe HealthManager::Droplet do
-  before do
-    HealthManager::Droplet.heartbeat_deadline = 10
-    HealthManager::Droplet.flapping_death = 1
-    HealthManager::Droplet.droplet_gc_grace_period = 60
-    HealthManager::Droplet.desired_state_update_deadline = 50
+  let(:droplet_gc_grace_period) { 60 }
+  let(:flapping_timeout) { 500 }
+  let(:config) do
+    {
+      :intervals => {
+        :droplet_gc_grace_period => droplet_gc_grace_period,
+        :heartbeat_deadline => 10,
+        :flapping_death => 1,
+        :desired_state_update_deadline => 50,
+        :flapping_timeout => flapping_timeout
+      }
+    }
   end
+
+  before { HealthManager::Droplet.any_instance.stub(:config) { config } }
 
   describe "process_heartbeat" do
     let(:droplet) { HealthManager::Droplet.new(2) }
@@ -110,7 +119,7 @@ describe HealthManager::Droplet do
     expect(app.extra_instances.size).to be > 0
   end
 
-  describe "#ripe_for_gc?" do
+  describe "ripe_for_gc?" do
     before { Timecop.freeze }
     after { Timecop.return }
 
@@ -124,7 +133,7 @@ describe HealthManager::Droplet do
 
     context "when app was never updated" do
       it "can be gc-ed at the end of gc period" do
-        Timecop.travel(end_of_gc_period = HealthManager::Droplet.droplet_gc_grace_period)
+        Timecop.travel(end_of_gc_period = droplet_gc_grace_period)
         app.should_not be_ripe_for_gc
 
         Timecop.travel(after_end_of_gc_period = 1)
@@ -140,7 +149,7 @@ describe HealthManager::Droplet do
 
       it "cannot be gc-ed at the end of gc period " +
         "because desired state indicates that app *should* be running" do
-        Timecop.travel(end_of_gc_period = HealthManager::Droplet.droplet_gc_grace_period - 10)
+        Timecop.travel(end_of_gc_period = droplet_gc_grace_period - 10)
         app.should_not be_ripe_for_gc
 
         Timecop.travel(after_end_of_gc_period = 1)
@@ -159,7 +168,7 @@ describe HealthManager::Droplet do
 
       it "can be gc-ed at the end of the gc period " +
         "because heartbeat alone does not indicate that app *should* be running" do
-        Timecop.travel(end_of_gc_period = HealthManager::Droplet.droplet_gc_grace_period - 10)
+        Timecop.travel(end_of_gc_period = droplet_gc_grace_period - 10)
         app.should_not be_ripe_for_gc
 
         Timecop.travel(after_end_of_gc_period = 1)
@@ -210,12 +219,11 @@ describe HealthManager::Droplet do
       heart
     end
     let(:droplet_state) { HealthManager::STARTED }
-    
+
     subject(:update_realtime_varz) { droplet.update_realtime_varz(varz) }
+    let(:flapping_timeout) { 3456 }
 
     before do
-      HealthManager::Droplet.flapping_timeout = 3456
-      HealthManager::Droplet.flapping_death = 1
       droplet.process_exit_crash(make_crash_message(droplet))
       droplet.instance_variable_set(:@state, droplet_state)
       beat['droplets'].each do |b|

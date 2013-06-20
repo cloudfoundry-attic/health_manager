@@ -5,14 +5,6 @@ module HealthManager
   class Droplet
     include HealthManager::Common
 
-    class << self
-      attr_accessor :heartbeat_deadline
-      attr_accessor :desired_state_update_deadline
-      attr_accessor :flapping_timeout
-      attr_accessor :flapping_death
-      attr_accessor :droplet_gc_grace_period
-    end
-
     attr_reader :id
     attr_reader :state
     attr_reader :live_version
@@ -38,7 +30,7 @@ module HealthManager
     end
 
     def ripe_for_gc?
-      timestamp_older_than?(@desired_state_update_timestamp, Droplet.droplet_gc_grace_period)
+      timestamp_older_than?(@desired_state_update_timestamp, interval(:droplet_gc_grace_period))
     end
 
     def set_desired_state(desired_droplet)
@@ -112,7 +104,7 @@ module HealthManager
       versions.each do |version, version_entry|
         version_entry['instances'].delete_if do |index, instance|  # deleting extra instances
 
-          if running_state?(instance) && timestamp_older_than?(instance['timestamp'], Droplet.heartbeat_deadline)
+          if running_state?(instance) && timestamp_older_than?(instance['timestamp'], interval(:droplet_lost))
             instance['state'] = DOWN
             instance['state_timestamp'] = now
           end
@@ -157,14 +149,14 @@ module HealthManager
         [
          instance['state'] == CRASHED,
          lhb.nil?,
-         lhb && timestamp_older_than?(lhb, Droplet.heartbeat_deadline)
+         lhb && timestamp_older_than?(lhb, interval(:droplet_lost))
         ].any? && !restart_pending?(i)
       end
     end
 
     def prune_crashes
       @crashes.delete_if { |_, crash|
-        timestamp_older_than?(crash['timestamp'], Droplet.flapping_timeout)
+        timestamp_older_than?(crash['timestamp'], interval(:flapping_timeout))
       }
     end
 
@@ -179,7 +171,7 @@ module HealthManager
     end
 
     def reset_recently?
-      timestamp_fresher_than?(@reset_timestamp, Droplet.heartbeat_deadline || 0)
+      timestamp_fresher_than?(@reset_timestamp, interval(:droplet_lost) || 0)
     end
 
     def desired_state_update_required?
@@ -195,11 +187,11 @@ module HealthManager
         logger.warn { "unexpected instance_id: #{message['instance']}, desired: #{instance['instance']}" }
       end
 
-      instance['crashes'] = 0 if timestamp_older_than?(instance['crash_timestamp'], Droplet.flapping_timeout)
+      instance['crashes'] = 0 if timestamp_older_than?(instance['crash_timestamp'], interval(:flapping_timeout))
       instance['crashes'] += 1
       instance['crash_timestamp'] = message['crash_timestamp']
 
-      if instance['crashes'] > Droplet.flapping_death
+      if instance['crashes'] > interval(:flapping_death)
         instance['state'] = FLAPPING
       end
 
@@ -286,7 +278,7 @@ module HealthManager
     def desired_state_update_overdue?
       timestamp_older_than?(
         @desired_state_update_timestamp,
-        Droplet.desired_state_update_deadline,
+        interval(:desired_state_lost),
       )
     end
 

@@ -23,13 +23,6 @@ module HealthManager
     def prepare
       logger.debug { "harmonizer: #prepare" }
 
-      #set system-wide configurations
-      Droplet.heartbeat_deadline = interval(:droplet_lost)
-      Droplet.desired_state_update_deadline = interval(:desired_state_lost)
-      Droplet.flapping_timeout = interval(:flapping_timeout)
-      Droplet.flapping_death = interval(:flapping_death)
-      Droplet.droplet_gc_grace_period = interval(:droplet_gc_grace_period)
-
       #schedule time-based actions
 
       scheduler.immediately { update_desired_state }
