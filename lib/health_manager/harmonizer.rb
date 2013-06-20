@@ -229,12 +229,7 @@ module HealthManager
     def update_desired_state
       desired_state.update_user_counts
       varz.reset_desired!
-      droplet_ids = []
-      desired_state.each_droplet do |droplet_id, desired_droplet|
-        droplet_ids << droplet_id.to_s
-        @droplet_registry.get(droplet_id).set_desired_state(desired_droplet)
-      end
-      @droplet_registry.delete_if { |id, _| !droplet_ids.include?(id) }
+      desired_state.update
     end
 
     def analyze_droplet(droplet)

@@ -54,7 +54,7 @@ module HealthManager
       @scheduler = Scheduler.new(@config)
       @droplet_registry = DropletRegistry.new
       @actual_state = ActualState.new(@config, @varz, @droplet_registry)
-      @desired_state = DesiredState.new(@config, @varz)
+      @desired_state = DesiredState.new(@config, @varz, @droplet_registry)
       @nudger = Nudger.new(@config, @varz, @publisher)
       @harmonizer = Harmonizer.new(@config, @varz, @nudger, @scheduler, @actual_state, @desired_state, @droplet_registry)
       @reporter = Reporter.new(@config, @varz, @droplet_registry, @publisher)

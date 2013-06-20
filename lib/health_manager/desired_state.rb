@@ -5,14 +5,17 @@ module HealthManager
     include HealthManager::Common
     attr_reader :varz
 
-    def initialize(config, varz)
+    def initialize(config, varz, droplet_registry)
       @config = config
       @varz = varz
       @error_count = 0
       @connected = false
+      @droplet_registry = droplet_registry
+      @droplet_ids = []
     end
 
-    def each_droplet(&block)
+    def update(&block)
+      @droplet_ids = []
       process_next_batch({}, &block)
     end
 
@@ -77,6 +80,8 @@ module HealthManager
           batch = response['results']
 
           if batch.nil? || batch.empty?
+            @droplet_registry.delete_if { |id, _| !@droplet_ids.include?(id.to_s) }
+            @droplet_ids = []
             varz.publish_desired_stats
             logger.info("bulk: done. Loop duration: #{varz[:bulk_update_loop_duration]}")
             next
@@ -86,7 +91,9 @@ module HealthManager
 
           batch.each do |app_id, droplet|
             update_desired_stats_for_droplet(droplet)
-            block.call(app_id.to_s, droplet)
+            @droplet_registry.get(app_id).set_desired_state(droplet)
+            @droplet_ids << app_id.to_s
+            block.call(app_id.to_s, droplet) if block
           end
           process_next_batch(bulk_token, &block)
         end

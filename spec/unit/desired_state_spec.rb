@@ -19,6 +19,7 @@ describe HealthManager::DesiredState do
   }
   let(:manager) { HealthManager::Manager.new(config) }
   let(:varz) { manager.varz }
+  let(:droplet_registry) { manager.droplet_registry }
   let(:provider) { manager.desired_state }
 
   describe "bulk_url" do
@@ -138,7 +139,7 @@ describe HealthManager::DesiredState do
       end
     end
 
-    describe "each_droplet" do
+    describe "update" do
       let(:bulk_token) { "{}" }
       let(:droplets_received) { [] }
       let(:block) { Proc.new { |app_id, droplet_hash| droplets_received << droplet_hash } }
@@ -173,7 +174,7 @@ describe HealthManager::DesiredState do
 
       subject do
         in_em do
-          provider.each_droplet(&block)
+          provider.update(&block)
           done
         end
       end
@@ -317,6 +318,83 @@ describe HealthManager::DesiredState do
         end
       end
     end
+
+    describe "process_next_batch" do
+      let(:http_mock) do
+        http = double("http")
+        http.stub(:response_header).and_return(double("response header"))
+        http.response_header.stub(:status).and_return(http_response_status)
+        http.stub(:response).and_return(http_response_body_1, http_response_body_2, "{}")
+        http
+      end
+
+      let(:droplet_info) do
+        {
+          "instances" => 1,
+          "memory" => 256,
+          "state" => "STARTED",
+          "version" => "123",
+          "package_state" => "STAGED",
+          "updated_at" => Time.now
+        }
+      end
+
+      let(:bulk_token) { "bulk_token" }
+      let(:results_1) do
+        {
+          "1" => droplet_info,
+          "2" => droplet_info
+        }
+      end
+      let(:results_2) do
+        {
+          "3" => droplet_info,
+          "4" => droplet_info
+        }
+      end
+
+      let(:desired_droplets) { ["1", "2", "3", "4"] }
+      let(:registered_droplets) { ["0", "1", "2", "5"] }
+      let(:removed_droplets) { ["0", "5"] }
+
+      let(:http_response_status) { 200 }
+      let(:http_response_body_1) { encode_json({"bulk_token" => bulk_token, "results" => results_1}) }
+      let(:http_response_body_2) { encode_json({"bulk_token" => bulk_token, "results" => results_2}) }
+
+      subject do
+        in_em do
+          provider.process_next_batch(bulk_token)
+          done
+        end
+      end
+
+      before do
+        EM::HttpConnection.any_instance.stub(:get).with(any_args).and_return(http_mock)
+      end
+
+      context "http callback successful" do
+        before do
+          http_mock.stub(:callback).and_yield
+          http_mock.stub(:errback)
+        end
+
+        it "removes droplets from registry that are not in response" do
+          registered_droplets.each do |id|
+            droplet_registry.get(id)
+          end
+
+          subject
+
+          desired_droplets.each do |id|
+            expect(droplet_registry.keys).to include(id)
+          end
+
+          removed_droplets.each do |id|
+            expect(droplet_registry.keys).to_not include(id)
+          end
+        end
+      end
+    end
   end
 
   describe "#with_credentials" do
@@ -367,7 +445,7 @@ describe HealthManager::DesiredState do
   end
 
   describe "#bulk_url" do
-    subject { described_class.new(config, varz) }
+    subject { described_class.new(config, varz, droplet_registry) }
 
     context "with no scheme configured" do
       let(:bulk_api_host) { "api.vcap.me" }

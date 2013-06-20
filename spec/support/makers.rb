@@ -30,7 +30,7 @@ def make_bulk_entry(options={})
   {
     'instances'     => 4,
     'state'         => 'STARTED',
-    'live_version'  => '12345abcded',
+    'version'       => '12345abcded',
     'package_state' => 'STAGED',
     'memory'        => 256,
     'updated_at'    => Time.now.utc.to_s

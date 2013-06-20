@@ -282,38 +282,19 @@ module HealthManager
     end
 
     describe "update_desired_state" do
-      before do
-        register_droplets(5)
-        desired_state.stub(:each_droplet) do |&blk|
-          4.times do |i|
-            blk.call(i, droplet_desired_state)
-          end
-        end
-      end
-
-      it "sets desired state for all droplets in registry" do
-        4.times do |i|
-          droplet_registry.get(i).should_receive(:set_desired_state)
-        end
+      it "updates desired state" do
+        desired_state.should_receive(:update)
         subject.update_desired_state
       end
 
-      it "removes from registry droplets that are not in desired state" do
-        desired_ids = []
-        desired_ids << droplet_registry.get(0).id
-        desired_ids << droplet_registry.get(1).id
-        desired_ids << droplet_registry.get(2).id
-        desired_ids << droplet_registry.get(3).id
-
-        undesired_droplet = droplet_registry.get(4)
+      it "resets desired varz" do
+        varz.should_receive(:reset_desired!)
         subject.update_desired_state
+      end
 
-
-        desired_ids.each do |id|
-          expect(droplet_registry[id]).not_to be_nil
-        end
-        expect(droplet_registry).to_not include(undesired_droplet)
-
+      it "updates user counts" do
+        desired_state.should_receive(:update_user_counts)
+        subject.update_desired_state
       end
     end
 
