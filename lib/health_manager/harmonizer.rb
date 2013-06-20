@@ -9,7 +9,8 @@ module HealthManager
 
     attr_reader :varz, :nudger, :scheduler, :actual_state, :desired_state
 
-    def initialize(varz, nudger, scheduler, actual_state, desired_state, droplet_registry)
+    def initialize(config, varz, nudger, scheduler, actual_state, desired_state, droplet_registry)
+      @config = config
       @varz = varz
       @nudger = nudger
       @scheduler = scheduler

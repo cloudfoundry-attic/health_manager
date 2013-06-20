@@ -2,7 +2,8 @@ module HealthManager
   class Shadower
     include HealthManager::Common
 
-    def initialize
+    def initialize(config = {})
+      @config = config
       @requests = {}
     end
 

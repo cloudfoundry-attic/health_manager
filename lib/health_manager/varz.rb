@@ -31,7 +31,8 @@ module HealthManager
   class Varz < Hash
     include HealthManager::Common
 
-    def initialize
+    def initialize(config={})
+      @config = config
       @desired_stats_reset_at = Time.now
       self.merge!({
         :total_users => 0,

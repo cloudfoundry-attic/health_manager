@@ -5,7 +5,8 @@ module HealthManager
     include HealthManager::Common
     attr_reader :varz
 
-    def initialize(varz)
+    def initialize(config, varz)
+      @config = config
       @varz = varz
       @error_count = 0
       @connected = false
@@ -112,11 +113,11 @@ module HealthManager
     end
 
     def host
-      (config['bulk_api'] && config['bulk_api']['host']) || "api.vcap.me"
+      (@config['bulk_api'] && @config['bulk_api']['host']) || "api.vcap.me"
     end
 
     def batch_size
-      (config['bulk_api'] && config['bulk_api']['batch_size']) || "500"
+      (@config['bulk_api'] && @config['bulk_api']['batch_size']) || "500"
     end
 
     def bulk_url
@@ -146,7 +147,7 @@ module HealthManager
           yield @user, @password
         end
 
-        NATS.timeout(sid, get_param_from_config_or_default(:nats_request_timeout, config)) do
+        NATS.timeout(sid, get_param_from_config_or_default(:nats_request_timeout, @config)) do
           logger.error("bulk: NATS timeout getting bulk api credentials. Request ignored.")
         end
       end

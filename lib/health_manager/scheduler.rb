@@ -2,12 +2,13 @@ module HealthManager
   class Scheduler
     include HealthManager::Common
 
-    def initialize
+    def initialize(config = {})
+      @config = config
       @schedule = []
       @last_receipt = 0
       @receipt_to_timer = {}
       @starting_times = {}
-      @run_loop_interval = get_param_from_config_or_default(:run_loop_interval, config)
+      @run_loop_interval = get_param_from_config_or_default(:run_loop_interval, @config)
     end
 
     def schedule(options, &block)

@@ -3,10 +3,8 @@ require 'spec_helper'
 describe HealthManager::Scheduler do
   describe '#interval' do
     it 'should return configured interval values' do
-      s1 = HealthManager::Scheduler.new
-      s1.stub(:config) { {:intervals => {:droplets_analysis => 7}} }
-      s2 = HealthManager::Scheduler.new
-      s2.stub(:config) { {'intervals' => {'droplets_analysis' => 6}} }
+      s1 = HealthManager::Scheduler.new(:intervals => {:droplets_analysis => 7})
+      s2 = HealthManager::Scheduler.new('intervals' => {'droplets_analysis' => 6})
 
       s1.interval(:droplets_analysis).should == 7
       s1.interval('droplets_analysis').should == 7
