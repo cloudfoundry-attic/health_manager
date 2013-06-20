@@ -7,7 +7,7 @@ local_route: 127.0.0.1
 
 # NATS message bus URI, adjust as needed.
 # Can be overriden with NATS_URI env variable.
-mbus: nats://nats:nats@127.0.0.1:4222/
+mbus: nats://nats:nats@127.0.0.1:4233/
 
 logging:
   level: info
@@ -17,9 +17,7 @@ logging:
 # set this to your dev instance api url
 # the default for the bulk_api host is http://api.vcap.me
 bulk_api:
-  #host: http://api.vcap.me
-  #host: http://api.cf88.dev.las01.vcsops.com
-
+  host: http://api.vcap.me
 
 # use value "disable" to stop shadowing and start using hm_next for
 # real any other value, as well as default, will result in hm_next

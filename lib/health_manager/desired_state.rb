@@ -119,11 +119,11 @@ module HealthManager
     end
 
     def host
-      (config['bulk_api'] && config['bulk_api']['host']) || "api.vcap.me"
+      HealthManager::Config.bulk_api_url
     end
 
     def batch_size
-      (config['bulk_api'] && config['bulk_api']['batch_size']) || "500"
+      HealthManager::Config.bulk_api_batch_size
     end
 
     def bulk_url
@@ -153,7 +153,7 @@ module HealthManager
           yield @user, @password
         end
 
-        NATS.timeout(sid, get_param_from_config_or_default(:nats_request_timeout, config)) do
+        NATS.timeout(sid, HealthManager::Config.interval(:nats_request_timeout)) do
           logger.error("bulk: NATS timeout getting bulk api credentials. Request ignored.")
         end
       end

@@ -20,6 +20,9 @@ describe "when NATS fails", :type => :integration do
       },
       "bulk_api" => {
         "host" => "http://127.0.0.1:#{fake_bulk_api_port}"
+      },
+      "logging" => {
+        "level" => "debug"
       }
     )
 

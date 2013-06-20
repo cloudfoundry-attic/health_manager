@@ -7,7 +7,7 @@ describe HealthManager::ActualState do
   let(:config) { { :intervals => { :flapping_death => flapping_death } } }
 
   before do
-    HealthManager::Droplet.any_instance.stub(:config) { config }
+    HealthManager::Config.load(config)
     @actual_state = HealthManager::ActualState.new(HealthManager::Varz.new, droplet_registry)
     @actual_state.harmonizer = harmonizer
   end

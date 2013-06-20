@@ -35,11 +35,9 @@ module HealthManager
       }
     end
 
-    subject(:harmonizer) do
-      harmonizer = Harmonizer.new(varz, nudger, scheduler, actual_state, desired_state, droplet_registry)
-      harmonizer.stub(:config) { config }
-      harmonizer
-    end
+    subject(:harmonizer) { Harmonizer.new(varz, nudger, scheduler, actual_state, desired_state, droplet_registry) }
+
+    before { HealthManager::Config.load(config) }
 
     def register_droplets(droplets_number)
       droplets_number.times do |i|

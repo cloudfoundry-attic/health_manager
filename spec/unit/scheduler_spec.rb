@@ -1,22 +1,25 @@
 require 'spec_helper'
 
 describe HealthManager::Scheduler do
-  describe '#interval' do
+  let(:config) do
+    {:intervals => {:droplets_analysis => 7}}
+  end
+
+  before do
+    HealthManager::Config.load(config)
+  end
+
+  describe 'interval' do
     it 'should return configured interval values' do
       s1 = HealthManager::Scheduler.new
-      s1.stub(:config) { {:intervals => {:droplets_analysis => 7}} }
-      s2 = HealthManager::Scheduler.new
-      s2.stub(:config) { {'intervals' => {'droplets_analysis' => 6}} }
 
       s1.interval(:droplets_analysis).should == 7
       s1.interval('droplets_analysis').should == 7
-      s2.interval(:droplets_analysis).should == 6
-      s2.interval('droplets_analysis').should == 6
     end
 
     it 'should return default interval values' do
-      subject.interval(:analysis_delay).should == HealthManager::DEFAULTS[:analysis_delay]
-      subject.interval('analysis_delay').should == HealthManager::DEFAULTS[:analysis_delay]
+      subject.interval(:analysis_delay).should == HealthManager::DEFAULTS[:intervals][:analysis_delay]
+      subject.interval('analysis_delay').should == HealthManager::DEFAULTS[:intervals][:analysis_delay]
     end
 
     it 'should raise ArgumentError for invalid intervals' do

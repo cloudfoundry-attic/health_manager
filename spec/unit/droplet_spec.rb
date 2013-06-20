@@ -15,7 +15,7 @@ describe HealthManager::Droplet do
     }
   end
 
-  before { HealthManager::Droplet.any_instance.stub(:config) { config } }
+  before { HealthManager::Config.load(config) }
 
   describe "process_heartbeat" do
     let(:droplet) { HealthManager::Droplet.new(2) }

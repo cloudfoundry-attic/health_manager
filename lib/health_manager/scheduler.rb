@@ -7,7 +7,7 @@ module HealthManager
       @last_receipt = 0
       @receipt_to_timer = {}
       @starting_times = {}
-      @run_loop_interval = get_param_from_config_or_default(:run_loop_interval, config)
+      @run_loop_interval = HealthManager::Config.interval(:run_loop_interval)
     end
 
     def schedule(options, &block)

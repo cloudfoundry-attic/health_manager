@@ -27,6 +27,7 @@ module HealthManager
       # start out as stale until desired state is set
       @desired_state_update_required = true
       @desired_state_update_timestamp = now
+
     end
 
     def ripe_for_gc?

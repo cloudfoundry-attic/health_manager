@@ -14,6 +14,7 @@ require 'vcap/priority_queue'
 
 require 'health_manager/constants'
 require 'health_manager/common'
+require 'health_manager/config'
 require 'health_manager/droplet'
 require 'health_manager/actual_state'
 require 'health_manager/desired_state'
@@ -32,16 +33,13 @@ module HealthManager
     attr_reader :varz, :actual_state, :desired_state, :droplet_registry, :reporter, :nudger, :publisher, :harmonizer
 
     def initialize(config = {})
-      load_config(config)
+      HealthManager::Config.load(config)
 
       @log_counter = Steno::Sink::Counter.new
 
-      logging_config = config['logging']
-      logging_config = {'level' => ENV['LOG_LEVEL']} if ENV['LOG_LEVEL'] #ENV override
-      logging_config ||= {'level' => 'info'}
-      setup_logging(logging_config)
+      setup_logging(HealthManager::Config.logging_config)
 
-      logger.info("HealthManager: initializing")
+      logger.info("HealthManager: initializing with config: #{config}")
 
       @varz = Varz.new
 
@@ -54,7 +52,7 @@ module HealthManager
       @scheduler = Scheduler.new
       @droplet_registry = DropletRegistry.new
       @actual_state = ActualState.new(@varz, @droplet_registry)
-      @desired_state = DesiredState.new(@varz)
+      @desired_state = DesiredState.new(@varz, @droplet_registry)
       @nudger = Nudger.new(@varz, @publisher)
       @harmonizer = Harmonizer.new(@varz, @nudger, @scheduler, @actual_state, @desired_state, @droplet_registry)
       @reporter = Reporter.new(@varz, @droplet_registry, @publisher)
@@ -64,15 +62,15 @@ module HealthManager
       logger.info("registering VCAP component")
       logger.debug("config: #{sanitized_config}")
 
-      status_config = config['status'] || {}
+      status_config = HealthManager::Config.get_param(:status) || {}
       VCAP::Component.register(:type => 'HealthManager',
-                               :host => VCAP.local_ip(config['local_route']),
-                               :index => config['index'] || 0,
+                               :host => VCAP.local_ip(HealthManager::Config.config[:local_route]),
+                               :index => HealthManager::Config.config[:index] || 0,
                                :config => sanitized_config,
                                :nats => @publisher,
-                               :port => status_config['port'],
-                               :user => status_config['user'],
-                               :password => status_config['password'],
+                               :port => status_config[:port],
+                               :user => status_config[:user],
+                               :password => status_config[:password],
                                :logger => logger,
                                :log_counter => @log_counter
       )
@@ -110,7 +108,7 @@ module HealthManager
     end
 
     def sanitized_config
-      sanitized_config = config.dup
+      sanitized_config = HealthManager::Config.config.dup
       sanitized_config.delete(:health_manager_component_registry)
       sanitized_config
     end
@@ -122,7 +120,7 @@ module HealthManager
     end
 
     def get_nats_uri
-      ENV[NATS_URI] || config['mbus']
+      ENV[NATS_URI] || HealthManager::Config.mbus_url
     end
 
     def self.now

@@ -1,41 +1,16 @@
 module HealthManager::Common
-
-  def load_config(config)
-    @config = config
-  end
-
-  def config
-    @config || {}
-  end
-
   def interval(name)
-    get_interval_from_config_or_default(name, config)
+    HealthManager::Config.interval(name)
   end
 
   def cc_partition
-    @cc_partition ||= get_param_from_config_or_default(:cc_partition, config)
-  end
-
-  def get_interval_from_config_or_default(name, config)
-    intervals = config[:intervals] || config['intervals'] || {}
-    get_param_from_config_or_default(name, intervals)
-  end
-
-  def get_param_from_config_or_default(name, config)
-    value = config[name] ||
-      config[name.to_sym] ||
-      config[name.to_s] ||
-      HealthManager::DEFAULTS[name.to_sym]
-
-    raise ArgumentError, "undefined parameter #{name}" unless value
-    logger.debug("config: #{name}: #{value}")
-    value
+    @cc_partition ||= HealthManager::Config.get_param(:cc_partition)
   end
 
   def should_shadow?
     #do NOT shadow by default
     ENV[HealthManager::HM_SHADOW] == 'true' ||
-      get_param_from_config_or_default('shadow_mode', config) == 'enable'
+      HealthManager::Config.get_param(:shadow_mode) == 'enable'
   end
 
   def logger

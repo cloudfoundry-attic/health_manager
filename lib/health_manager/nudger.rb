@@ -6,7 +6,7 @@ module HealthManager
 
     def initialize(varz, publisher)
       @queue = VCAP::PrioritySet.new
-      @queue_batch_size = get_interval_from_config_or_default(:queue_batch_size, config)
+      @queue_batch_size = HealthManager::Config.interval(:queue_batch_size)
       @varz = varz
       @publisher = publisher
     end

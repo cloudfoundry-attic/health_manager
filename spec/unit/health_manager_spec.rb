@@ -59,6 +59,16 @@ describe HealthManager do
 
   describe "Garbage collection of droplets" do
     GRACE_PERIOD = 60
+    let(:config) do
+      {
+        :intervals => {
+          :droplet_gc_grace_period => GRACE_PERIOD
+        },
+        'logging' => {
+          'file' => "/dev/null"
+        }
+      }
+    end
 
     before do
       app,@desired = make_app
@@ -69,13 +79,8 @@ describe HealthManager do
       @actual_state = manager.actual_state
       manager.droplet_registry.size.should == 0
 
-      HealthManager::Droplet.any_instance.stub(:config) do
-        {
-          :intervals => {
-            :droplet_gc_grace_period => GRACE_PERIOD
-          }
-        }
-      end
+      HealthManager::Config.load(config)
+
     end
 
     it 'should not GC when a recent h/b arrives' do
