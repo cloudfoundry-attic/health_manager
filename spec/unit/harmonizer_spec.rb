@@ -266,6 +266,11 @@ module HealthManager
           expect(subject.varz[:analysis_loop_duration]).to_not be_nil
         end
 
+        it "publishes realtime varz" do
+          subject.varz.should_receive(:publish_realtime_stats)
+          subject.analyze_apps
+        end
+
         context "when it run before" do
           before do
             register_droplets(ITERATIONS_PER_QUANTUM + 1)

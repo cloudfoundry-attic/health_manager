@@ -1,6 +1,10 @@
 require 'spec_helper'
 
 describe HealthManager::Varz do
+  before do
+    VCAP::Component.varz.replace({})
+  end
+
   describe "#new" do
     its([:total_apps]) { should eq 0 }
     its([:total_instances]) { should eq 0 }
@@ -117,7 +121,7 @@ describe HealthManager::Varz do
       Timecop.freeze(create_time) { HealthManager::Varz.new }
     end
 
-    its([:total_instances]) { should eq VCAP::Component.varz[:total_instances] }
+    its([:total_users]) { should eq VCAP::Component.varz[:total_users] }
 
     it "sets the time since the last reset" do
       expect(subject[:bulk_update_loop_duration]).to eq(publish_time - create_time)
@@ -135,14 +139,26 @@ describe HealthManager::Varz do
         expect(subject[:bulk_update_loop_duration]).to eq(publish_time - reset_time)
       end
     end
+
+    it 'should not publish realtime stats' do
+      subject[:running][:apps] = 5
+      subject.publish_desired_stats
+      expect(VCAP::Component.varz).not_to have_key(:running)
+    end
   end
 
-  describe "#publish" do
+  describe "publish_realtime_stats" do
     before do
-      subject[:total_users] = 42
-      subject.publish
+      subject[:total_instances] = 42
+      subject.publish_realtime_stats
     end
 
-    its([:total_users]) { should eq VCAP::Component.varz[:total_users] }
+    its([:total_instances]) { should eq VCAP::Component.varz[:total_instances] }
+
+    it 'should not publish desired stats' do
+      subject[:users] = [:foo]
+      subject.publish_realtime_stats
+      expect(VCAP::Component.varz).not_to have_key(:users)
+    end
   end
 end

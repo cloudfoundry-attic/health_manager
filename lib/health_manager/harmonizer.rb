@@ -246,10 +246,10 @@ module HealthManager
       else
         varz[:droplets] = {}
       end
-      varz.publish
 
       elapsed = scheduler.elapsed_time(:droplets_analysis)
       varz[:analysis_loop_duration] = elapsed
+      varz.publish_realtime_stats
 
       logger.info ["harmonizer: Analyzed #{varz[:running_instances]} running ",
         "#{varz[:missing_instances]} missing instances. ",

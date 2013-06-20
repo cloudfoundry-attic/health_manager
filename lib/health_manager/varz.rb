@@ -63,11 +63,11 @@ module HealthManager
 
     def publish_desired_stats
       self[:bulk_update_loop_duration] = Time.now - @desired_stats_reset_at
-      publish
+      deep_merge!(VCAP::Component.varz, deep_dup(self.reject {|key|DEFAULT_REALTIME.keys.include?(key)}))
     end
 
-    def publish
-      deep_merge!(VCAP::Component.varz, deep_dup(self))
+    def publish_realtime_stats
+      deep_merge!(VCAP::Component.varz, deep_dup(self.reject {|key|DEFAULT_DESIRED.keys.include?(key)}))
     end
 
     private
