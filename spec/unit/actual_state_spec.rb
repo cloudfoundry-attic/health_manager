@@ -3,11 +3,8 @@ require 'spec_helper'
 describe HealthManager::ActualState do
   let(:droplet_registry) { HealthManager::DropletRegistry.new }
   let(:harmonizer) { double }
-  let(:flapping_death) { 3 }
-  let(:config) { { :intervals => { :flapping_death => flapping_death } } }
-
   before do
-    HealthManager::Droplet.any_instance.stub(:config) { config }
+    HealthManager::Droplet.flapping_death = 3
     @actual_state = HealthManager::ActualState.new(HealthManager::Varz.new, droplet_registry)
     @actual_state.harmonizer = harmonizer
   end
