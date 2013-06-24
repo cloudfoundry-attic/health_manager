@@ -1,4 +1,5 @@
 require 'em-http'
+require 'set'
 
 module HealthManager
   class DesiredState
@@ -10,12 +11,10 @@ module HealthManager
       @error_count = 0
       @connected = false
       @droplet_registry = droplet_registry
-      @droplet_ids = []
     end
 
     def update(&block)
-      @droplet_ids = []
-      process_next_batch({}, &block)
+      process_next_batch({}, Set.new, Time.now, &block)
     end
 
     def update_user_counts
@@ -53,7 +52,7 @@ module HealthManager
       @user = @password = nil #ensure re-acquisition of credentials
     end
 
-    def process_next_batch(bulk_token, &block)
+    def process_next_batch(bulk_token, seen_droplets, start_time, &block)
       with_credentials do |user, password|
         options = {
           :head => { 'authorization' => [user, password] },
@@ -68,10 +67,12 @@ module HealthManager
           @error_count = 0 # reset after a successful request
 
           if http.response_header.status != 200
-            logger.error("bulk: request problem. Response status: #{http.response_header.status}")
+            logger.error("hm.desired-state.error",
+                         response_status: http.response_header.status)
             @connected = false
             next
           end
+
           @connected = true
 
           response = parse_json(http.response)
@@ -79,22 +80,32 @@ module HealthManager
           batch = response['results']
 
           if batch.nil? || batch.empty?
-            @droplet_registry.delete_if { |id, _| !@droplet_ids.include?(id.to_s) }
-            @droplet_ids = []
+            duration = Time.now - start_time
+
+            @droplet_registry.delete_if do |id, _|
+              unless seen_droplets.include?(id.to_s)
+                logger.info "hm.desired-state.droplet-gone", id: id
+                true
+              end
+            end
+
             varz.publish_desired_stats
-            logger.info("bulk: done. Loop duration: #{varz[:bulk_update_loop_duration]}")
+
+            logger.info "hm.desired-state.bulk-update-done", duration: duration
+
             next
           end
 
-          logger.debug { "bulk: batch of size #{batch.size} received" }
+          logger.debug "hm.desired-state.bulk-update-batch-received", size: batch.size
 
           batch.each do |app_id, droplet|
             update_desired_stats_for_droplet(droplet)
             @droplet_registry.get(app_id).set_desired_state(droplet)
-            @droplet_ids << app_id.to_s
+            seen_droplets << app_id.to_s
             block.call(app_id.to_s, droplet) if block
           end
-          process_next_batch(bulk_token, &block)
+
+          process_next_batch(bulk_token, seen_droplets, start_time, &block)
         end
 
         http.errback do
@@ -108,7 +119,7 @@ module HealthManager
 
           if @error_count < MAX_BULK_ERROR_COUNT
             logger.info("Retrying bulk request, bulk_token: #{bulk_token}")
-            process_next_batch(bulk_token, &block)
+            process_next_batch(bulk_token, seen_droplets, start_time, &block)
           else
             logger.error("Too many consecutive bulk API errors.")
             @connected = false

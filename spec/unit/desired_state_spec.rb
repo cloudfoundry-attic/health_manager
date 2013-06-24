@@ -233,11 +233,11 @@ describe HealthManager::DesiredState do
           end
 
           it "should log something" do
-            provider.logger.should_receive(:info).with /bulk.*done/
+            provider.logger.should_receive(:info).with /bulk.*done/, instance_of(Hash)
             subject
           end
 
-          it 'should be available' do
+          it "should be available" do
             subject
             provider.should be_available
           end
@@ -274,9 +274,9 @@ describe HealthManager::DesiredState do
           end
 
           it "should log warnings and then success" do
-            provider.logger.should_receive(:warn).with(/bulk/).and_call_original
-            provider.logger.should_receive(:info).with(/retry/i).ordered.and_call_original
-            provider.logger.should_receive(:info).with(/bulk.*done/).ordered.and_call_original
+            provider.logger.should_receive(:warn).with(/bulk/)
+            provider.logger.should_receive(:info).with(/retry/i)
+            provider.logger.should_receive(:info).with(/bulk.*done/, instance_of(Hash))
             subject
           end
 
@@ -363,7 +363,7 @@ describe HealthManager::DesiredState do
 
       subject do
         in_em do
-          provider.process_next_batch(bulk_token)
+          provider.process_next_batch(bulk_token, [], Time.now)
           done
         end
       end
