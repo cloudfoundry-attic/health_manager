@@ -12,20 +12,26 @@ module HealthManager
     end
 
     def deque_batch_of_requests
-      @queue_batch_size.times do |i|
+      @queue_batch_size.times do
         break if @queue.empty?
-        message = encode_json(@queue.remove)
-        publish_request_message(message)
+
+        request = @queue.remove
+
+        publish_request_message(
+          request[:operation],
+          encode_json(request[:payload]))
       end
     end
 
-    def publish_request_message(message)
-      logger.info("nudger: publish: cloudcontrollers.hm.requests: #{message}")
-      publisher.publish("cloudcontrollers.hm.requests.#{cc_partition}", message)
+    def publish_request_message(operation, payload)
+      logger.info("hm.nudger.request",
+                  :operation => operation, :payload => payload)
+
+      publisher.publish("health.#{operation}", payload)
     end
 
     def start_flapping_instance_immediately(app, index)
-      publish_request_message(encode_json(make_start_message(app, [index], true)))
+      publish_request_message("start", encode_json(make_start_message(app, [index], true)))
     end
 
     def start_instance(app, index, priority)
@@ -34,7 +40,7 @@ module HealthManager
 
     def start_instances(app, indices, priority)
       logger.debug { "nudger: queued: start instances #{indices} for #{app.id} priority: #{priority}" }
-      queue(make_start_message(app, indices), priority)
+      queue("start", make_start_message(app, indices), priority)
     end
 
     def stop_instances_immediately(app, instances_and_reasons)
@@ -44,41 +50,54 @@ module HealthManager
 
       instances = instances_and_reasons.map { |inst, _| inst }
 
-      publish_request_message(encode_json(make_stop_message(app, instances)))
+      publish_request_message("stop", encode_json(make_stop_message(app, instances)))
     end
 
     def stop_instance(app, instance, priority)
       logger.debug { "nudger: stopping instance: app: #{app.id} instance: #{instance}" }
-      queue(make_stop_message(app, instance), priority)
+      queue("stop", make_stop_message(app, instance), priority)
     end
 
     def make_start_message(app, indices, flapping = false)
-      message = {
+      {
         :droplet => app.id,
-        :op => :START,
         :last_updated => app.last_updated,
         :version => app.live_version,
-        :indices => indices
+        :indices => indices,
+        :running => running_count(app),
+        :flapping => flapping
       }
-      message[:flapping] = true if flapping
-      message
     end
 
     def make_stop_message(app, instance)
       {
         :droplet => app.id,
-        :op => :STOP,
         :last_updated => app.last_updated,
-        :instances => instance
+        :instances => instance,
+        :running => running_count(app),
+        :version => app.live_version
       }
     end
 
-    def queue(message, priority = NORMAL_PRIORITY)
+    def queue(operation, payload, priority = NORMAL_PRIORITY)
       logger.debug { "nudger: queueing: #{message}, #{priority}" }
-      key = message.clone
+      key = payload.clone
       key.delete(:last_updated)
-      @queue.insert(message, priority, key)
+      @queue.insert({ operation: operation, payload: payload }, priority, key)
       varz[:queue_length] = @queue.size
+    end
+
+    def running_count(app)
+      counts = {}
+
+      app.versions.each do |version, version_entry|
+        counts[version] =
+          version_entry["instances"].count do |instance|
+            instance["state"] == RUNNING
+          end
+      end
+
+      counts
     end
   end
 end
