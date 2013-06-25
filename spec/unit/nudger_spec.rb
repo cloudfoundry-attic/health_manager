@@ -25,16 +25,16 @@ module HealthManager
       droplet = Droplet.new(1)
 
       droplet.versions["some-version"] = {
-        "instances" => [
-          { "instance" => "some-instances",
+        "instances" => {
+          0 => { "instance" => "some-instances",
             "timestamp" => 0,
             "state" => RUNNING
           },
-          { "instance" => "some-instances",
+          1 => { "instance" => "some-instances",
             "timestamp" => 0,
             "state" => DOWN
           }
-        ]
+        }
       }
 
       publisher.should_receive(:publish).with("health.start", match(/"running":\{"some-version":1\}/)).once
@@ -53,16 +53,16 @@ module HealthManager
       droplet = Droplet.new(1)
 
       droplet.versions["some-version"] = {
-        "instances" => [
-          { "instance" => "some-instances",
+        "instances" => {
+          0 => { "instance" => "some-instances",
             "timestamp" => 0,
             "state" => RUNNING
           },
-          { "instance" => "some-instances",
+          1 => { "instance" => "some-instances",
             "timestamp" => 0,
             "state" => DOWN
           }
-        ]
+        }
       }
 
       publisher.should_receive(:publish).with("health.stop", match(/"running":\{"some-version":1\}/)).once
