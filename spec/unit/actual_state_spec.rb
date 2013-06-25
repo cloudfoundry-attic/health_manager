@@ -90,7 +90,7 @@ describe HealthManager::ActualState do
     end
 
     it 'should forward heartbeats' do
-      harmonizer.should_receive(:on_extra_instances).with(@droplet, [])
+      harmonizer.should_receive(:on_extra_instances).with(@droplet, {})
       make_and_send_heartbeat
       check_instance_state
     end

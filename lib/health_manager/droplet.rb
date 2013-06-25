@@ -21,7 +21,7 @@ module HealthManager
       @versions = {}
       @crashes = {}
       @pending_restarts = {}
-      @extra_instances = []
+      @extra_instances = {}
       reset_missing_indices
 
       # start out as stale until desired state is set
@@ -76,8 +76,10 @@ module HealthManager
 
       if running_state?(beat)
         if instance['state'] == RUNNING && instance['instance'] != beat['instance']
-          @extra_instances << [beat['instance'],
-            "Instance mismatch, actual: #{beat['instance']}, desired: #{instance['instance']}"]
+          @extra_instances[beat["instance"]] = {
+            version: beat["version"],
+            reason: "Instance mismatch, actual: #{beat['instance']}, desired: #{instance['instance']}"
+          }
         else
           instance['last_heartbeat'] = now
           instance['timestamp'] = now
@@ -99,7 +101,7 @@ module HealthManager
     end
 
     def update_extra_instances
-      @extra_instances = []
+      @extra_instances = {}
 
       # first, go through each version and prune indices
       versions.each do |version, version_entry|
@@ -121,7 +123,10 @@ module HealthManager
           if prune_reason
             logger.debug1 { "pruning: #{prune_reason}" }
             if running_state?(instance)
-              @extra_instances << [instance['instance'], prune_reason]
+              @extra_instances[instance["instance"]] = {
+                version: version,
+                reason: prune_reason
+              }
             end
 
             true

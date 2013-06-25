@@ -43,12 +43,15 @@ module HealthManager
       queue("start", make_start_message(app, indices), priority)
     end
 
-    def stop_instances_immediately(app, instances_and_reasons)
-      instances_and_reasons.each do |instance, reason|
-        logger.info("nudger: stopping instance #{instance} for #{app.id}, reason: #{reason}")
+    def stop_instances_immediately(app, instances_and_meta)
+      instances_and_meta.each do |instance, meta|
+        logger.info("nudger: stopping instance #{instance} for #{app.id}, reason: #{meta[:reason]}")
       end
 
-      instances = instances_and_reasons.map { |inst, _| inst }
+      instances = instances_and_meta.inject({}) do |h, (inst, meta)|
+        h[inst] = meta[:version]
+        h
+      end
 
       publish_request_message("stop", encode_json(make_stop_message(app, instances)))
     end

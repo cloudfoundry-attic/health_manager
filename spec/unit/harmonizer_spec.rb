@@ -70,12 +70,20 @@ module HealthManager
 
     describe "when app is considered to be an extra app" do
       it "stops all instances of the app" do
-        nudger
-          .should_receive(:stop_instances_immediately)
-          .with(app, [
-            ["version-1-0", "Extra app"],
-            ["version-2-0", "Extra app"]
-          ])
+        nudger.should_receive(:stop_instances_immediately).with(
+          app,
+          {
+            "version-1-0" => {
+              :version => "version-1",
+              :reason => "Extra app"
+            },
+            "version-2-0"=>{
+              :version => "version-2",
+              :reason => "Extra app"
+            }
+          }
+        )
+
         desired_state.stub(:available?) { true }
 
         subject.on_extra_app(app)

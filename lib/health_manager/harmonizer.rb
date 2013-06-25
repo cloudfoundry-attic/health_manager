@@ -120,12 +120,21 @@ module HealthManager
       nudger.stop_instances_immediately(droplet, extra_instances)
     end
 
-    # Currently we do not check that desired state
-    # is available; therefore, HM can be overly aggressive stopping apps.
     def on_extra_app(droplet)
       return unless desired_state.available?
-      instance_ids_with_reasons = droplet.all_instances.map { |i| [i["instance"], "Extra app"] }
-      nudger.stop_instances_immediately(droplet, instance_ids_with_reasons)
+
+      instances = droplet.versions.inject({}) do |h, (version, version_entry)|
+        version_entry["instances"].each do |_, inst|
+          h[inst["instance"]] = {
+            version: version,
+            reason: "Extra app"
+          }
+        end
+
+        h
+      end
+
+      nudger.stop_instances_immediately(droplet, instances)
     end
 
     # ------------------------------------------------------------
