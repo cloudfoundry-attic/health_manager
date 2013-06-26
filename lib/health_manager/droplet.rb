@@ -103,9 +103,11 @@ module HealthManager
     def update_extra_instances
       @extra_instances = {}
 
+      num_running = 0
+
       # first, go through each version and prune indices
       versions.each do |version, version_entry|
-        version_entry['instances'].delete_if do |index, instance|  # deleting extra instances
+        version_entry['instances'].delete_if do |_, instance|  # deleting extra instances
           if running_state?(instance) && timestamp_older_than?(instance['timestamp'], interval(:droplet_lost))
             instance['state'] = DOWN
             instance['state_timestamp'] = now
@@ -114,7 +116,7 @@ module HealthManager
           prune_reason =
             if state == STOPPED
               "Droplet state is STOPPED"
-            elsif index >= num_instances
+            elsif num_running >= num_instances
               "Extra instance"
             elsif version != live_version
               "Live version mismatch"
@@ -130,6 +132,10 @@ module HealthManager
             end
 
             true
+          else
+            num_running += 1
+
+            false
           end
         end
       end

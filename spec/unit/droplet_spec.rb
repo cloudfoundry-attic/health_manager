@@ -333,6 +333,7 @@ describe HealthManager::Droplet do
         }
       }
     end
+
     let(:droplet) do
       droplet = HealthManager::Droplet.new(2)
       droplet.instance_variable_set(:@versions, versions)
@@ -344,6 +345,7 @@ describe HealthManager::Droplet do
 
     context "if the droplet was stopped" do
       before { droplet.stub(:state) { HealthManager::STOPPED } }
+
       it "removes instances" do
         droplet.update_extra_instances
         expect(droplet.versions).to eql({})
@@ -352,6 +354,7 @@ describe HealthManager::Droplet do
 
     context "if there are extra instances" do
       before { droplet.stub(:num_instances) { 1 } }
+
       it "removes instances" do
         droplet.update_extra_instances
         expect(droplet.versions["123"]["instances"].size).to eql(1)
@@ -360,9 +363,96 @@ describe HealthManager::Droplet do
 
     context "if their version don't match live version" do
       before { droplet.stub(:live_version) { "456" } }
+
       it "removes instances" do
         droplet.update_extra_instances
         expect(droplet.versions.size).to eql(0)
+      end
+    end
+
+    context "when there are too many instances running" do
+      context "and the desired number is 1" do
+        before { droplet.stub(:num_instances) { 1 } }
+
+        context "and the first instance is an old version" do
+          let(:versions) do
+            {
+              "some-bogus-version" => {
+                "instances" => {
+                  0 => {
+                    "state" => HealthManager::RUNNING,
+                    "version" => "some-old-version",
+                    "timestamp" => Time.now.to_i
+                  }
+                }
+              },
+              "123" => {
+                "instances" => {
+                  1 => {
+                    "state" => HealthManager::RUNNING,
+                    "version" => "123",
+                    "timestamp" => Time.now.to_i
+                  },
+                  2 => {
+                    "state" => HealthManager::RUNNING,
+                    "version" => "123",
+                    "timestamp" => Time.now.to_i
+                  },
+                  3 => {
+                    "state" => HealthManager::RUNNING,
+                    "version" => "123",
+                    "timestamp" => Time.now.to_i
+                  }
+                }
+              }
+            }
+          end
+
+          it "keeps one of the running instances of the current version" do
+            droplet.update_extra_instances
+            expect(droplet.versions.size).to eql(1)
+          end
+        end
+
+        context "and the last instance is an old version" do
+          let(:versions) do
+            {
+              "123" => {
+                "instances" => {
+                  1 => {
+                    "state" => HealthManager::RUNNING,
+                    "version" => "123",
+                    "timestamp" => Time.now.to_i
+                  },
+                  2 => {
+                    "state" => HealthManager::RUNNING,
+                    "version" => "123",
+                    "timestamp" => Time.now.to_i
+                  },
+                  3 => {
+                    "state" => HealthManager::RUNNING,
+                    "version" => "123",
+                    "timestamp" => Time.now.to_i
+                  }
+                }
+              },
+              "some-bogus-version" => {
+                "instances" => {
+                  0 => {
+                    "state" => HealthManager::RUNNING,
+                    "version" => "some-old-version",
+                    "timestamp" => Time.now.to_i
+                  }
+                }
+              }
+            }
+          end
+
+          it "keeps one of the running instances of the current version" do
+            droplet.update_extra_instances
+            expect(droplet.versions.size).to eql(1)
+          end
+        end
       end
     end
   end

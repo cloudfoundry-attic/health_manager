@@ -30,11 +30,6 @@ describe HealthManager::ActualState do
           NATS.stub(:connected?).and_return(true)
         end
 
-        it "logs that it is subscribing" do
-          @actual_state.logger.should_receive(:info).with(/subscribing/).exactly(3).times
-          @actual_state.start
-        end
-
         it "re-subscribes to heartbeat, droplet.exited/updated messages" do
           NATS.should_receive(:subscribe).with('dea.heartbeat')
           NATS.should_receive(:subscribe).with('droplet.exited')
@@ -49,7 +44,7 @@ describe HealthManager::ActualState do
           end
 
           it "logs that nats went down" do
-            @actual_state.logger.should_receive(:info).with(/NATS/)
+            @actual_state.logger.should_receive(:warn).with(/nats/)
             @actual_state.start
           end
         end
