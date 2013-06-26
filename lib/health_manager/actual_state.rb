@@ -22,22 +22,21 @@ module HealthManager
       end
 
       if was_available && !@available
-        logger.info("connection to NATS was lost")
+        logger.warn "hm.actual-state.nats-connection-lost"
       end
     end
 
     def initialize_subscriptions
-      logger.info("subscribing to heartbeats")
+      logger.info "hm.actual-state.subscribing"
+
       NATS.subscribe('dea.heartbeat') do |message|
         process_heartbeat(message)
       end
 
-      logger.info("subscribing to droplet.exited")
       NATS.subscribe('droplet.exited') do |message|
         process_droplet_exited(message)
       end
 
-      logger.info("subscribing to droplet.updated")
       NATS.subscribe('droplet.updated') do |message|
         process_droplet_updated(message)
       end
@@ -57,7 +56,9 @@ module HealthManager
       message = parse_json(message_str)
       return unless cc_partition_match?(message)
 
-      logger.debug { "process_droplet_exited: #{message_str}" }
+      logger.debug "hm.actual-state.process-droplet-exited",
+                   :message => message
+
       varz[:droplet_exited_msgs_received] += 1
 
       droplet = get_droplet(message)
@@ -65,6 +66,7 @@ module HealthManager
       droplet.mark_instance_as_down(message['version'],
                                     message['index'],
                                     message['instance'])
+
       case message['reason']
       when CRASHED
         varz[:crashed_instances] += 1
@@ -82,7 +84,9 @@ module HealthManager
     def process_heartbeat(message_str)
       message = parse_json(message_str)
 
-      logger.debug { "Actual: #process_heartbeat: #{message_str}" }
+      logger.debug "hm.actual-state.process-heartbeat",
+                   :dea => message["dea"]
+
       varz[:heartbeat_msgs_received] += 1
 
       message['droplets'].each do |beat|
@@ -97,7 +101,9 @@ module HealthManager
       message = parse_json(message_str)
       return unless cc_partition_match?(message)
 
-      logger.debug { "Actual: #process_droplet_updated: #{message_str}" }
+      logger.debug "hm.actual-state.process-droplet-updated",
+                   :droplet => message["droplet"]
+
       varz[:droplet_updated_msgs_received] += 1
       droplet = get_droplet(message)
       droplet.reset_missing_indices
