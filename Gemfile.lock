@@ -1,5 +1,5 @@
 GIT
-  remote: git://github.com/cloudfoundry/steno.git
+  remote: https://github.com/cloudfoundry/steno.git
   revision: d88c70767c43a5eff32ccb47e3bb561b981e62e8
   specs:
     steno (1.1.0)
@@ -8,7 +8,7 @@ GIT
       yajl-ruby (~> 1.0)
 
 GIT
-  remote: git://github.com/cloudfoundry/vcap-common.git
+  remote: https://github.com/cloudfoundry/vcap-common.git
   revision: f7653c1140e6818fca6dd9a7591c2e3dc8d2e24b
   specs:
     vcap_common (2.0.11)
