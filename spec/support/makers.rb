@@ -37,7 +37,7 @@ def make_bulk_entry(options={})
   }
 end
 
-def make_heartbeat(droplets, options={})
+def make_heartbeat_message(droplets, options={})
   hb = []
   droplets.each do |droplet|
     droplet.num_instances.times { |index|
@@ -67,10 +67,11 @@ end
 
 def make_exited_message(app, options={})
   index = options['index'] || 0
+  existing_instance = app.safe_get_instance(index)
   {
     'droplet' => app.id,
     'version' => app.live_version,
-    'instance' => app.get_instance(index)['instance'] || "instance_id_#{index}",
+    'instance' => existing_instance.nil? ? "instance_id_#{index}" : existing_instance.instance_guid,
     'index' => index,
     'reason' => 'STOPPED',
     'cc_partition' => 'default',
@@ -79,10 +80,11 @@ end
 
 def make_update_message(app, options={})
   index = options['index'] || 0
+  existing_instance = app.safe_get_instance(index)
   {
     'droplet' => app.id,
     'version' => app.live_version,
-    'instance' => app.get_instance(index)['instance'] || "instance_id_#{index}",
+    'instance' => existing_instance.nil? ? "instance_id_#{index}" : existing_instance.instance_guid,
     'index' => index,
     'reason' => 'RUNNING',
     'cc_partition' => 'default',

@@ -10,10 +10,10 @@ module HealthManager
     let(:varz) { HealthManager::Varz.new }
     let(:app) do
       app, _ = make_app(:num_instances => 1)
-      heartbeats = make_heartbeat([app], :app_live_version => "version-1")
-      app.process_heartbeat(heartbeats["droplets"][0])
-      heartbeats = make_heartbeat([app], :app_live_version => "version-2")
-      app.process_heartbeat(heartbeats["droplets"][0])
+      heartbeats = make_heartbeat_message([app], :app_live_version => "version-1")
+      app.process_heartbeat(HealthManager::Heartbeat.new(heartbeats["droplets"][0]))
+      heartbeats = make_heartbeat_message([app], :app_live_version => "version-2")
+      app.process_heartbeat(HealthManager::Heartbeat.new(heartbeats["droplets"][0]))
       app
     end
     let(:config) do

@@ -65,7 +65,7 @@ module HealthManager
       logger.debug { "harmonizer: exit_crashed" }
 
       index = message['index']
-      instance = droplet.get_instance(message['version'], message['index'])
+      instance = droplet.get_instance(message['index'], message['version'])
 
       if flapping?(instance)
         execute_flapping_policy(droplet, index, instance, true)
@@ -125,7 +125,7 @@ module HealthManager
 
       instances = droplet.versions.inject({}) do |h, (version, version_entry)|
         version_entry["instances"].each do |_, inst|
-          h[inst["instance"]] = {
+          h[inst.instance_guid] = {
             version: version,
             reason: "Extra app"
           }

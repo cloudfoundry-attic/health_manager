@@ -57,14 +57,14 @@ describe HealthManager::ActualState do
       app, desired = make_app
       @droplet = droplet_registry.get(app.id)
       @droplet.set_desired_state(desired)
-      instance = @droplet.get_instance(@droplet.live_version, 0)
-      instance['state'].should == 'DOWN'
-      instance['last_heartbeat'].should be_nil
+      instance = @droplet.get_instance(0)
+      instance.should be_down
+      instance.last_heartbeat.should be_nil
       harmonizer.stub(:on_extra_instances)
     end
 
     def make_and_send_heartbeat
-      hb = make_heartbeat([@droplet])
+      hb = make_heartbeat_message([@droplet])
       @actual_state.send(:process_heartbeat, encode_json(hb))
     end
 
@@ -79,9 +79,9 @@ describe HealthManager::ActualState do
     end
 
     def check_instance_state(state='RUNNING')
-      instance = @droplet.get_instance(@droplet.live_version, 0)
-      instance['state'].should == state
-      instance['last_heartbeat'].should_not be_nil
+      instance = @droplet.get_instance(0)
+      instance.state.should == state
+      instance.last_heartbeat.should_not be_nil
     end
 
     it 'should forward heartbeats' do

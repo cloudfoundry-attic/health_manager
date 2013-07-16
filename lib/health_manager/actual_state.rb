@@ -92,7 +92,7 @@ module HealthManager
       message['droplets'].each do |beat|
         next unless cc_partition_match?(beat)
         droplet = get_droplet(beat)
-        droplet.process_heartbeat(beat)
+        droplet.process_heartbeat(Heartbeat.new(beat))
         harmonizer.on_extra_instances(droplet, droplet.extra_instances)
       end
     end

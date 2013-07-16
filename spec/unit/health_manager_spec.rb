@@ -72,7 +72,7 @@ describe HealthManager do
 
     before do
       app,@desired = make_app
-      @hb = make_heartbeat([app])
+      @hb = make_heartbeat_message([app])
 
       @h = manager.harmonizer
 
@@ -80,7 +80,6 @@ describe HealthManager do
       manager.droplet_registry.size.should == 0
 
       HealthManager::Config.load(config)
-
     end
 
     it 'should not GC when a recent h/b arrives' do

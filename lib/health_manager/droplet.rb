@@ -1,4 +1,5 @@
 require 'set'
+require 'health_manager/heartbeat'
 
 module HealthManager
   #this class provides answers about droplet's State
@@ -72,25 +73,21 @@ module HealthManager
     end
 
     def process_heartbeat(beat)
-      instance = get_instance(beat['version'], beat['index'])
+      instance = get_instance(beat.index, beat.version)
 
-      if running_state?(beat)
-        if instance['state'] == RUNNING && instance['instance'] != beat['instance']
-          @extra_instances[beat["instance"]] = {
-            version: beat["version"],
-            reason: "Instance mismatch, actual: #{beat['instance']}, desired: #{instance['instance']}"
+      if beat.starting_or_running?
+        if instance.running? && instance.instance_guid != beat.instance_guid
+          @extra_instances[beat.instance_guid] = {
+            version: beat.version,
+            reason: "Instance mismatch, actual: #{beat.instance_guid}, desired: #{instance.instance_guid}"
           }
         else
-          instance['last_heartbeat'] = now
-          instance['timestamp'] = now
-          %w(instance state_timestamp state).each { |key|
-            instance[key] = beat[key]
-          }
+          instance.update_from(beat)
         end
-      elsif beat['state'] == CRASHED
-        @crashes[beat['instance']] = {
+      elsif beat.state == CRASHED
+        @crashes[beat.instance_guid] = {
           'timestamp' => now,
-          'crash_timestamp' => beat['state_timestamp']
+          'crash_timestamp' => beat.state_timestamp
         }
       end
     end
@@ -108,9 +105,8 @@ module HealthManager
       # first, go through each version and prune indices
       versions.each do |version, version_entry|
         version_entry['instances'].delete_if do |_, instance|  # deleting extra instances
-          if running_state?(instance) && timestamp_older_than?(instance['timestamp'], interval(:droplet_lost))
-            instance['state'] = DOWN
-            instance['state_timestamp'] = now
+          if instance.starting_or_running? && instance.timestamp_older_than?(interval(:droplet_lost))
+            instance.down!
           end
 
           prune_reason =
@@ -124,8 +120,8 @@ module HealthManager
 
           if prune_reason
             logger.debug1 { "pruning: #{prune_reason}" }
-            if running_state?(instance)
-              @extra_instances[instance["instance"]] = {
+            if instance.starting_or_running?
+              @extra_instances[instance.instance_guid] = {
                 version: version,
                 reason: prune_reason
               }
@@ -155,13 +151,12 @@ module HealthManager
                         # e.g. valid version, etc.
                        ].all?
 
-
       (0...num_instances).find_all do |i|
-        instance = get_instance(live_version, i)
+        instance = get_instance(i)
         logger.debug1 { "looking at instance #{@id}:#{i}: #{instance}" }
-        lhb = instance['last_heartbeat']
+        lhb = instance.last_heartbeat
         [
-         instance['state'] == CRASHED,
+         instance.crashed?,
          lhb.nil?,
          lhb && timestamp_older_than?(lhb, interval(:droplet_lost))
         ].any? && !restart_pending?(i)
@@ -180,10 +175,6 @@ module HealthManager
       @num_instances
     end
 
-    def running_state?(instance)
-      instance && instance['state'] && RUNNING_STATES.include?(instance['state'])
-    end
-
     def reset_recently?
       timestamp_fresher_than?(@reset_timestamp, interval(:droplet_lost) || 0)
     end
@@ -193,59 +184,49 @@ module HealthManager
     end
 
     def process_exit_crash(message)
-      instance = get_instance(message['version'], message['index'])
-      instance['state'] = CRASHED
+      instance = get_instance(message['index'], message['version'], message['instance'])
+      instance.crash!(interval(:flapping_timeout), interval(:flapping_death), message['crash_timestamp'])
 
-      instance['instance'] ||= message['instance']
-      if instance['instance'] != message['instance']
-        logger.warn { "unexpected instance_id: #{message['instance']}, desired: #{instance['instance']}" }
+      if instance.instance_guid != message['instance']
+        logger.warn { "unexpected instance_id: #{message['instance']}, desired: #{instance.instance_guid}" }
       end
 
-      instance['crashes'] = 0 if timestamp_older_than?(instance['crash_timestamp'], interval(:flapping_timeout))
-      instance['crashes'] += 1
-      instance['crash_timestamp'] = message['crash_timestamp']
-
-      if instance['crashes'] > interval(:flapping_death)
-        instance['state'] = FLAPPING
-      end
-
-      @crashes[instance['instance']] = {
+      @crashes[instance.instance_guid] = {
         'timestamp' => now,
-        'crash_timestamp' => message['crash_timestamp']
+        'crash_timestamp' => instance.crash_timestamp
       }
     end
 
     def mark_instance_as_down(version, index, instance_id)
-      instance = get_instance(version, index)
-      if instance['instance'] == instance_id
+      instance = get_instance(index, version)
+      if instance.instance_guid == instance_id
         logger.debug("Marking as down: #{version}, #{index}, #{instance_id}")
-        instance['state'] = DOWN
-      elsif instance['instance']
-        logger.warn("instance mismatch. actual: #{instance_id}, desired: #{instance['instance']}")
+        instance.down!
+      elsif instance.instance_guid
+        logger.warn("instance mismatch. actual: #{instance_id}, desired: #{instance.instance_guid}")
       else
         # NOOP for freshly created instance with nil instance_id
       end
     end
 
     def all_instances
-      @versions.map { |_, v| v["instances"].values }.flatten
+      versions.map { |_, v| v["instances"].values }.flatten
     end
 
     def get_version(version = @live_version)
-      @versions[version] ||= {'instances' => {}}
+      versions[version] ||= {'instances' => {}}
     end
 
     def get_instances(version = @live_version)
       get_version(version)['instances']
     end
 
-    def get_instance(version = @live_version, index)
-      get_instances(version)[index] ||= {
-        'state' => DOWN,
-        'crashes' => 0,
-        'crash_timestamp' => -1,
-        'last_action' => -1
-      }
+    def get_instance(index, version = @live_version, instance_guid = nil, safe = false)
+      get_instances(version)[index] ||= Heartbeat.fresh(instance_guid)
+    end
+
+    def safe_get_instance(index, version = @live_version)
+      get_instances(version)[index]
     end
 
     def update_realtime_varz(varz)
@@ -257,8 +238,8 @@ module HealthManager
         varz[:running][:apps] += 1
 
         num_instances.times do |index|
-          instance = get_instance(live_version, index)
-          case instance['state']
+          instance = get_instance(index)
+          case instance.state
             when STARTING, RUNNING
               varz[:running_instances] += 1
               varz[:running][:running_instances] += 1
@@ -290,10 +271,7 @@ module HealthManager
     end
 
     def desired_state_update_overdue?
-      timestamp_older_than?(
-        @desired_state_update_timestamp,
-        interval(:desired_state_lost),
-      )
+      timestamp_older_than?(@desired_state_update_timestamp, interval(:desired_state_lost),)
     end
 
     def timestamp_fresher_than?(timestamp, age)

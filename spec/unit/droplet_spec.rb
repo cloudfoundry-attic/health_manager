@@ -20,7 +20,7 @@ describe HealthManager::Droplet do
   describe "process_heartbeat" do
     let(:droplet) { HealthManager::Droplet.new(2) }
     let(:droplet_beat_1) do
-      {
+      HealthManager::Heartbeat.new(
         'droplet' => 2,
         'version' => "abc-def",
         'instance' => "someinstance1",
@@ -28,10 +28,10 @@ describe HealthManager::Droplet do
         'state' => HealthManager::RUNNING,
         'state_timestamp' => now,
         'cc_partition' => 'default'
-      }
+      )
     end
     let(:droplet_beat_2) do
-      {
+      HealthManager::Heartbeat.new(
         'droplet' => 2,
         'version' => "abc-def",
         'instance' => "someinstance2",
@@ -39,7 +39,7 @@ describe HealthManager::Droplet do
         'state' => HealthManager::RUNNING,
         'state_timestamp' => now,
         'cc_partition' => 'default'
-      }
+      )
     end
 
     subject do
@@ -49,12 +49,8 @@ describe HealthManager::Droplet do
 
     it "sets versions correctly" do
       subject
-      expect(droplet.versions["abc-def"]["instances"][0]).to include(
-        "state" => "RUNNING"
-      )
-      expect(droplet.versions["abc-def"]["instances"][1]).to include(
-        "state" => "RUNNING"
-      )
+      expect(droplet.versions["abc-def"]["instances"][0]).to be_running
+      expect(droplet.versions["abc-def"]["instances"][1]).to be_running
     end
   end
 
@@ -73,7 +69,6 @@ describe HealthManager::Droplet do
 
   it 'should process crash message' do
     app, _ = make_app
-    invoked = false
 
     message = make_crash_message(app)
     app.process_exit_crash(message)
@@ -88,35 +83,31 @@ describe HealthManager::Droplet do
     #no heartbeats arrived yet, so all instances are assumed missing
     app.missing_indices.should == [0, 1, 2, 3]
 
-    hbs = make_heartbeat([app])['droplets']
+    hbs = make_heartbeat_message([app])['droplets']
 
     hbs.delete_at(3)
     hbs.delete_at(1)
 
     hbs.each { |hb|
-      app.process_heartbeat(hb)
+      app.process_heartbeat(HealthManager::Heartbeat.new(hb))
     }
 
     expect(app.missing_indices).to eql(missing_indices)
   end
 
   it 'should have extra instances' do
-    app, desired = make_app
-    extra_instance_id = desired['version'] + "-0"
-
-    future_answer = [[extra_instance_id, "Extra instance"]]
-    event_handler_invoked = false
+    app, _ = make_app
 
     #no heartbeats arrived yet, so all instances are assumed missing
 
-    hbs = make_heartbeat([app])['droplets']
+    hbs = make_heartbeat_message([app])['droplets']
 
     hbs << hbs.first.dup
     hbs.first['index'] = 4
 
-    hbs.each { |hb| app.process_heartbeat(hb) }
+    hbs.each { |hb| app.process_heartbeat(HealthManager::Heartbeat.new(hb)) }
     app.update_extra_instances
-    expect(app.extra_instances.size).to be > 0
+    expect(app.extra_instances.size).to eq 1
   end
 
   describe "ripe_for_gc?" do
@@ -163,7 +154,7 @@ describe HealthManager::Droplet do
     context "when app was updated via heartbeat" do
       before do
         Timecop.travel(during_gc_period = 10)
-        app.process_heartbeat(make_heartbeat([app]))
+        app.process_heartbeat(HealthManager::Heartbeat.new(make_heartbeat_message([app])["droplets"][0]))
       end
 
       it "can be gc-ed at the end of the gc period " +
@@ -182,14 +173,14 @@ describe HealthManager::Droplet do
 
     context "when there are multiple instances of multiple versions" do
       before do
-        heartbeats = make_heartbeat([app], :app_live_version => "version-1")
-        app.process_heartbeat(heartbeats["droplets"][0])
-        heartbeats = make_heartbeat([app], :app_live_version => "version-2")
-        app.process_heartbeat(heartbeats["droplets"][0])
+        heartbeats = make_heartbeat_message([app], :app_live_version => "version-1")
+        app.process_heartbeat(HealthManager::Heartbeat.new(heartbeats["droplets"][0]))
+        heartbeats = make_heartbeat_message([app], :app_live_version => "version-2")
+        app.process_heartbeat(HealthManager::Heartbeat.new(heartbeats["droplets"][0]))
       end
 
       it "returns list of all instances for all versions" do
-        instances = app.all_instances.map { |i| i["instance"] }
+        instances = app.all_instances.map { |i| i.instance_guid }
         instances.should =~ %w(version-1-0 version-2-0)
       end
     end
@@ -209,7 +200,7 @@ describe HealthManager::Droplet do
     end
     let(:varz) { HealthManager::Varz.new }
     let(:beat) do
-      heart = make_heartbeat([droplet])
+      heart = make_heartbeat_message([droplet])
       heart['droplets'][0]['state'] = HealthManager::DOWN # Flapping from multiple crashes
       heart['droplets'][1]['state'] = HealthManager::DOWN
       heart['droplets'][2]['state'] = HealthManager::STARTING
@@ -227,7 +218,7 @@ describe HealthManager::Droplet do
       droplet.process_exit_crash(make_crash_message(droplet))
       droplet.instance_variable_set(:@state, droplet_state)
       beat['droplets'].each do |b|
-        droplet.process_heartbeat(b)
+        droplet.process_heartbeat(HealthManager::Heartbeat.new(b))
       end
     end
 
@@ -319,16 +310,16 @@ describe HealthManager::Droplet do
       {
         "123" => {
           "instances" => {
-            0 => {
+            0 => HealthManager::Heartbeat.new(
               "state" => HealthManager::RUNNING,
               "version" => "123",
               "timestamp" => Time.now.to_i
-            },
-            1 => {
+            ),
+            1 => HealthManager::Heartbeat.new(
               "state" => HealthManager::RUNNING,
               "version" => "123",
               "timestamp" => Time.now.to_i
-            }
+            )
           }
         }
       }
@@ -379,30 +370,30 @@ describe HealthManager::Droplet do
             {
               "some-bogus-version" => {
                 "instances" => {
-                  0 => {
+                  0 => HealthManager::Heartbeat.new(
                     "state" => HealthManager::RUNNING,
                     "version" => "some-old-version",
                     "timestamp" => Time.now.to_i
-                  }
+                  )
                 }
               },
               "123" => {
                 "instances" => {
-                  1 => {
+                  1 => HealthManager::Heartbeat.new(
                     "state" => HealthManager::RUNNING,
                     "version" => "123",
                     "timestamp" => Time.now.to_i
-                  },
-                  2 => {
+                  ),
+                  2 => HealthManager::Heartbeat.new(
                     "state" => HealthManager::RUNNING,
                     "version" => "123",
                     "timestamp" => Time.now.to_i
-                  },
-                  3 => {
+                  ),
+                  3 => HealthManager::Heartbeat.new(
                     "state" => HealthManager::RUNNING,
                     "version" => "123",
                     "timestamp" => Time.now.to_i
-                  }
+                  )
                 }
               }
             }
@@ -419,30 +410,30 @@ describe HealthManager::Droplet do
             {
               "123" => {
                 "instances" => {
-                  1 => {
+                  1 => HealthManager::Heartbeat.new(
                     "state" => HealthManager::RUNNING,
                     "version" => "123",
                     "timestamp" => Time.now.to_i
-                  },
-                  2 => {
+                  ),
+                  2 => HealthManager::Heartbeat.new(
                     "state" => HealthManager::RUNNING,
                     "version" => "123",
                     "timestamp" => Time.now.to_i
-                  },
-                  3 => {
+                  ),
+                  3 => HealthManager::Heartbeat.new(
                     "state" => HealthManager::RUNNING,
                     "version" => "123",
                     "timestamp" => Time.now.to_i
-                  }
+                  )
                 }
               },
               "some-bogus-version" => {
                 "instances" => {
-                  0 => {
+                  0 => HealthManager::Heartbeat.new(
                     "state" => HealthManager::RUNNING,
                     "version" => "some-old-version",
                     "timestamp" => Time.now.to_i
-                  }
+                  )
                 }
               }
             }

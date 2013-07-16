@@ -63,7 +63,7 @@ module HealthManager
         droplet = droplet_registry.get(droplet_id)
 
         running = (0...droplet.num_instances).count { |i|
-          RUNNING == droplet.get_instance(version, i)['state']
+          RUNNING == droplet.get_instance(i, version)['state']
         }
         response = {
           :droplet => droplet_id,
