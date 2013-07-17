@@ -5,8 +5,8 @@
 # value of nil, should work in most cases.
 local_route: 127.0.0.1
 
-# NATS message bus URI, adjust as needed.
-# Can be overriden with NATS_URI env variable.
+# message bus URI, adjust as needed.
+# Can be overriden with MBUS_URI env variable.
 mbus: nats://nats:nats@127.0.0.1:4233/
 
 logging:
@@ -83,10 +83,6 @@ intervals:
   # number of droplets objects to be published under varz[:droplets]
   # use non-positive value to disable
   max_droplets_in_varz:    0
-
-  # HM periodically pings NATS to see if it needs to re-subscribe to
-  # its events. This is the interval (in seconds) between those pings
-  check_nats_availability: 5
 
 # Used for /healthz and /vars endpoints. If not provided random
 # values will be generated on component start. Uncomment to use

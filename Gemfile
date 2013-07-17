@@ -9,6 +9,7 @@ gem "eventmachine", "~> 1.0.0"
 gem "yajl-ruby"
 gem "rest-client"
 gem "em-http-request"
+gem "cf-message-bus"
 
 group :test do
   gem "sinatra"

@@ -6,11 +6,12 @@ module HealthManager
     include HealthManager::Common
     attr_reader :varz
 
-    def initialize(varz, droplet_registry)
+    def initialize(varz, droplet_registry, message_bus)
       @varz = varz
       @error_count = 0
       @connected = false
       @droplet_registry = droplet_registry
+      @message_bus = message_bus
     end
 
     def update(&block)
@@ -155,17 +156,16 @@ module HealthManager
       if @user && @password
         yield @user, @password
       else
-        logger.info("bulk: requesting API credentials over NATS...")
-        sid = NATS.request("cloudcontroller.bulk.credentials.#{cc_partition}", nil, :max => 1) do |response|
-          logger.info("bulk: API credentials received.")
-          auth =  parse_json(response)
-          @user = auth[:user] || auth['user']
-          @password = auth[:password] || auth['password']
-          yield @user, @password
-        end
-
-        NATS.timeout(sid, HealthManager::Config.interval(:nats_request_timeout)) do
-          logger.error("bulk: NATS timeout getting bulk api credentials. Request ignored.")
+        logger.info("bulk: requesting API credentials over message bus...")
+        @message_bus.request("cloudcontroller.bulk.credentials.#{cc_partition}", nil, max: 1, timeout: HealthManager::Config.interval(:bulk_credentials_timeout)) do |response|
+          if response[:timeout]
+            logger.error("bulk: message bus timeout getting bulk api credentials. Request ignored.")
+          else
+            logger.info("bulk: API credentials received.")
+            @user = response[:user] || response['user']
+            @password = response[:password] || response['password']
+            yield @user, @password
+          end
         end
       end
     end

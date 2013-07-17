@@ -6,20 +6,21 @@ module HealthManager
 
     attr_reader :varz, :droplet_registry, :publisher
 
-    def initialize(varz, droplet_registry, publisher)
+    def initialize(varz, droplet_registry, publisher, message_bus)
       @varz = varz
       @droplet_registry = droplet_registry
       @publisher = publisher
+      @message_bus = message_bus
     end
 
     def prepare
-      NATS.subscribe('healthmanager.status') do |msg, reply_to|
+      @message_bus.subscribe('healthmanager.status') do |msg, reply_to|
         process_status_message(msg, reply_to)
       end
-      NATS.subscribe('healthmanager.health') do |msg, reply_to|
+      @message_bus.subscribe('healthmanager.health') do |msg, reply_to|
         process_health_message(msg, reply_to)
       end
-      NATS.subscribe('healthmanager.droplet') do |msg, reply_to|
+      @message_bus.subscribe('healthmanager.droplet') do |msg, reply_to|
         process_droplet_message(msg, reply_to)
       end
     end

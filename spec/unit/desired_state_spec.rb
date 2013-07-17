@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'cf_message_bus/mock_message_bus'
 
 describe HealthManager::DesiredState do
   let(:bulk_api_host) { "127.0.0.1" }
@@ -17,7 +18,12 @@ describe HealthManager::DesiredState do
       }
     }
   }
-  let(:manager) { HealthManager::Manager.new(config) }
+  let(:manager) do
+    m = HealthManager::Manager.new(config)
+    m.setup_components(message_bus)
+    m
+  end
+  let(:message_bus) { CfMessageBus::MockMessageBus.new }
   let(:varz) { manager.varz }
   let(:droplet_registry) { manager.droplet_registry }
   let(:provider) { manager.desired_state }
@@ -402,19 +408,18 @@ describe HealthManager::DesiredState do
       provider.reset_credentials
     end
 
-    context "nats responds" do
+    context "message bus responds" do
       let(:response) {
-        encode_json({
-                      "user" => "some_user",
-                      "password" => "some_password"
-                    })
+        {
+          "user" => "some_user",
+          "password" => "some_password"
+        }
       }
       before do
-        NATS.should_receive(:request).once.and_yield(response)
-        NATS.should_receive(:timeout).once
+        message_bus.should_receive(:request).once.and_yield(response)
       end
 
-      it "requests the credentials from nats" do
+      it "requests the credentials over the message bus" do
         expect { |b| provider.with_credentials(&b) }.to yield_with_args("some_user", "some_password")
       end
 
@@ -424,17 +429,16 @@ describe HealthManager::DesiredState do
       end
 
       it "uses the cached credentials on subsequent calls" do
-        # "before" expectations ensure NATS is only called once even for multiple calls
+        # "before" expectations ensure message_bus is only called once even for multiple calls
         3.times {
           expect { |b| provider.with_credentials(&b) }.to yield_with_args("some_user", "some_password")
         }
       end
     end
 
-    context "nats times out" do
+    context "message bus times out" do
       before do
-        NATS.should_receive(:request)
-        NATS.should_receive(:timeout).and_yield
+        message_bus.should_receive(:request).with(anything, anything, hash_including(:timeout => HealthManager::Config.interval(:bulk_credentials_timeout))).and_yield({timeout: true})
       end
 
       it "logs the error" do
@@ -445,7 +449,7 @@ describe HealthManager::DesiredState do
   end
 
   describe "#bulk_url" do
-    subject { described_class.new(varz, droplet_registry) }
+    subject { described_class.new(varz, droplet_registry, message_bus) }
 
     before { ::HealthManager::Config.load(config) }
 

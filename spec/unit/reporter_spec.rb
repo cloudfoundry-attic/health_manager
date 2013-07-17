@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'cf_message_bus/mock_message_bus'
 
 describe HealthManager::Reporter do
   let(:config) do
@@ -8,7 +9,12 @@ describe HealthManager::Reporter do
       }
     }
   end
-  let(:manager) { HealthManager::Manager.new(config) }
+  let(:manager) do
+    m = HealthManager::Manager.new(config)
+    m.setup_components(message_bus)
+    m
+  end
+  let(:message_bus) { CfMessageBus::MockMessageBus.new }
 
   let(:publisher) { manager.publisher }
   let(:provider) { subject.droplet_registry }
@@ -16,9 +22,9 @@ describe HealthManager::Reporter do
   subject { manager.reporter }
 
   it "subscribe to topics" do
-    NATS.should_receive(:subscribe).with('healthmanager.status')
-    NATS.should_receive(:subscribe).with('healthmanager.health')
-    NATS.should_receive(:subscribe).with('healthmanager.droplet')
+    message_bus.should_receive(:subscribe).with('healthmanager.status')
+    message_bus.should_receive(:subscribe).with('healthmanager.health')
+    message_bus.should_receive(:subscribe).with('healthmanager.droplet')
     subject.prepare
   end
 

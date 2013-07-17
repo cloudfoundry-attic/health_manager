@@ -4,50 +4,34 @@ module HealthManager
     attr_reader :varz
     attr_accessor :harmonizer
 
-    def initialize(varz, droplet_registry)
+    def initialize(varz, droplet_registry, message_bus)
       @droplet_registry = droplet_registry
       @varz = varz
+      @message_bus = message_bus
     end
 
     def cc_partition_match?(message)
       cc_partition == message['cc_partition']
     end
 
-    def check_availability
-      was_available = @available
-      @available = available?
-
-      if @available && !was_available
-        initialize_subscriptions
-      end
-
-      if was_available && !@available
-        logger.warn "hm.actual-state.nats-connection-lost"
-      end
-    end
-
-    def initialize_subscriptions
+    def start
       logger.info "hm.actual-state.subscribing"
 
-      NATS.subscribe('dea.heartbeat') do |message|
+      @message_bus.subscribe('dea.heartbeat') do |message|
         process_heartbeat(message)
       end
 
-      NATS.subscribe('droplet.exited') do |message|
+      @message_bus.subscribe('droplet.exited') do |message|
         process_droplet_exited(message)
       end
 
-      NATS.subscribe('droplet.updated') do |message|
+      @message_bus.subscribe('droplet.updated') do |message|
         process_droplet_updated(message)
       end
     end
 
-    def start
-      check_availability
-    end
-
     def available?
-      NATS.connected?
+      @message_bus.connected?
     end
 
     private

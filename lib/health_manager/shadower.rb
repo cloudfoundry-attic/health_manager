@@ -2,8 +2,9 @@ module HealthManager
   class Shadower
     include HealthManager::Common
 
-    def initialize
+    def initialize(message_bus)
       @requests = {}
+      @message_bus = message_bus
     end
 
     def subscribe_to_all
@@ -17,7 +18,7 @@ module HealthManager
     def subscribe(subj)
       logger.info("shadower: subscribing: #{subj}")
 
-      NATS.subscribe(subj) do |message|
+      @message_bus.subscribe(subj) do |message|
         process_message(subj, message)
       end
     end

@@ -1,55 +1,17 @@
 require 'spec_helper'
+require 'cf_message_bus/mock_message_bus'
 
 describe HealthManager::ActualState do
   let(:droplet_registry) { HealthManager::DropletRegistry.new }
   let(:harmonizer) { double }
   let(:flapping_death) { 3 }
   let(:config) { { :intervals => { :flapping_death => flapping_death } } }
+  let(:message_bus) { CfMessageBus::MockMessageBus.new }
 
   before do
     HealthManager::Config.load(config)
-    @actual_state = HealthManager::ActualState.new(HealthManager::Varz.new, droplet_registry)
+    @actual_state = HealthManager::ActualState.new(HealthManager::Varz.new, droplet_registry, message_bus)
     @actual_state.harmonizer = harmonizer
-  end
-
-  describe "check_availability" do
-    context "when not connected to nats" do
-      before do
-        NATS.stub(:subscribe)
-        NATS.stub(:connected?).and_return(false)
-      end
-
-      it "does not try to subscribe" do
-        NATS.should_not_receive(:subscribe)
-        @actual_state.start
-      end
-
-      context "when NATS comes back up" do
-        before do
-          @actual_state.start
-          NATS.stub(:connected?).and_return(true)
-        end
-
-        it "re-subscribes to heartbeat, droplet.exited/updated messages" do
-          NATS.should_receive(:subscribe).with('dea.heartbeat')
-          NATS.should_receive(:subscribe).with('droplet.exited')
-          NATS.should_receive(:subscribe).with('droplet.updated')
-          @actual_state.start
-        end
-
-        context "when NATS goes down again" do
-          before do
-            @actual_state.start
-            NATS.stub(:connected?).and_return(false)
-          end
-
-          it "logs that nats went down" do
-            @actual_state.logger.should_receive(:warn).with(/nats/)
-            @actual_state.start
-          end
-        end
-      end
-    end
   end
 
   context 'Droplet updating' do
@@ -149,13 +111,13 @@ describe HealthManager::ActualState do
   describe "available?" do
     subject { @actual_state.available? }
 
-    context "when connecting to NATS fails" do
-      before { NATS.stub(:connected?) { false } }
+    context "when not connected to message bus" do
+      before { message_bus.stub(:connected?) { false } }
       it { should be_false }
     end
 
-    context "when connecting to nats succeeds" do
-      before { NATS.stub(:connected?) { true } }
+    context "when connected to message bus" do
+      before { message_bus.stub(:connected?) { true } }
       it { should be_true }
     end
   end

@@ -5,7 +5,7 @@ require 'yaml'
 require 'yajl'
 require 'optparse'
 require 'time'
-require 'nats/client'
+require 'cf_message_bus/message_bus'
 require 'steno'
 
 require 'vcap/common'
@@ -42,20 +42,6 @@ module HealthManager
       logger.info("HealthManager: initializing with config: #{config}")
 
       @varz = Varz.new
-
-      @publisher = if should_shadow?
-        @shadower = Shadower.new
-      else
-        NATS
-      end
-
-      @scheduler = Scheduler.new
-      @droplet_registry = DropletRegistry.new
-      @actual_state = ActualState.new(@varz, @droplet_registry)
-      @desired_state = DesiredState.new(@varz, @droplet_registry)
-      @nudger = Nudger.new(@varz, @publisher)
-      @harmonizer = Harmonizer.new(@varz, @nudger, @scheduler, @actual_state, @desired_state, @droplet_registry)
-      @reporter = Reporter.new(@varz, @droplet_registry, @publisher)
     end
 
     def register_as_vcap_component
@@ -84,15 +70,30 @@ module HealthManager
       Steno.init(config)
     end
 
+    def setup_components(message_bus)
+      @publisher = if should_shadow?
+                     @shadower = Shadower.new(message_bus)
+                   else
+                     message_bus
+                   end
+
+      @scheduler = Scheduler.new
+      @droplet_registry = DropletRegistry.new
+      @actual_state = ActualState.new(@varz, @droplet_registry, message_bus)
+      @desired_state = DesiredState.new(@varz, @droplet_registry, message_bus)
+      @nudger = Nudger.new(@varz, @publisher)
+      @harmonizer = Harmonizer.new(@varz, @nudger, @scheduler, @actual_state, @desired_state, @droplet_registry)
+      @reporter = Reporter.new(@varz, @droplet_registry, @publisher, message_bus)
+    end
+
     def start
       logger.info("starting...")
 
       EM.epoll
-      NATS.on_error do
-        logger.warn("can't connect to NATS")
-      end
+      EM.run do
+        message_bus = CfMessageBus::MessageBus.new(uri: message_bus_uri, logger: logger)
+        setup_components(message_bus)
 
-      NATS.start(:uri => get_nats_uri, :max_reconnect_attempts => Float::INFINITY) do
         @reporter.prepare
         @harmonizer.prepare
         @actual_state.start
@@ -115,12 +116,12 @@ module HealthManager
 
     def shutdown
       logger.info("shutting down...")
-      NATS.stop { EM.stop }
+      EM.stop
       logger.info("...good bye.")
     end
 
-    def get_nats_uri
-      ENV[NATS_URI] || HealthManager::Config.mbus_url
+    def message_bus_uri
+      ENV[MBUS_URI] || HealthManager::Config.mbus_url
     end
 
     def self.now

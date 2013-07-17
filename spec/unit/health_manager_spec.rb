@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'cf_message_bus/mock_message_bus'
 
 describe HealthManager do
 
@@ -14,7 +15,12 @@ describe HealthManager do
     }
   end
 
-  let(:manager) { HealthManager::Manager.new(config) }
+  let(:manager) do
+    m = HealthManager::Manager.new(config)
+    m.setup_components(message_bus)
+    m
+  end
+  let(:message_bus) { CfMessageBus::MockMessageBus.new }
 
   before do
     EM.error_handler do |e|
@@ -27,10 +33,10 @@ describe HealthManager do
   end
 
   describe "Manager" do
-    it 'should not publish to NATS when registering as vcap_component in shadow mode' do
+    it 'should not publish to message bus when registering as vcap_component in shadow mode' do
       in_em do
-        NATS.should_receive(:subscribe).once
-        NATS.should_not_receive(:publish)
+        message_bus.should_receive(:subscribe).once
+        message_bus.should_not_receive(:publish)
         manager.register_as_vcap_component
       end
     end

@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'cf_message_bus/mock_message_bus'
 
 module HealthManager
   describe Nudger do
@@ -10,8 +11,11 @@ module HealthManager
       }
     end
 
-    let(:manager) { Manager.new(config) }
-
+    let(:manager) do
+      m = Manager.new(config)
+      m.setup_components(CfMessageBus::MockMessageBus.new())
+      m
+    end
     let(:nudger) { manager.nudger }
     let(:publisher) { manager.publisher }
 
