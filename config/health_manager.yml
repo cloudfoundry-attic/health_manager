@@ -74,10 +74,6 @@ intervals:
   # how often should the gc loop for droplets run
   droplet_gc:              300
 
-  # number of droplets objects to be published under varz[:droplets]
-  # use non-positive value to disable
-  max_droplets_in_varz:    0
-
 # Used for /healthz and /vars endpoints. If not provided random
 # values will be generated on component start. Uncomment to use
 # static values.

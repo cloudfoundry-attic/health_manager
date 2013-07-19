@@ -240,12 +240,6 @@ module HealthManager
     private
 
     def finish_droplet_analysis
-      if @droplet_registry.size <= interval(:max_droplets_in_varz)
-        varz[:droplets] = @droplet_registry
-      else
-        varz[:droplets] = {}
-      end
-
       elapsed = scheduler.elapsed_time(:droplets_analysis)
       varz[:analysis_loop_duration] = elapsed
       varz.publish_realtime_stats

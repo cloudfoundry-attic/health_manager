@@ -18,9 +18,6 @@ module HealthManager
     end
     let(:config) do
       {
-        :intervals => {
-          :max_droplets_in_varz => 10
-        },
         :health_manager_component_registry => {:nudger => nudger}
       }
     end
