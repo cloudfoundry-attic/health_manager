@@ -42,12 +42,6 @@ module HealthManager
       scheduler.at_interval :droplet_gc do
         gc_droplets
       end
-
-      if should_shadow?
-        scheduler.at_interval :check_shadowing do
-          shadower.check_shadowing
-        end
-      end
     end
 
     def on_droplet_updated(droplet, message)

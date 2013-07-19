@@ -4,12 +4,11 @@ module HealthManager
   class Reporter
     include HealthManager::Common
 
-    attr_reader :varz, :droplet_registry, :publisher
+    attr_reader :varz, :droplet_registry
 
-    def initialize(varz, droplet_registry, publisher, message_bus)
+    def initialize(varz, droplet_registry, message_bus)
       @varz = varz
       @droplet_registry = droplet_registry
-      @publisher = publisher
       @message_bus = message_bus
     end
 
@@ -43,12 +42,12 @@ module HealthManager
           .select { |_, instance| FLAPPING == instance['state'] }
           .map { |i, instance| { :index => i, :since => instance['state_timestamp'] }}
 
-        publisher.publish(reply_to, encode_json({:indices => result}))
+        @message_bus.publish(reply_to, encode_json({:indices => result}))
       when CRASHED
         result = droplet.crashes.map { |instance, crash|
           { :instance => instance, :since => crash['crash_timestamp'] }
         }
-        publisher.publish(reply_to, encode_json({:instances => result}))
+        @message_bus.publish(reply_to, encode_json({:instances => result}))
       end
     end
 
@@ -71,7 +70,7 @@ module HealthManager
           :version => version,
           :healthy => running
         }
-        publisher.publish(reply_to, encode_json(response))
+        @message_bus.publish(reply_to, encode_json(response))
       end
     end
 
@@ -82,7 +81,7 @@ module HealthManager
         droplet_id = droplet['droplet'].to_s
         next unless droplet_registry.include?(droplet_id)
         droplet = droplet_registry.get(droplet_id)
-        publisher.publish(reply_to, encode_json(droplet))
+        @message_bus.publish(reply_to, encode_json(droplet))
       end
     end
   end

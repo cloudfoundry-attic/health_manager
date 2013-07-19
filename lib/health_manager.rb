@@ -24,7 +24,6 @@ require 'health_manager/nudger'
 require 'health_manager/harmonizer'
 require 'health_manager/varz'
 require 'health_manager/reporter'
-require 'health_manager/shadower'
 
 module HealthManager
   class Manager
@@ -44,7 +43,7 @@ module HealthManager
       @varz = Varz.new
     end
 
-    def register_as_vcap_component
+    def register_as_vcap_component(message_bus)
       logger.info("registering VCAP component")
       logger.debug("config: #{sanitized_config}")
 
@@ -53,7 +52,7 @@ module HealthManager
                                :host => VCAP.local_ip(HealthManager::Config.config[:local_route]),
                                :index => HealthManager::Config.config[:index] || 0,
                                :config => sanitized_config,
-                               :nats => @publisher,
+                               :nats => message_bus,
                                :port => status_config[:port],
                                :user => status_config[:user],
                                :password => status_config[:password],
@@ -71,19 +70,13 @@ module HealthManager
     end
 
     def setup_components(message_bus)
-      @publisher = if should_shadow?
-                     @shadower = Shadower.new(message_bus)
-                   else
-                     message_bus
-                   end
-
       @scheduler = Scheduler.new
       @droplet_registry = DropletRegistry.new
       @actual_state = ActualState.new(@varz, @droplet_registry, message_bus)
       @desired_state = DesiredState.new(@varz, @droplet_registry, message_bus)
-      @nudger = Nudger.new(@varz, @publisher)
+      @nudger = Nudger.new(@varz, message_bus)
       @harmonizer = Harmonizer.new(@varz, @nudger, @scheduler, @actual_state, @desired_state, @droplet_registry)
-      @reporter = Reporter.new(@varz, @droplet_registry, @publisher, message_bus)
+      @reporter = Reporter.new(@varz, @droplet_registry, message_bus)
     end
 
     def start
@@ -98,12 +91,7 @@ module HealthManager
         @harmonizer.prepare
         @actual_state.start
 
-        if should_shadow?
-          logger.info("starting Shadower")
-          @shadower.subscribe_to_all
-        end
-
-        register_as_vcap_component
+        register_as_vcap_component(message_bus)
         @scheduler.start #blocking call
       end
     end

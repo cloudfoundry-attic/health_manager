@@ -12,7 +12,6 @@ module HealthManager
 
   DEFAULTS = {
     :cc_partition => "default",
-    :shadow_mode => "disable",
     :intervals => {
       :desired_state_update    => 60,
       :analysis_delay           => 5,
@@ -29,8 +28,6 @@ module HealthManager
       :giveup_crash_number      => 4,
       :min_restart_delay        => 60,
       :max_restart_delay        => 480,
-      :max_shadowing_delay      => 10,
-      :check_shadowing          => 30,
       :delay_time_noise         => 5,
       :max_droplets_in_varz     => 0,
       :droplet_gc_grace_period  => 240,
@@ -60,5 +57,4 @@ module HealthManager
   #environment options
   MBUS_URI          = 'MBUS_URI'
   LOG_LEVEL         = 'LOG_LEVEL'
-  HM_SHADOW         = 'HM_SHADOW'
 end

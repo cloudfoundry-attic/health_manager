@@ -5,7 +5,6 @@ describe HealthManager do
 
   let(:config) do
     {
-      'shadow_mode' => 'enable',
       'intervals' => {
         'desired_state_update' => 1.5,
       },
@@ -33,20 +32,11 @@ describe HealthManager do
   end
 
   describe "Manager" do
-    it 'should not publish to message bus when registering as vcap_component in shadow mode' do
-      in_em do
-        message_bus.should_receive(:subscribe).once
-        message_bus.should_not_receive(:publish)
-        manager.register_as_vcap_component
-      end
-    end
-
     it 'should construct appropriate dependencies' do
       manager.harmonizer.should be_a_kind_of HealthManager::Harmonizer
       manager.harmonizer.varz.should be_a_kind_of HealthManager::Varz
       manager.harmonizer.desired_state.should be_a_kind_of HealthManager::DesiredState
       manager.harmonizer.nudger.should be_a_kind_of HealthManager::Nudger
-      manager.nudger.publisher.should eq manager.publisher
       manager.actual_state.harmonizer.should eq manager.harmonizer
     end
 
@@ -59,7 +49,7 @@ describe HealthManager do
       end
 
       VCAP::Component.should_receive(:register).with(hash_including(:log_counter => log_counter))
-      manager.register_as_vcap_component
+      manager.register_as_vcap_component(message_bus)
     end
   end
 

@@ -16,7 +16,6 @@ describe HealthManager::Reporter do
   end
   let(:message_bus) { CfMessageBus::MockMessageBus.new }
 
-  let(:publisher) { manager.publisher }
   let(:provider) { subject.droplet_registry }
 
   subject { manager.reporter }
@@ -38,7 +37,7 @@ describe HealthManager::Reporter do
   it "should publish a response to droplet request" do
     provider.stub(:include? => true)
     provider.stub(:[] => droplet)
-    publisher.should_receive(:publish).with(reply_to, manager.encode_json(droplet))
+    message_bus.should_receive(:publish).with(reply_to, manager.encode_json(droplet))
     subject.process_droplet_message(message_str, reply_to)
   end
 end

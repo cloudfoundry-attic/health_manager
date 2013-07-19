@@ -19,12 +19,6 @@ logging:
 bulk_api:
   host: http://api.vcap.me
 
-# use value "disable" to stop shadowing and start using hm_next for
-# real any other value, as well as default, will result in hm_next
-# working in shadow mode.
-# WARNING: remove legacy health_manager if disabling shadow mode for hm_next
-shadow_mode: disable
-
 intervals:
 
   # how often the desired state is updated

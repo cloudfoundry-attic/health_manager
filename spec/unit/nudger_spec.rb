@@ -13,14 +13,14 @@ module HealthManager
 
     let(:manager) do
       m = Manager.new(config)
-      m.setup_components(CfMessageBus::MockMessageBus.new())
+      m.setup_components(message_bus)
       m
     end
+    let(:message_bus) { CfMessageBus::MockMessageBus.new }
     let(:nudger) { manager.nudger }
-    let(:publisher) { manager.publisher }
 
     it 'should be able to start app instance' do
-      publisher.should_receive(:publish).with("health.start", hash_including(indices: [0])).once
+      message_bus.should_receive(:publish).with("health.start", hash_including(indices: [0])).once
       nudger.start_instance(Droplet.new(1), 0, 0)
       nudger.deque_batch_of_requests
     end
@@ -41,14 +41,14 @@ module HealthManager
         }
       }
 
-      publisher.should_receive(:publish).with("health.start", hash_including(running: {'some-version' => 1})).once
+      message_bus.should_receive(:publish).with("health.start", hash_including(running: {'some-version' => 1})).once
 
       nudger.start_instance(droplet, 0, 0)
       nudger.deque_batch_of_requests
     end
 
     it 'should be able to stop app instance' do
-      publisher.should_receive(:publish).with("health.stop", hash_including(instances: 0)).once
+      message_bus.should_receive(:publish).with("health.stop", hash_including(instances: 0)).once
       nudger.stop_instance(Droplet.new(1), 0, 0)
       nudger.deque_batch_of_requests
     end
@@ -69,7 +69,7 @@ module HealthManager
         }
       }
 
-      publisher.should_receive(:publish).with("health.stop", hash_including(running: {'some-version' => 1})).once
+      message_bus.should_receive(:publish).with("health.stop", hash_including(running: {'some-version' => 1})).once
 
       nudger.stop_instance(droplet, 0, 0)
       nudger.deque_batch_of_requests
@@ -85,7 +85,7 @@ module HealthManager
         "updated_at" => "2013-06-24"
       )
 
-      publisher.should_receive(:publish).with("health.stop", hash_including(version: 'some-version')).once
+      message_bus.should_receive(:publish).with("health.stop", hash_including(version: 'some-version')).once
 
       nudger.stop_instance(droplet, 0, 0)
       nudger.deque_batch_of_requests
@@ -119,7 +119,7 @@ module HealthManager
           nudger.queue("fizz", message2)
         end
 
-        publisher.should_receive(:publish).
+        message_bus.should_receive(:publish).
           exactly(:once).
           with("health.fizz", message1)
 
@@ -132,7 +132,7 @@ module HealthManager
           nudger.queue("foo", message3)
         end
 
-        publisher.should_receive(:publish).exactly(2).times
+        message_bus.should_receive(:publish).exactly(2).times
         nudger.deque_batch_of_requests
       end
     end

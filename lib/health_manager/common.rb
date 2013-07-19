@@ -7,12 +7,6 @@ module HealthManager::Common
     @cc_partition ||= HealthManager::Config.get_param(:cc_partition)
   end
 
-  def should_shadow?
-    #do NOT shadow by default
-    ENV[HealthManager::HM_SHADOW] == 'true' ||
-      HealthManager::Config.get_param(:shadow_mode) == 'enable'
-  end
-
   def logger
     @logger ||= get_logger
   end
