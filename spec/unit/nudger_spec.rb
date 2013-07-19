@@ -20,7 +20,7 @@ module HealthManager
     let(:publisher) { manager.publisher }
 
     it 'should be able to start app instance' do
-      publisher.should_receive(:publish).with("health.start", match(/"indices":\[0\]/)).once
+      publisher.should_receive(:publish).with("health.start", hash_including(indices: [0])).once
       nudger.start_instance(Droplet.new(1), 0, 0)
       nudger.deque_batch_of_requests
     end
@@ -41,14 +41,14 @@ module HealthManager
         }
       }
 
-      publisher.should_receive(:publish).with("health.start", match(/"running":\{"some-version":1\}/)).once
+      publisher.should_receive(:publish).with("health.start", hash_including(running: {'some-version' => 1})).once
 
       nudger.start_instance(droplet, 0, 0)
       nudger.deque_batch_of_requests
     end
 
     it 'should be able to stop app instance' do
-      publisher.should_receive(:publish).with("health.stop", match(/"instances":0/)).once
+      publisher.should_receive(:publish).with("health.stop", hash_including(instances: 0)).once
       nudger.stop_instance(Droplet.new(1), 0, 0)
       nudger.deque_batch_of_requests
     end
@@ -69,7 +69,7 @@ module HealthManager
         }
       }
 
-      publisher.should_receive(:publish).with("health.stop", match(/"running":\{"some-version":1\}/)).once
+      publisher.should_receive(:publish).with("health.stop", hash_including(running: {'some-version' => 1})).once
 
       nudger.stop_instance(droplet, 0, 0)
       nudger.deque_batch_of_requests
@@ -85,7 +85,7 @@ module HealthManager
         "updated_at" => "2013-06-24"
       )
 
-      publisher.should_receive(:publish).with("health.stop", match(/"version":"some-version"/)).once
+      publisher.should_receive(:publish).with("health.stop", hash_including(version: 'some-version')).once
 
       nudger.stop_instance(droplet, 0, 0)
       nudger.deque_batch_of_requests
@@ -121,7 +121,7 @@ module HealthManager
 
         publisher.should_receive(:publish).
           exactly(:once).
-          with("health.fizz", manager.encode_json(message1))
+          with("health.fizz", message1)
 
         nudger.deque_batch_of_requests
       end

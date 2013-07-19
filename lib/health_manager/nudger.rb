@@ -19,7 +19,7 @@ module HealthManager
 
         publish_request_message(
           request[:operation],
-          encode_json(request[:payload]))
+          request[:payload])
       end
     end
 
@@ -31,7 +31,7 @@ module HealthManager
     end
 
     def start_flapping_instance_immediately(app, index)
-      publish_request_message("start", encode_json(make_start_message(app, [index], true)))
+      publish_request_message("start", make_start_message(app, [index], true))
     end
 
     def start_instance(app, index, priority)
