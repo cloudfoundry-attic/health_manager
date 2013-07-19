@@ -79,7 +79,7 @@ describe HealthManager do
     end
 
     it 'should not GC when a recent h/b arrives' do
-      @actual_state.send(:process_heartbeat, encode_json(@hb))
+      @actual_state.send(:process_heartbeat, @hb)
       manager.droplet_registry.size.should == 1
       droplet = manager.droplet_registry.values.first
 
@@ -97,7 +97,7 @@ describe HealthManager do
     end
 
     it 'should not GC after desired state is set' do
-      @actual_state.send(:process_heartbeat, encode_json(@hb))
+      @actual_state.send(:process_heartbeat, @hb)
       droplet = manager.droplet_registry.values.first
 
       Timecop.travel(Time.now + GRACE_PERIOD + 10)

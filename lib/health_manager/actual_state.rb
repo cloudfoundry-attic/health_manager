@@ -36,8 +36,7 @@ module HealthManager
 
     private
 
-    def process_droplet_exited(message_str)
-      message = parse_json(message_str)
+    def process_droplet_exited(message)
       return unless cc_partition_match?(message)
 
       logger.debug "hm.actual-state.process-droplet-exited",
@@ -65,9 +64,7 @@ module HealthManager
       end
     end
 
-    def process_heartbeat(message_str)
-      message = parse_json(message_str)
-
+    def process_heartbeat(message)
       logger.debug "hm.actual-state.process-heartbeat",
                    :dea => message["dea"]
 
@@ -81,8 +78,7 @@ module HealthManager
       end
     end
 
-    def process_droplet_updated(message_str)
-      message = parse_json(message_str)
+    def process_droplet_updated(message)
       return unless cc_partition_match?(message)
 
       logger.debug "hm.actual-state.process-droplet-updated",

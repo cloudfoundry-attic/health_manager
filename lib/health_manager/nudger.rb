@@ -53,7 +53,7 @@ module HealthManager
         h
       end
 
-      publish_request_message("stop", encode_json(make_stop_message(app, instances)))
+      publish_request_message("stop", make_stop_message(app, instances))
     end
 
     def stop_instance(app, instance, priority)

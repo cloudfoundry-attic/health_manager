@@ -26,7 +26,6 @@ module HealthManager
 
     def process_status_message(message, reply_to)
       varz[:healthmanager_status_msgs_received] += 1
-      message = parse_json(message)
       logger.debug { "reporter: status: message: #{message}" }
       droplet_id = message['droplet'].to_s
 
@@ -42,18 +41,17 @@ module HealthManager
           .select { |_, instance| FLAPPING == instance['state'] }
           .map { |i, instance| { :index => i, :since => instance['state_timestamp'] }}
 
-        @message_bus.publish(reply_to, encode_json({:indices => result}))
+        @message_bus.publish(reply_to, {:indices => result})
       when CRASHED
         result = droplet.crashes.map { |instance, crash|
           { :instance => instance, :since => crash['crash_timestamp'] }
         }
-        @message_bus.publish(reply_to, encode_json({:instances => result}))
+        @message_bus.publish(reply_to, {:instances => result})
       end
     end
 
     def process_health_message(message, reply_to)
       varz[:healthmanager_health_request_msgs_received] += 1
-      message = parse_json(message)
       message['droplets'].each do |droplet|
         droplet_id = droplet['droplet'].to_s
 
@@ -70,18 +68,17 @@ module HealthManager
           :version => version,
           :healthy => running
         }
-        @message_bus.publish(reply_to, encode_json(response))
+        @message_bus.publish(reply_to, response)
       end
     end
 
     def process_droplet_message(message, reply_to)
       varz[:healthmanager_droplet_request_msgs_received] += 1
-      message = parse_json(message)
       message['droplets'].each do |droplet|
         droplet_id = droplet['droplet'].to_s
         next unless droplet_registry.include?(droplet_id)
         droplet = droplet_registry.get(droplet_id)
-        @message_bus.publish(reply_to, encode_json(droplet))
+        @message_bus.publish(reply_to, droplet)
       end
     end
   end

@@ -31,13 +31,12 @@ describe HealthManager::Reporter do
   let(:reply_to) { '_INBOX.1234' }
   let(:droplet) { HealthManager::Droplet.new('some_droplet_id') }
 
-  let(:message) { {:droplets => [{:droplet => droplet.id}]} }
-  let(:message_str) { manager.encode_json(message) }
+  let(:message) { {'droplets' => [{'droplet' => droplet.id}]} }
 
   it "should publish a response to droplet request" do
     provider.stub(:include? => true)
     provider.stub(:[] => droplet)
-    message_bus.should_receive(:publish).with(reply_to, manager.encode_json(droplet))
-    subject.process_droplet_message(message_str, reply_to)
+    message_bus.should_receive(:publish).with(reply_to, droplet)
+    subject.process_droplet_message(message, reply_to)
   end
 end

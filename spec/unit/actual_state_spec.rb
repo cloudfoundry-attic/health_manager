@@ -27,17 +27,17 @@ describe HealthManager::ActualState do
 
     def make_and_send_heartbeat
       hb = make_heartbeat_message([@droplet])
-      @actual_state.send(:process_heartbeat, encode_json(hb))
+      @actual_state.send(:process_heartbeat, hb)
     end
 
     def make_and_send_exited_message(reason)
       msg = make_exited_message(@droplet, 'reason'=>reason)
-      @actual_state.send(:process_droplet_exited, encode_json(msg))
+      @actual_state.send(:process_droplet_exited, msg)
     end
 
     def make_and_send_update_message(options = {})
       msg = make_update_message(@droplet, options)
-      @actual_state.send(:process_droplet_updated, encode_json(msg))
+      @actual_state.send(:process_droplet_updated, msg)
     end
 
     def check_instance_state(state='RUNNING')
@@ -61,7 +61,7 @@ describe HealthManager::ActualState do
     it "does not update droplet partition does not match" do
       harmonizer.should_not_receive(:on_droplet_updated)
       @droplet.should_not_receive(:reset_missing_indices)
-      make_and_send_update_message(:cc_partition => "OTHER")
+      make_and_send_update_message('cc_partition' => "OTHER")
     end
 
     it 'should mark instances that crashed as CRASHED' do
