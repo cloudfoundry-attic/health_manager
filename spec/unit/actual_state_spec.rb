@@ -21,7 +21,7 @@ describe HealthManager::ActualState do
       @droplet.set_desired_state(desired)
       instance = @droplet.get_instance(0)
       instance.should be_down
-      instance.last_heartbeat.should be_nil
+      instance.should_not have_recent_heartbeat
       harmonizer.stub(:on_extra_instances)
     end
 
@@ -43,7 +43,7 @@ describe HealthManager::ActualState do
     def check_instance_state(state='RUNNING')
       instance = @droplet.get_instance(0)
       instance.state.should == state
-      instance.last_heartbeat.should_not be_nil
+      instance.should have_recent_heartbeat
     end
 
     it 'should forward heartbeats' do

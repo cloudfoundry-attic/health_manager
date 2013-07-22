@@ -54,6 +54,14 @@ describe HealthManager::Droplet do
     end
   end
 
+  it 'should return instances with pending_restarts' do
+    app, _ = make_app
+    app.get_instance(1).mark_pending_restart_with_receipt!('foo')
+    app.get_instance(3).mark_pending_restart_with_receipt!('bar')
+
+    app.pending_restarts.map(&:index).should == [1, 3]
+  end
+
   it 'should not invoke missing_instances for non-staged states' do
     app, _ = make_app('package_state' => 'PENDING')
     app.missing_indices.should == []
@@ -61,8 +69,8 @@ describe HealthManager::Droplet do
 
   it 'should not invoke missing_instances for instances with pending restarts' do
     app, _ = make_app
-    app.add_pending_restart(1, nil)
-    app.add_pending_restart(3, nil)
+    app.get_instance(1).mark_pending_restart_with_receipt!('foo')
+    app.get_instance(3).mark_pending_restart_with_receipt!('bar')
 
     app.missing_indices.should == [0, 2]
   end
@@ -164,30 +172,6 @@ describe HealthManager::Droplet do
 
         Timecop.travel(after_end_of_gc_period = 1)
         app.should be_ripe_for_gc
-      end
-    end
-  end
-
-  describe "#all_instances" do
-    let(:app) { a, _ = make_app(:num_instances => 1); a }
-
-    context "when there are multiple instances of multiple versions" do
-      before do
-        heartbeats = make_heartbeat_message([app], :app_live_version => "version-1")
-        app.process_heartbeat(HealthManager::Heartbeat.new(heartbeats["droplets"][0]))
-        heartbeats = make_heartbeat_message([app], :app_live_version => "version-2")
-        app.process_heartbeat(HealthManager::Heartbeat.new(heartbeats["droplets"][0]))
-      end
-
-      it "returns list of all instances for all versions" do
-        instances = app.all_instances.map { |i| i.instance_guid }
-        instances.should =~ %w(version-1-0 version-2-0)
-      end
-    end
-
-    context "when there are no instances" do
-      it "returns empty list" do
-        app.all_instances.should == []
       end
     end
   end
@@ -306,28 +290,26 @@ describe HealthManager::Droplet do
   end
 
   describe "update_extra_instances" do
-    let(:versions) do
-      {
-        "123" => {
-          "instances" => {
-            0 => HealthManager::Heartbeat.new(
-              "state" => HealthManager::RUNNING,
-              "version" => "123",
-              "timestamp" => Time.now.to_i
-            ),
-            1 => HealthManager::Heartbeat.new(
-              "state" => HealthManager::RUNNING,
-              "version" => "123",
-              "timestamp" => Time.now.to_i
-            )
-          }
-        }
-      }
+    let(:heartbeats) do
+      [
+        HealthManager::Heartbeat.new(
+          "state" => HealthManager::RUNNING,
+          "version" => "123",
+          "timestamp" => Time.now.to_i,
+          "index" => 0
+        ),
+        HealthManager::Heartbeat.new(
+          "state" => HealthManager::RUNNING,
+          "version" => "123",
+          "timestamp" => Time.now.to_i,
+          "index" => 1
+        )
+      ]
     end
 
     let(:droplet) do
       droplet = HealthManager::Droplet.new(2)
-      droplet.instance_variable_set(:@versions, versions)
+      heartbeats.each { |beat| droplet.process_heartbeat(beat) }
       droplet.stub(:state) { HealthManager::RUNNING }
       droplet.stub(:num_instances) { 2 }
       droplet.stub(:live_version) { "123" }
@@ -366,37 +348,33 @@ describe HealthManager::Droplet do
         before { droplet.stub(:num_instances) { 1 } }
 
         context "and the first instance is an old version" do
-          let(:versions) do
-            {
-              "some-bogus-version" => {
-                "instances" => {
-                  0 => HealthManager::Heartbeat.new(
-                    "state" => HealthManager::RUNNING,
-                    "version" => "some-old-version",
-                    "timestamp" => Time.now.to_i
-                  )
-                }
-              },
-              "123" => {
-                "instances" => {
-                  1 => HealthManager::Heartbeat.new(
-                    "state" => HealthManager::RUNNING,
-                    "version" => "123",
-                    "timestamp" => Time.now.to_i
-                  ),
-                  2 => HealthManager::Heartbeat.new(
-                    "state" => HealthManager::RUNNING,
-                    "version" => "123",
-                    "timestamp" => Time.now.to_i
-                  ),
-                  3 => HealthManager::Heartbeat.new(
-                    "state" => HealthManager::RUNNING,
-                    "version" => "123",
-                    "timestamp" => Time.now.to_i
-                  )
-                }
-              }
-            }
+          let(:heartbeats) do
+            [
+              HealthManager::Heartbeat.new(
+                "state" => HealthManager::RUNNING,
+                "version" => "some-old-version",
+                "timestamp" => Time.now.to_i,
+                "index" => 0
+              ),
+              HealthManager::Heartbeat.new(
+                "state" => HealthManager::RUNNING,
+                "version" => "123",
+                "timestamp" => Time.now.to_i,
+                "index" => 1
+              ),
+              HealthManager::Heartbeat.new(
+                "state" => HealthManager::RUNNING,
+                "version" => "123",
+                "timestamp" => Time.now.to_i,
+                "index" => 2
+              ),
+              HealthManager::Heartbeat.new(
+                "state" => HealthManager::RUNNING,
+                "version" => "123",
+                "timestamp" => Time.now.to_i,
+                "index" => 3
+              )
+            ]
           end
 
           it "keeps one of the running instances of the current version" do
@@ -406,37 +384,33 @@ describe HealthManager::Droplet do
         end
 
         context "and the last instance is an old version" do
-          let(:versions) do
-            {
-              "123" => {
-                "instances" => {
-                  1 => HealthManager::Heartbeat.new(
-                    "state" => HealthManager::RUNNING,
-                    "version" => "123",
-                    "timestamp" => Time.now.to_i
-                  ),
-                  2 => HealthManager::Heartbeat.new(
-                    "state" => HealthManager::RUNNING,
-                    "version" => "123",
-                    "timestamp" => Time.now.to_i
-                  ),
-                  3 => HealthManager::Heartbeat.new(
-                    "state" => HealthManager::RUNNING,
-                    "version" => "123",
-                    "timestamp" => Time.now.to_i
-                  )
-                }
-              },
-              "some-bogus-version" => {
-                "instances" => {
-                  0 => HealthManager::Heartbeat.new(
-                    "state" => HealthManager::RUNNING,
-                    "version" => "some-old-version",
-                    "timestamp" => Time.now.to_i
-                  )
-                }
-              }
-            }
+          let(:heartbeats) do
+            [
+              HealthManager::Heartbeat.new(
+                "state" => HealthManager::RUNNING,
+                "version" => "123",
+                "timestamp" => Time.now.to_i,
+                "index" => 1
+              ),
+              HealthManager::Heartbeat.new(
+                "state" => HealthManager::RUNNING,
+                "version" => "123",
+                "timestamp" => Time.now.to_i,
+                "index" => 2
+              ),
+              HealthManager::Heartbeat.new(
+                "state" => HealthManager::RUNNING,
+                "version" => "123",
+                "timestamp" => Time.now.to_i,
+                "index" => 3
+              ),
+              HealthManager::Heartbeat.new(
+                "state" => HealthManager::RUNNING,
+                "version" => "some-old-version",
+                "timestamp" => Time.now.to_i,
+                "index" => 0
+              )
+            ]
           end
 
           it "keeps one of the running instances of the current version" do

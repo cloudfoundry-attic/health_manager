@@ -38,8 +38,8 @@ module HealthManager
       when FLAPPING
         version = message['version']
         result = droplet.get_instances(version)
-          .select { |_, instance| FLAPPING == instance['state'] }
-          .map { |i, instance| { :index => i, :since => instance['state_timestamp'] }}
+          .select { |_, instance| instance.flapping? }
+          .map { |i, instance| { :index => i, :since => instance.state_timestamp }}
 
         @message_bus.publish(reply_to, {:indices => result})
       when CRASHED

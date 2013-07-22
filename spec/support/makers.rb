@@ -71,7 +71,7 @@ def make_exited_message(app, options={})
   {
     'droplet' => app.id,
     'version' => app.live_version,
-    'instance' => existing_instance.nil? ? "instance_id_#{index}" : existing_instance.instance_guid,
+    'instance' => existing_instance.nil? ? "instance_id_#{index}" : existing_instance.guid,
     'index' => index,
     'reason' => 'STOPPED',
     'cc_partition' => 'default',
@@ -84,7 +84,7 @@ def make_update_message(app, options={})
   {
     'droplet' => app.id,
     'version' => app.live_version,
-    'instance' => existing_instance.nil? ? "instance_id_#{index}" : existing_instance.instance_guid,
+    'instance' => existing_instance.nil? ? "instance_id_#{index}" : existing_instance.guid,
     'index' => index,
     'reason' => 'RUNNING',
     'cc_partition' => 'default',

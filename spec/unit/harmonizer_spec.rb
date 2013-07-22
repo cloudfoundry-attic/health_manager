@@ -99,12 +99,15 @@ module HealthManager
     end
 
     describe "on_missing_instances" do
+      let(:flapping_instance) { double(:flapping_instance, :flapping? => true) }
+      let(:not_flapping_instance) { double(:running_instance, :flapping? => false) }
+
       let(:droplet) do
         droplet = Droplet.new("app-id")
         droplet.stub(:get_instance) do |ind|
           instances = [
-            {"state" => "FLAPPING"},
-            {"state" => "RUNNING"}
+            flapping_instance,
+            not_flapping_instance
           ]
           instances[ind]
         end
@@ -117,7 +120,7 @@ module HealthManager
         context "when instance is flapping" do
           before { droplet.stub(:missing_indices).and_return([0]) }
           it "executes flapping policy" do
-            subject.should_receive(:execute_flapping_policy).with(droplet, 0, {"state" => "FLAPPING"}, false)
+            subject.should_receive(:execute_flapping_policy).with(droplet, flapping_instance, false)
             harmonizer.on_missing_instances(droplet)
           end
         end
@@ -205,16 +208,17 @@ module HealthManager
     end
 
     describe "on_exit_crashed" do
-      let(:instance) { {} }
+      let(:instance) { double(:app_instance) }
       let(:droplet) { double(:get_instance => instance) }
 
       it "executes flapping policy if instance is flapping" do
-        instance["state"] = FLAPPING
-        harmonizer.should_receive(:execute_flapping_policy).with(droplet, 1, instance, true)
+        instance.stub(:flapping? => true)
+        harmonizer.should_receive(:execute_flapping_policy).with(droplet, instance, true)
         harmonizer.on_exit_crashed(droplet, {"index" => 1})
       end
 
       it "tells the nudger to start the instance" do
+        instance.stub(:flapping? => false)
         nudger.should_receive(:start_instance).with(droplet, 1, HealthManager::LOW_PRIORITY)
         harmonizer.on_exit_crashed(droplet, {"index" => 1})
       end
@@ -331,6 +335,55 @@ module HealthManager
       it "updates desired state" do
         harmonizer.should_receive(:update_desired_state).with(no_args)
         harmonizer.on_droplet_updated(droplet, {})
+      end
+    end
+
+    describe "#executing_flapping_policy" do
+      let(:droplet) { double(:droplet) }
+      let(:instance) { double(:instance, :crash_count => 1, :index => 0) }
+
+      context "when the instance is not pending a restart" do
+        before { instance.stub(:pending_restart?) { false } }
+
+        context "when the instance should give up being restarted" do
+          before { instance.stub(:giveup_restarting?) { true } }
+
+          it "should not schedule a delayed restart" do
+            scheduler.should_not_receive(:after)
+            instance.should_not_receive(:mark_pending_restart_with_receipt!)
+            subject.execute_flapping_policy(droplet, instance, true)
+          end
+        end
+
+        context "when the instance should be restarted" do
+          before { instance.stub(:giveup_restarting?) { false} }
+
+          it 'should schedule a restart and mark the instance as pending a restart' do
+            scheduler.stub(:after).with(kind_of(Float)).and_return(:my_receipt)
+            instance.should_receive(:mark_pending_restart_with_receipt!).with(:my_receipt)
+            subject.execute_flapping_policy(droplet, instance, false)
+          end
+
+          it 'should restart the instance correctly' do
+            scheduler.stub(:after).with(kind_of(Float)).and_yield
+            instance.stub(:mark_pending_restart_with_receipt!)
+
+            instance.should_receive(:unmark_pending_restart!)
+            nudger.should_receive(:start_flapping_instance_immediately).with(droplet, 0)
+
+            subject.execute_flapping_policy(droplet, instance, false)
+          end
+        end
+      end
+
+      context "when the instance is pending a restart" do
+        before { instance.stub(:pending_restart?) { true } }
+
+        it 'should not schedule a restart' do
+          scheduler.should_not_receive(:after)
+          instance.should_not_receive(:mark_pending_restart_with_receipt!)
+          subject.execute_flapping_policy(droplet, instance, true)
+        end
       end
     end
   end

@@ -57,8 +57,8 @@ module HealthManager
       index = message['index']
       instance = droplet.get_instance(message['index'], message['version'])
 
-      if flapping?(instance)
-        execute_flapping_policy(droplet, index, instance, true)
+      if instance.flapping?
+        execute_flapping_policy(droplet, instance, true)
       else
         nudger.start_instance(droplet, index, LOW_PRIORITY)
       end
@@ -89,8 +89,8 @@ module HealthManager
       logger.debug { "harmonizer: missing_instances"}
       droplet.missing_indices.each do |index|
         instance = droplet.get_instance(index)
-        if flapping?(instance)
-          execute_flapping_policy(droplet, index, instance, false)
+        if instance.flapping?
+          execute_flapping_policy(droplet, instance, false)
         else
           nudger.start_instance(droplet, index, NORMAL_PRIORITY)
         end
@@ -113,15 +113,15 @@ module HealthManager
     def on_extra_app(droplet)
       return unless desired_state.available?
 
-      instances = droplet.versions.inject({}) do |h, (version, version_entry)|
+      instances = droplet.versions.inject({}) do |memo, (version, version_entry)|
         version_entry["instances"].each do |_, inst|
-          h[inst.instance_guid] = {
+          memo[inst.guid] = {
             version: version,
             reason: "Extra app"
           }
         end
 
-        h
+        memo
       end
 
       nudger.stop_instances_immediately(droplet, instances)
@@ -135,24 +135,15 @@ module HealthManager
     # crashes, predicate methods, etc.  Consider making "instance"
     # into a full-fledged object
 
-    def execute_flapping_policy(droplet, index, instance, chatty)
-      unless droplet.restart_pending?(index)
-        instance['last_action'] = now
-        if giveup_restarting?(instance)
-          logger.info { "given up on restarting: app_id=#{droplet.id} index=#{index}" } if chatty
+    def execute_flapping_policy(droplet, instance, chatty)
+      unless instance.pending_restart?
+        if instance.giveup_restarting?
+          logger.info { "given up on restarting: app_id=#{droplet.id} index=#{instance.index}" } if chatty
         else
           delay = calculate_delay(instance)
-          schedule_delayed_restart(droplet, instance, index, delay)
+          schedule_delayed_restart(droplet, instance, instance.index, delay)
         end
       end
-    end
-
-    def flapping?(instance)
-      instance['state'] == FLAPPING
-    end
-
-    def giveup_restarting?(instance)
-      interval(:giveup_crash_number) > 0 && instance['crashes'] > interval(:giveup_crash_number)
     end
 
     def calculate_delay(instance)
@@ -166,7 +157,7 @@ module HealthManager
       # passes, the start message is published immediately.
 
       delay = [interval(:max_restart_delay),
-               interval(:min_restart_delay) << (instance['crashes'] - interval(:flapping_death) - 1)
+               interval(:min_restart_delay) << (instance.crash_count - interval(:flapping_death) - 1)
               ].min.to_f
       noise_amount = 2.0 * (rand - 0.5) * interval(:delay_time_noise).to_f
 
@@ -178,18 +169,17 @@ module HealthManager
 
     def schedule_delayed_restart(droplet, instance, index, delay)
       receipt = scheduler.after(delay) do
-        droplet.remove_pending_restart(index)
-        instance['last_action'] = now
+        instance.unmark_pending_restart!
         nudger.start_flapping_instance_immediately(droplet, index)
       end
-      droplet.add_pending_restart(index, receipt)
+      instance.mark_pending_restart_with_receipt!(receipt)
     end
 
     def abort_all_pending_delayed_restarts(droplet)
-      droplet.pending_restarts.each do |_, receipt|
-        scheduler.cancel(receipt)
+      droplet.pending_restarts.each do |instance|
+        scheduler.cancel(instance.pending_restart_receipt)
+        instance.unmark_pending_restart!
       end
-      droplet.pending_restarts.clear
     end
 
     # Flapping-related code ENDS
