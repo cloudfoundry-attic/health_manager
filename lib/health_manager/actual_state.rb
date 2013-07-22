@@ -11,7 +11,7 @@ module HealthManager
     end
 
     def cc_partition_match?(message)
-      cc_partition == message['cc_partition']
+      cc_partition == message.fetch(:cc_partition)
     end
 
     def start
@@ -46,11 +46,11 @@ module HealthManager
 
       droplet = get_droplet(message)
 
-      droplet.mark_instance_as_down(message['version'],
-                                    message['index'],
-                                    message['instance'])
+      droplet.mark_instance_as_down(message.fetch(:version),
+                                    message.fetch(:index),
+                                    message.fetch(:instance))
 
-      case message['reason']
+      case message.fetch(:reason)
       when CRASHED
         varz[:crashed_instances] += 1
         droplet.process_exit_crash(message)
@@ -66,11 +66,11 @@ module HealthManager
 
     def process_heartbeat(message)
       logger.debug "hm.actual-state.process-heartbeat",
-                   :dea => message["dea"]
+                   :dea => message.fetch(:dea)
 
       varz[:heartbeat_msgs_received] += 1
 
-      message['droplets'].each do |beat|
+      message[:droplets].each do |beat|
         next unless cc_partition_match?(beat)
         droplet = get_droplet(beat)
         droplet.process_heartbeat(Heartbeat.new(beat))
@@ -82,7 +82,7 @@ module HealthManager
       return unless cc_partition_match?(message)
 
       logger.debug "hm.actual-state.process-droplet-updated",
-                   :droplet => message["droplet"]
+                   :droplet => message.fetch(:droplet)
 
       varz[:droplet_updated_msgs_received] += 1
       droplet = get_droplet(message)
@@ -91,7 +91,7 @@ module HealthManager
     end
 
     def get_droplet(message)
-      @droplet_registry.get(message['droplet'].to_s)
+      @droplet_registry.get(message.fetch(:droplet).to_s)
     end
   end
 end

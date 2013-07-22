@@ -166,11 +166,11 @@ module HealthManager
     end
 
     def process_exit_crash(message)
-      instance = get_instance(message['index'], message['version'], message['instance'])
-      instance.crash!(message['crash_timestamp'])
+      instance = get_instance(message.fetch(:index), message.fetch(:version), message.fetch(:instance))
+      instance.crash!(message.fetch(:crash_timestamp))
 
-      if instance.guid != message['instance']
-        logger.warn { "unexpected instance_id: #{message['instance']}, desired: #{instance.guid}" }
+      if instance.guid != message.fetch(:instance)
+        logger.warn { "unexpected instance_id: #{message.fetch(:instance)}, desired: #{instance.guid}" }
       end
 
       @crashes[instance.guid] = {

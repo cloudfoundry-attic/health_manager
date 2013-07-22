@@ -27,16 +27,16 @@ module HealthManager
     def process_status_message(message, reply_to)
       varz[:healthmanager_status_msgs_received] += 1
       logger.debug { "reporter: status: message: #{message}" }
-      droplet_id = message['droplet'].to_s
+      droplet_id = message.fetch(:droplet).to_s
 
       return unless droplet_registry.include?(droplet_id)
       droplet = droplet_registry.get(droplet_id)
-      state = message['state']
+      state = message.fetch(:state)
 
       result = nil
       case state
       when FLAPPING
-        version = message['version']
+        version = message.fetch(:version)
         result = droplet.get_instances(version)
           .select { |_, instance| instance.flapping? }
           .map { |i, instance| { :index => i, :since => instance.state_timestamp }}
@@ -52,12 +52,12 @@ module HealthManager
 
     def process_health_message(message, reply_to)
       varz[:healthmanager_health_request_msgs_received] += 1
-      message['droplets'].each do |droplet|
-        droplet_id = droplet['droplet'].to_s
+      message.fetch(:droplets).each do |droplet|
+        droplet_id = droplet.fetch(:droplet).to_s
 
         next unless droplet_registry.include?(droplet_id)
 
-        version = droplet['version']
+        version = droplet.fetch(:version)
         droplet = droplet_registry.get(droplet_id)
 
         running = (0...droplet.num_instances).count { |i|
@@ -74,8 +74,8 @@ module HealthManager
 
     def process_droplet_message(message, reply_to)
       varz[:healthmanager_droplet_request_msgs_received] += 1
-      message['droplets'].each do |droplet|
-        droplet_id = droplet['droplet'].to_s
+      message.fetch(:droplets).each do |droplet|
+        droplet_id = droplet.fetch(:droplet).to_s
         next unless droplet_registry.include?(droplet_id)
         droplet = droplet_registry.get(droplet_id)
         @message_bus.publish(reply_to, droplet)

@@ -54,8 +54,8 @@ module HealthManager
     def on_exit_crashed(droplet, message)
       logger.debug { "harmonizer: exit_crashed" }
 
-      index = message['index']
-      instance = droplet.get_instance(message['index'], message['version'])
+      index = message.fetch(:index)
+      instance = droplet.get_instance(message.fetch(:index), message.fetch(:version))
 
       if instance.flapping?
         execute_flapping_policy(droplet, instance, true)
@@ -69,7 +69,7 @@ module HealthManager
     end
 
     def on_exit_dea(droplet, message)
-      index = message['index']
+      index = message.fetch(:index)
 
       logger.info { "harmonizer: exit_dea: app_id=#{droplet.id} index=#{index}" }
       nudger.start_instance(droplet, index, HIGH_PRIORITY)

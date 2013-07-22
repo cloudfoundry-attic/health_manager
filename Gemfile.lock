@@ -33,7 +33,7 @@ GEM
     addressable (2.3.4)
     backports (3.3.1)
     builder (3.2.2)
-    cf-message-bus (0.0.3)
+    cf-message-bus (0.0.4)
       eventmachine (~> 1.0.0)
       nats (= 0.4.26)
       vcap-concurrency

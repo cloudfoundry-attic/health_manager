@@ -11,9 +11,9 @@ module HealthManager
     let(:app) do
       app, _ = make_app(:num_instances => 1)
       heartbeats = make_heartbeat_message([app], :app_live_version => "version-1")
-      app.process_heartbeat(HealthManager::Heartbeat.new(heartbeats["droplets"][0]))
+      app.process_heartbeat(HealthManager::Heartbeat.new(heartbeats[:droplets][0]))
       heartbeats = make_heartbeat_message([app], :app_live_version => "version-2")
-      app.process_heartbeat(HealthManager::Heartbeat.new(heartbeats["droplets"][0]))
+      app.process_heartbeat(HealthManager::Heartbeat.new(heartbeats[:droplets][0]))
       app
     end
     let(:config) do
@@ -214,13 +214,13 @@ module HealthManager
       it "executes flapping policy if instance is flapping" do
         instance.stub(:flapping? => true)
         harmonizer.should_receive(:execute_flapping_policy).with(droplet, instance, true)
-        harmonizer.on_exit_crashed(droplet, {"index" => 1})
+        harmonizer.on_exit_crashed(droplet, { :index => 1, :version => 'some-version' })
       end
 
       it "tells the nudger to start the instance" do
         instance.stub(:flapping? => false)
         nudger.should_receive(:start_instance).with(droplet, 1, HealthManager::LOW_PRIORITY)
-        harmonizer.on_exit_crashed(droplet, {"index" => 1})
+        harmonizer.on_exit_crashed(droplet, { :index => 1, :version => 'some-version' })
       end
     end
 
@@ -316,7 +316,7 @@ module HealthManager
       let(:droplet) { Droplet.new(2) }
       it "tells nudger to start instance" do
         nudger.should_receive(:start_instance).with(droplet, 1, HealthManager::HIGH_PRIORITY)
-        harmonizer.on_exit_dea(droplet, {"index" => 1})
+        harmonizer.on_exit_dea(droplet, { :index => 1})
       end
     end
 

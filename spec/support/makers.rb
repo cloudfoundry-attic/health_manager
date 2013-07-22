@@ -44,24 +44,24 @@ def make_heartbeat_message(droplets, options={})
       app_live_version = options[:app_live_version] || droplet.live_version
 
       hb << {
-        'droplet' => droplet.id,
-        'version' => app_live_version,
-        'instance' => "#{app_live_version}-#{index}",
-        'index' => index,
-        'state' => options[:state] || HealthManager::RUNNING,
-        'state_timestamp' => now,
-        'cc_partition' => 'default'
+        :droplet => droplet.id,
+        :version => app_live_version,
+        :instance => "#{app_live_version}-#{index}",
+        :index => index,
+        :state => options[:state] || HealthManager::RUNNING,
+        :state_timestamp => now,
+        :cc_partition => 'default'
       }
     }
   end
 
-  {'droplets' => hb, 'dea' => '123456789abcdefgh'}
+  {:droplets => hb, :dea => '123456789abcdefgh'}
 end
 
 def make_crash_message(app, options={})
   make_exited_message(app,
-                      {'reason' => 'CRASHED',
-                        'crash_timestamp' => now,
+                      {:reason => 'CRASHED',
+                        :crash_timestamp => now,
                       }.merge(options))
 end
 
@@ -69,12 +69,12 @@ def make_exited_message(app, options={})
   index = options['index'] || 0
   existing_instance = app.safe_get_instance(index)
   {
-    'droplet' => app.id,
-    'version' => app.live_version,
-    'instance' => existing_instance.nil? ? "instance_id_#{index}" : existing_instance.guid,
-    'index' => index,
-    'reason' => 'STOPPED',
-    'cc_partition' => 'default',
+    :droplet => app.id,
+    :version => app.live_version,
+    :instance => existing_instance.nil? ? "instance_id_#{index}" : existing_instance.guid,
+    :index => index,
+    :reason => 'STOPPED',
+    :cc_partition => 'default',
   }.merge(options)
 end
 
@@ -82,11 +82,11 @@ def make_update_message(app, options={})
   index = options['index'] || 0
   existing_instance = app.safe_get_instance(index)
   {
-    'droplet' => app.id,
-    'version' => app.live_version,
-    'instance' => existing_instance.nil? ? "instance_id_#{index}" : existing_instance.guid,
-    'index' => index,
-    'reason' => 'RUNNING',
-    'cc_partition' => 'default',
+    :droplet => app.id,
+    :version => app.live_version,
+    :instance => existing_instance.nil? ? "instance_id_#{index}" : existing_instance.guid,
+    :index => index,
+    :reason => 'RUNNING',
+    :cc_partition => 'default',
   }.merge(options)
 end

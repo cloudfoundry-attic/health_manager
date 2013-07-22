@@ -31,7 +31,7 @@ describe HealthManager::Reporter do
   let(:reply_to) { '_INBOX.1234' }
   let(:droplet) { HealthManager::Droplet.new('some_droplet_id') }
 
-  let(:message) { {'droplets' => [{'droplet' => droplet.id}]} }
+  let(:message) { { :droplets => [{ :droplet => droplet.id}]} }
 
   it "should publish a response to droplet request" do
     provider.stub(:include? => true)
