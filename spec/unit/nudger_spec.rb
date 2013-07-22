@@ -27,19 +27,20 @@ module HealthManager
 
     it "includes the running count in start requests" do
       droplet = Droplet.new(1)
-
-      droplet.versions["some-version"] = {
-        "instances" => {
-          0 => { "instance" => "some-instances",
-            "timestamp" => 0,
-            "state" => RUNNING
-          },
-          1 => { "instance" => "some-instances",
-            "timestamp" => 0,
-            "state" => DOWN
-          }
-        }
-      }
+      droplet.process_heartbeat(Heartbeat.new(
+        :instance => "some-instances",
+        :timestamp => 0,
+        :state => RUNNING,
+        :index => 0,
+        :version => "some-version"
+      ))
+      droplet.process_heartbeat(Heartbeat.new(
+        :instance => "some-instances",
+        :timestamp => 0,
+        :state => DOWN,
+        :index => 1,
+        :version => "some-version"
+      ))
 
       message_bus.should_receive(:publish).with("health.start", hash_including(running: {'some-version' => 1})).once
 
@@ -55,19 +56,20 @@ module HealthManager
 
     it "includes the running count in stop requests" do
       droplet = Droplet.new(1)
-
-      droplet.versions["some-version"] = {
-        "instances" => {
-          0 => { "instance" => "some-instances",
-            "timestamp" => 0,
-            "state" => RUNNING
-          },
-          1 => { "instance" => "some-instances",
-            "timestamp" => 0,
-            "state" => DOWN
-          }
-        }
-      }
+      droplet.process_heartbeat(Heartbeat.new(
+        :instance => "some-instances",
+        :timestamp => 0,
+        :state => RUNNING,
+        :index => 0,
+        :version => "some-version"
+      ))
+      droplet.process_heartbeat(Heartbeat.new(
+        :instance => "some-instances",
+        :timestamp => 0,
+        :state => DOWN,
+        :index => 1,
+        :version => "some-version"
+      ))
 
       message_bus.should_receive(:publish).with("health.stop", hash_including(running: {'some-version' => 1})).once
 

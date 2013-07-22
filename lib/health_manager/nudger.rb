@@ -96,7 +96,7 @@ module HealthManager
       app.versions.each do |version, version_entry|
         counts[version] =
           version_entry["instances"].count do |_, instance|
-            instance["state"] == RUNNING
+            instance.running?
           end
       end
 
