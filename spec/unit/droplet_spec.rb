@@ -49,8 +49,8 @@ describe HealthManager::Droplet do
 
     it "sets versions correctly" do
       subject
-      expect(droplet.versions["abc-def"]["instances"][0]).to be_running
-      expect(droplet.versions["abc-def"]["instances"][1]).to be_running
+      expect(droplet.get_instance(0, "abc-def")).to be_running
+      expect(droplet.get_instance(1, "abc-def")).to be_running
     end
   end
 
@@ -321,7 +321,7 @@ describe HealthManager::Droplet do
 
       it "removes instances" do
         droplet.update_extra_instances
-        expect(droplet.versions).to eql({})
+        expect(droplet.get_instances('123')).to eql({})
       end
     end
 
@@ -330,7 +330,7 @@ describe HealthManager::Droplet do
 
       it "removes instances" do
         droplet.update_extra_instances
-        expect(droplet.versions["123"]["instances"].size).to eql(1)
+        expect(droplet.get_instances("123")).to have(1).item
       end
     end
 
@@ -339,7 +339,7 @@ describe HealthManager::Droplet do
 
       it "removes instances" do
         droplet.update_extra_instances
-        expect(droplet.versions.size).to eql(0)
+        expect(droplet.get_instances('123')).to eql({})
       end
     end
 
@@ -379,7 +379,7 @@ describe HealthManager::Droplet do
 
           it "keeps one of the running instances of the current version" do
             droplet.update_extra_instances
-            expect(droplet.versions.size).to eql(1)
+            expect(droplet.get_instances('123')).to have(1).item
           end
         end
 
@@ -415,9 +415,68 @@ describe HealthManager::Droplet do
 
           it "keeps one of the running instances of the current version" do
             droplet.update_extra_instances
-            expect(droplet.versions.size).to eql(1)
+            expect(droplet.get_instances('123')).to have(1).item
           end
         end
+      end
+    end
+  end
+
+
+  describe "reporting on instances" do
+    before do
+      heartbeats = [
+        HealthManager::Heartbeat.new(
+          :state => HealthManager::RUNNING,
+          :version => "123",
+          :timestamp => Time.now.to_i,
+          :instance => "beef",
+          :index => 0
+        ),
+        HealthManager::Heartbeat.new(
+          :state => HealthManager::STOPPED,
+          :version => "123",
+          :timestamp => Time.now.to_i,
+          :instance => "cafe",
+          :index => 2
+        ),
+        HealthManager::Heartbeat.new(
+          :state => HealthManager::STARTING,
+          :version => "123",
+          :timestamp => Time.now.to_i,
+          :instance => "face",
+          :index => 3
+        ),
+        HealthManager::Heartbeat.new(
+          :state => HealthManager::RUNNING,
+          :version => "123",
+          :timestamp => Time.now.to_i,
+          :instance => "dead",
+          :index => 1
+        ),
+        HealthManager::Heartbeat.new(
+          :state => HealthManager::RUNNING,
+          :version => "abc",
+          :timestamp => Time.now.to_i,
+          :instance => "baba",
+          :index => 0
+        )
+      ]
+
+      @droplet = HealthManager::Droplet.new(2)
+      heartbeats.each { |beat| @droplet.process_heartbeat(beat) }
+    end
+
+    describe "number_of_running_instances_by_version" do
+      it "should return a map of versions to running instances" do
+        expect(@droplet.number_of_running_instances_by_version).to eql({ "123" => 2, "abc" => 1 })
+      end
+    end
+
+    describe "all_starting_or_running_instances" do
+      specify do
+        expect(@droplet.all_starting_or_running_instances.count).to eql(4)
+        expect(@droplet.all_starting_or_running_instances.map(&:guid)).to match_array(%w(beef face dead baba))
       end
     end
   end

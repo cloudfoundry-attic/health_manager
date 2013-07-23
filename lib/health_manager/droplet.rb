@@ -6,7 +6,7 @@ module HealthManager
   class Droplet
     include HealthManager::Common
 
-    attr_reader :id, :state, :live_version, :num_instances, :package_state, :last_updated, :versions, :crashes, :extra_instances
+    attr_reader :id, :state, :live_version, :num_instances, :package_state, :last_updated, :crashes, :extra_instances
     attr_accessor :desired_state_update_required
 
     def initialize(id)
@@ -191,6 +191,13 @@ module HealthManager
       end
     end
 
+    def all_starting_or_running_instances
+      versions.inject([]) do |memo, (version, _)|
+        get_instances(version).each { |_, instance| memo << instance if instance.starting_or_running?}
+        memo
+      end
+    end
+
     def get_instances(version = @live_version)
       get_version(version)['instances']
     end
@@ -234,7 +241,15 @@ module HealthManager
       desired_state_update_overdue?
     end
 
+    def number_of_running_instances_by_version
+      versions.inject({}) do |memo, (version, version_entry)|
+        memo[version] = version_entry["instances"].count { |_, instance| instance.running? }
+        memo
+      end
+    end
+
     private
+    attr_reader :versions
 
     def delete_versions_without_instances
       versions.delete_if do |version, version_entry|

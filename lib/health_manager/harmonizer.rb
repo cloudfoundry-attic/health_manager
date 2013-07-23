@@ -113,17 +113,13 @@ module HealthManager
     def on_extra_app(droplet)
       return unless desired_state.available?
 
-      instances = droplet.versions.inject({}) do |memo, (version, version_entry)|
-        version_entry["instances"].each do |_, inst|
-          memo[inst.guid] = {
-            version: version,
-            reason: "Extra app"
-          }
-        end
-
+      instances = droplet.all_starting_or_running_instances.inject({}) do |memo, instance|
+        memo[instance.guid] = {
+          version: instance.version,
+          reason: "Extra app",
+        }
         memo
       end
-
       nudger.stop_instances_immediately(droplet, instances)
     end
 

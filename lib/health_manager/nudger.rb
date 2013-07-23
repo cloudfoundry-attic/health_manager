@@ -67,7 +67,7 @@ module HealthManager
         :last_updated => app.last_updated,
         :version => app.live_version,
         :indices => indices,
-        :running => running_count(app),
+        :running => app.number_of_running_instances_by_version,
         :flapping => flapping
       }
     end
@@ -77,7 +77,7 @@ module HealthManager
         :droplet => app.id,
         :last_updated => app.last_updated,
         :instances => instance,
-        :running => running_count(app),
+        :running => app.number_of_running_instances_by_version,
         :version => app.live_version
       }
     end
@@ -88,19 +88,6 @@ module HealthManager
       key.delete(:last_updated)
       @queue.insert({ operation: operation, payload: payload }, priority, key)
       varz[:queue_length] = @queue.size
-    end
-
-    def running_count(app)
-      counts = {}
-
-      app.versions.each do |version, version_entry|
-        counts[version] =
-          version_entry["instances"].count do |_, instance|
-            instance.running?
-          end
-      end
-
-      counts
     end
   end
 end

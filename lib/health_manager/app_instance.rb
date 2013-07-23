@@ -5,7 +5,7 @@ module HealthManager
   class AppInstance
     include StatefulObject
 
-    attr_reader :state, :guid, :index, :pending_restart_receipt, :last_crash_timestamp, :state_timestamp, :crash_count
+    attr_reader :state, :guid, :index, :pending_restart_receipt, :last_crash_timestamp, :state_timestamp, :crash_count, :version
 
     def initialize(version, index, guid)
       @version = version
