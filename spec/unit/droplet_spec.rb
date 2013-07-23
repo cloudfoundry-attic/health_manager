@@ -17,6 +17,87 @@ describe HealthManager::Droplet do
 
   before { HealthManager::Config.load(config) }
 
+  describe "handling multiple instances with the same index" do
+    let(:droplet) { HealthManager::Droplet.new(2) }
+    before do
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(
+          :droplet => 2,
+          :version => "abc",
+          :instance => "alpha",
+          :index => 0,
+          :state => HealthManager::RUNNING,
+          :state_timestamp => now,
+          :cc_partition => 'default'
+        )
+      )
+
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(
+          :droplet => 2,
+          :version => "abc",
+          :instance => "alpha",
+          :index => 0,
+          :state => HealthManager::RUNNING,
+          :state_timestamp => now,
+          :cc_partition => 'default'
+        )
+      )
+
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(
+          :droplet => 2,
+          :version => "abc",
+          :instance => "beta",
+          :index => 0,
+          :state => HealthManager::RUNNING,
+          :state_timestamp => now,
+          :cc_partition => 'default'
+        )
+      )
+    end
+
+    context 'alpha, beta, alpha' do
+      it 'kill beta, keep alpha as the guid' do
+        expect(droplet.extra_instances.keys).to eql([])
+        droplet.process_heartbeat(
+          HealthManager::Heartbeat.new(
+            :droplet => 2,
+            :version => "abc",
+            :instance => "alpha",
+            :index => 0,
+            :state => HealthManager::RUNNING,
+            :state_timestamp => now,
+            :cc_partition => 'default'
+          )
+        )
+        expect(droplet.extra_instances).to have(1).item
+        expect(droplet.extra_instances.keys).to eql(["beta"])
+        expect(droplet.get_instance(0, "abc").guid).to eql("alpha")
+      end
+    end
+
+    context 'alpha, beta, beta' do
+      it 'kill alpha, assign beta as the guid' do
+        expect(droplet.extra_instances.keys).to eql([])
+        droplet.process_heartbeat(
+          HealthManager::Heartbeat.new(
+            :droplet => 2,
+            :version => "abc",
+            :instance => "beta",
+            :index => 0,
+            :state => HealthManager::RUNNING,
+            :state_timestamp => now,
+            :cc_partition => 'default'
+          )
+        )
+        expect(droplet.extra_instances).to have(1).item
+        expect(droplet.extra_instances.keys).to eql(["alpha"])
+        expect(droplet.get_instance(0, "abc").guid).to eql("beta")
+      end
+    end
+  end
+
   describe "process_heartbeat" do
     let(:droplet) { HealthManager::Droplet.new(2) }
     let(:droplet_beat_1) do

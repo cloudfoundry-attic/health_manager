@@ -13,6 +13,7 @@ module HealthManager
       @guid = guid
       reset_crash_count
       @last_crash_timestamp = nil
+      @guid_stream = []
       down!
     end
 
@@ -33,10 +34,19 @@ module HealthManager
     end
 
     def receive_heartbeat(heartbeat)
+      @guid_stream << heartbeat.instance_guid
+
       @last_heartbeat_time = now
       @guid = heartbeat.instance_guid
       @state = heartbeat.state
       @state_timestamp = heartbeat.state_timestamp
+    end
+
+    def extra_instance_guid_to_prune
+      return nil if @guid_stream.count < 3
+      @guid_stream = @guid_stream.last(3)
+      return nil if @guid_stream[0] == @guid_stream[1]
+      @guid_stream.detect {|guid| guid != @guid}
     end
 
     def alive?

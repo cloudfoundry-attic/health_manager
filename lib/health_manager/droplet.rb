@@ -63,13 +63,13 @@ module HealthManager
       instance = get_instance(beat.index, beat.version)
 
       if beat.starting_or_running?
-        if instance.running? && instance.guid != beat.instance_guid
-          @extra_instances[beat.instance_guid] = {
+        instance.receive_heartbeat(beat)
+        instance_guid_to_prune = instance.extra_instance_guid_to_prune
+        if instance_guid_to_prune
+          @extra_instances[instance_guid_to_prune] = {
             version: beat.version,
-            reason: "Instance mismatch, actual: #{beat.instance_guid}, desired: #{instance.guid}"
+            reason: "Instance mismatch, pruning: #{instance_guid_to_prune}"
           }
-        else
-          instance.receive_heartbeat(beat)
         end
       elsif beat.state == CRASHED
         @crashes[beat.instance_guid] = {
