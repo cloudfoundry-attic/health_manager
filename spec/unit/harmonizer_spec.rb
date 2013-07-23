@@ -340,7 +340,7 @@ module HealthManager
 
     describe "#executing_flapping_policy" do
       let(:droplet) { double(:droplet) }
-      let(:instance) { double(:instance, :crash_count => 1, :index => 0) }
+      let(:instance) { HealthManager::AppInstance.new('version', 0, 'abc') }
 
       context "when the instance is not pending a restart" do
         before { instance.stub(:pending_restart?) { false } }
