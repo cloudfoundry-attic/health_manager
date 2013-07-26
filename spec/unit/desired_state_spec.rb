@@ -369,7 +369,7 @@ describe HealthManager::DesiredState do
 
       subject do
         in_em do
-          provider.process_next_batch(bulk_token, [], Time.now)
+          provider.process_next_batch(bulk_token, Time.now)
           done
         end
       end
@@ -384,7 +384,7 @@ describe HealthManager::DesiredState do
           http_mock.stub(:errback)
         end
 
-        it "removes droplets from registry that are not in response" do
+        it "keeps droplets in registry that are not in response" do
           registered_droplets.each do |id|
             droplet_registry.get(id)
           end
@@ -392,11 +392,11 @@ describe HealthManager::DesiredState do
           subject
 
           desired_droplets.each do |id|
-            expect(droplet_registry.keys).to include(id)
+            expect(droplet_registry).to have_key(id)
           end
 
           removed_droplets.each do |id|
-            expect(droplet_registry.keys).to_not include(id)
+            expect(droplet_registry).to have_key(id)
           end
         end
       end

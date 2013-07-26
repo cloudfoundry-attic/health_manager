@@ -15,7 +15,7 @@ module HealthManager
     end
 
     def update(&block)
-      process_next_batch({}, Set.new, Time.now, &block)
+      process_next_batch({}, Time.now, &block)
     end
 
     def update_user_counts
@@ -53,7 +53,7 @@ module HealthManager
       @user = @password = nil #ensure re-acquisition of credentials
     end
 
-    def process_next_batch(bulk_token, seen_droplets, start_time, &block)
+    def process_next_batch(bulk_token, start_time, &block)
       with_credentials do |user, password|
         options = {
           :head => { 'authorization' => [user, password] },
@@ -83,13 +83,6 @@ module HealthManager
           if batch.nil? || batch.empty?
             duration = Time.now - start_time
 
-            @droplet_registry.delete_if do |id, _|
-              unless seen_droplets.include?(id.to_s)
-                logger.info "hm.desired-state.droplet-gone", id: id
-                true
-              end
-            end
-
             varz.publish_desired_stats
 
             logger.info "hm.desired-state.bulk-update-done", duration: duration
@@ -102,11 +95,10 @@ module HealthManager
           batch.each do |app_id, droplet|
             update_desired_stats_for_droplet(droplet)
             @droplet_registry.get(app_id).set_desired_state(droplet)
-            seen_droplets << app_id.to_s
             block.call(app_id.to_s, droplet) if block
           end
 
-          process_next_batch(bulk_token, seen_droplets, start_time, &block)
+          process_next_batch(bulk_token, start_time, &block)
         end
 
         http.errback do
@@ -120,7 +112,7 @@ module HealthManager
 
           if @error_count < MAX_BULK_ERROR_COUNT
             logger.info("Retrying bulk request, bulk_token: #{bulk_token}")
-            process_next_batch(bulk_token, seen_droplets, start_time, &block)
+            process_next_batch(bulk_token, start_time, &block)
           else
             logger.error("Too many consecutive bulk API errors.")
             @connected = false
