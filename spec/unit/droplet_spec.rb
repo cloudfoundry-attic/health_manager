@@ -580,6 +580,14 @@ describe HealthManager::Droplet do
           :instance => "baba",
           :index => 0,
           :state_timestamp => 0
+        ),
+        HealthManager::Heartbeat.new(
+          :state => HealthManager::RUNNING,
+          :version => "abc",
+          :timestamp => Time.now.to_i,
+          :instance => "abab",
+          :index => 0,
+          :state_timestamp => 0
         )
       ]
 
@@ -589,7 +597,7 @@ describe HealthManager::Droplet do
 
     describe "number_of_running_instances_by_version" do
       it "should return a map of versions to running instances" do
-        expect(@droplet.number_of_running_instances_by_version).to eql({ "123" => 3, "abc" => 1 })
+        expect(@droplet.number_of_running_instances_by_version).to eql({ "123" => 2, "abc" => 2 })
       end
     end
 
