@@ -3,7 +3,7 @@ require 'spec_helper'
 module HealthManager
   describe AppInstance do
     subject(:instance) { AppInstance.new("version", 0, 'fuid') }
-    let(:heartbeat) { Heartbeat.new({'instance' => 'fuid', 'state' => 'RUNNING', 'version' => "version", 'index' => 0}) }
+    let(:heartbeat) { Heartbeat.new({ instance: 'fuid', state: 'RUNNING', version: "version", index: 0, state_timestamp: 0 }) }
 
     before do
       Config.load({})
@@ -158,6 +158,35 @@ module HealthManager
           instance.crash!(configured_giveup + 1)
           instance.should be_giveup_restarting
         end
+      end
+    end
+
+    describe "running_guid_count" do
+      its(:running_guid_count) { should eq(0) }
+
+      context 'after receiving a heartbeat' do
+        before do
+          instance.receive_heartbeat(heartbeat)
+        end
+
+        its(:running_guid_count) { should eq(1) }
+      end
+
+      context 'after receiving a heartbeat that is not running' do
+        before do
+          instance.receive_heartbeat(Heartbeat.new({ instance: 'fuid', state: 'DOWN', version: "version", index: 0, state_timestamp: 0}))
+        end
+
+        its(:running_guid_count) { should eq(0) }
+      end
+
+      context 'after receiving different heartbeats' do
+        before do
+          instance.receive_heartbeat(heartbeat)
+          instance.receive_heartbeat(Heartbeat.new({ instance: 'fluid', state: 'RUNNING', version: "version", index: 0, state_timestamp: 0 }))
+        end
+
+        its(:running_guid_count) { should eq(2) }
       end
     end
   end

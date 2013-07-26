@@ -49,6 +49,10 @@ module HealthManager
       @guid_stream.detect {|guid| guid != @guid}
     end
 
+    def running_guid_count
+      running? ? @guid_stream.uniq.size : 0
+    end
+
     def alive?
       !crashed? && has_recent_heartbeat?
     end

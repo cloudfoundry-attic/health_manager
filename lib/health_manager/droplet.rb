@@ -243,7 +243,7 @@ module HealthManager
 
     def number_of_running_instances_by_version
       versions.inject({}) do |memo, (version, version_entry)|
-        memo[version] = version_entry["instances"].count { |_, instance| instance.running? }
+        memo[version] = version_entry["instances"].inject(0) { |memo, (_, instance)| memo + instance.running_guid_count }
         memo
       end
     end

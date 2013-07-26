@@ -11,23 +11,23 @@ module HealthManager
     end
 
     def state
-      @hash[:state]
+      @hash.fetch(:state)
     end
 
     def state_timestamp
-      @hash[:state_timestamp]
+      @hash.fetch(:state_timestamp)
     end
 
     def instance_guid
-      @hash[:instance]
+      @hash.fetch(:instance)
     end
 
     def version
-      @hash[:version]
+      @hash.fetch(:version)
     end
 
     def index
-      @hash[:index]
+      @hash.fetch(:index)
     end
 
     def dup

@@ -32,14 +32,16 @@ module HealthManager
         :timestamp => 0,
         :state => RUNNING,
         :index => 0,
-        :version => "some-version"
+        :version => "some-version",
+        :state_timestamp => 0
       ))
       droplet.process_heartbeat(Heartbeat.new(
         :instance => "some-instances",
         :timestamp => 0,
         :state => DOWN,
         :index => 1,
-        :version => "some-version"
+        :version => "some-version",
+        :state_timestamp => 0
       ))
 
       message_bus.should_receive(:publish).with("health.start", hash_including(running: {'some-version' => 1})).once
@@ -61,14 +63,16 @@ module HealthManager
         :timestamp => 0,
         :state => RUNNING,
         :index => 0,
-        :version => "some-version"
+        :version => "some-version",
+        :state_timestamp => 0
       ))
       droplet.process_heartbeat(Heartbeat.new(
         :instance => "some-instances",
         :timestamp => 0,
         :state => DOWN,
         :index => 1,
-        :version => "some-version"
+        :version => "some-version",
+        :state_timestamp => 0
       ))
 
       message_bus.should_receive(:publish).with("health.stop", hash_including(running: {'some-version' => 1})).once
