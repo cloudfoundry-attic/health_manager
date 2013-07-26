@@ -577,7 +577,7 @@ describe HealthManager::Droplet do
           :state => HealthManager::RUNNING,
           :version => "abc",
           :timestamp => Time.now.to_i,
-          :instance => "baba",
+          :instance => "abab",
           :index => 0,
           :state_timestamp => 0
         ),
@@ -585,7 +585,7 @@ describe HealthManager::Droplet do
           :state => HealthManager::RUNNING,
           :version => "abc",
           :timestamp => Time.now.to_i,
-          :instance => "abab",
+          :instance => "baba",
           :index => 0,
           :state_timestamp => 0
         )
