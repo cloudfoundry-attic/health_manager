@@ -2,11 +2,11 @@ require "spec_helper"
 
 module HealthManager
   describe Harmonizer do
-    let(:nudger) { mock.as_null_object }
+    let(:nudger) { double.as_null_object }
     let(:droplet_registry) { HealthManager::DropletRegistry.new }
-    let(:desired_state) { mock.as_null_object }
-    let(:actual_state) { mock.as_null_object }
-    let(:scheduler) { mock.as_null_object }
+    let(:desired_state) { double.as_null_object }
+    let(:actual_state) { double.as_null_object }
+    let(:scheduler) { double.as_null_object }
     let(:varz) { HealthManager::Varz.new }
     let(:app) do
       app, _ = make_app(:num_instances => 1)
