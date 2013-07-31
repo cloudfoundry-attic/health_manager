@@ -10,10 +10,6 @@ module HealthManager
       @message_bus = message_bus
     end
 
-    def cc_partition_match?(message)
-      cc_partition == message.fetch(:cc_partition)
-    end
-
     def start
       logger.info "hm.actual-state.subscribing"
 
@@ -37,8 +33,6 @@ module HealthManager
     private
 
     def process_droplet_exited(message)
-      return unless cc_partition_match?(message)
-
       logger.debug "hm.actual-state.process-droplet-exited",
                    :message => message
 
@@ -71,7 +65,6 @@ module HealthManager
       varz[:heartbeat_msgs_received] += 1
 
       message[:droplets].each do |beat|
-        next unless cc_partition_match?(beat)
         droplet = get_droplet(beat)
         droplet.process_heartbeat(Heartbeat.new(beat))
         harmonizer.on_extra_instances(droplet, droplet.extra_instances)
@@ -79,8 +72,6 @@ module HealthManager
     end
 
     def process_droplet_updated(message)
-      return unless cc_partition_match?(message)
-
       logger.debug "hm.actual-state.process-droplet-updated",
                    :droplet => message.fetch(:droplet)
 

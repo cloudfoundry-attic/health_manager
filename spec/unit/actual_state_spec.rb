@@ -59,12 +59,6 @@ describe HealthManager::ActualState do
       make_and_send_update_message
     end
 
-    it "does not update droplet partition does not match" do
-      harmonizer.should_not_receive(:on_droplet_updated)
-      @droplet.should_not_receive(:reset_missing_indices)
-      make_and_send_update_message(:cc_partition => "OTHER")
-    end
-
     it 'should mark instances that crashed as CRASHED' do
       harmonizer.should_receive(:on_exit_crashed).with(@droplet, hash_including(:reason => "CRASHED"))
       make_and_send_heartbeat
