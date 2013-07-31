@@ -34,12 +34,16 @@ module HealthManager
     end
 
     def receive_heartbeat(heartbeat)
-      @guid_stream << heartbeat.instance_guid
+      if heartbeat.starting_or_running?
+        @guid_stream << heartbeat.instance_guid
 
-      @last_heartbeat_time = now
-      @guid = heartbeat.instance_guid
-      @state = heartbeat.state
-      @state_timestamp = heartbeat.state_timestamp
+        @last_heartbeat_time = now
+        @guid = heartbeat.instance_guid
+        @state = heartbeat.state
+        @state_timestamp = heartbeat.state_timestamp
+      else
+        @guid_stream.delete(heartbeat.instance_guid)
+      end
     end
 
     def extra_instance_guid_to_prune

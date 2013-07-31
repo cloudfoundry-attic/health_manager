@@ -17,6 +17,41 @@ describe HealthManager::Droplet do
 
   before { HealthManager::Config.load(config) }
 
+  describe "handling instances that start and then crash" do
+    let(:droplet) { HealthManager::Droplet.new(2) }
+    before do
+      heartbeat_properties = {
+        :droplet => 2,
+        :version => "abc",
+        :index => 0,
+        :state_timestamp => now,
+        :cc_partition => 'default'
+      }
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "alpha", :state => HealthManager::STARTING))
+      )
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "alpha", :state => HealthManager::CRASHED))
+      )
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "beta", :state => HealthManager::STARTING))
+      )
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "beta", :state => HealthManager::CRASHED))
+      )
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "gamma", :state => HealthManager::STARTING))
+      )
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "gamma", :state => HealthManager::CRASHED))
+      )
+    end
+
+    it "should not report any extra instances" do
+      expect(droplet.extra_instances.keys).to eql([])
+    end
+  end
+
   describe "handling multiple instances with the same index" do
     let(:droplet) { HealthManager::Droplet.new(2) }
     before do

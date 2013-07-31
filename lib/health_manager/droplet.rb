@@ -60,17 +60,16 @@ module HealthManager
 
     def process_heartbeat(beat)
       instance = get_instance(beat.index, beat.version)
+      instance.receive_heartbeat(beat)
+      instance_guid_to_prune = instance.extra_instance_guid_to_prune
+      if instance_guid_to_prune
+        @extra_instances[instance_guid_to_prune] = {
+          version: beat.version,
+          reason: "Instance mismatch, pruning: #{instance_guid_to_prune}"
+        }
+      end
 
-      if beat.starting_or_running?
-        instance.receive_heartbeat(beat)
-        instance_guid_to_prune = instance.extra_instance_guid_to_prune
-        if instance_guid_to_prune
-          @extra_instances[instance_guid_to_prune] = {
-            version: beat.version,
-            reason: "Instance mismatch, pruning: #{instance_guid_to_prune}"
-          }
-        end
-      elsif beat.state == CRASHED
+      if beat.state == CRASHED
         @crashes[beat.instance_guid] = {
           'timestamp' => now,
           'crash_timestamp' => beat.state_timestamp
