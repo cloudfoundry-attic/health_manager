@@ -52,6 +52,49 @@ describe HealthManager::Droplet do
     end
   end
 
+  describe "when three instances with the same index show up" do
+    let(:droplet) { HealthManager::Droplet.new(2) }
+
+    let(:heartbeat_properties) do
+    {
+      :droplet => 2,
+        :version => "abc",
+        :index => 0,
+        :state_timestamp => now,
+      :cc_partition => 'default'
+    }
+    end
+
+    it "should kill the instances one at a time" do
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "alpha", :state => HealthManager::STARTING))
+      )
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "alpha", :state => HealthManager::RUNNING))
+      )
+
+      expect(droplet.extra_instances.keys).to eql([])
+
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "beta", :state => HealthManager::STARTING))
+      )
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "beta", :state => HealthManager::RUNNING))
+      )
+
+      expect(droplet.extra_instances.keys).to eql(["alpha"])
+
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "gamma", :state => HealthManager::STARTING))
+      )
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "gamma", :state => HealthManager::RUNNING))
+      )
+
+      expect(droplet.extra_instances.keys).to eql(["beta"])
+    end
+  end
+
   describe "handling multiple instances with the same index" do
     let(:droplet) { HealthManager::Droplet.new(2) }
     before do

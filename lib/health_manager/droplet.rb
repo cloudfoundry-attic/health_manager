@@ -59,6 +59,7 @@ module HealthManager
     end
 
     def process_heartbeat(beat)
+      @extra_instances.clear
       instance = get_instance(beat.index, beat.version)
       instance.receive_heartbeat(beat)
       instance_guid_to_prune = instance.extra_instance_guid_to_prune
@@ -83,7 +84,7 @@ module HealthManager
     end
 
     def update_extra_instances
-      @extra_instances = {}
+      @extra_instances.clear
 
       num_running = 0
 
