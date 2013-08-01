@@ -52,17 +52,17 @@ module HealthManager
 
     def process_health_message(message, reply_to)
       varz[:healthmanager_health_request_msgs_received] += 1
-      message.fetch(:droplets).each do |droplet|
-        droplet_id = droplet.fetch(:droplet).to_s
+      message.fetch(:droplets).each do |droplet_hash|
+        droplet_id = droplet_hash.fetch(:droplet).to_s
+        version = droplet_hash.fetch(:version)
 
         next unless droplet_registry.include?(droplet_id)
-
-        version = droplet.fetch(:version)
         droplet = droplet_registry.get(droplet_id)
 
-        running = (0...droplet.num_instances).count { |i|
-          RUNNING == droplet.get_instance(i, version)['state']
-        }
+        running = (0...droplet.num_instances).count do |i|
+          droplet.get_instance(i, version).running?
+        end
+
         response = {
           :droplet => droplet_id,
           :version => version,
