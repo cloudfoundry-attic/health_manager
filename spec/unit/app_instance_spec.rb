@@ -189,5 +189,25 @@ module HealthManager
         its(:running_guid_count) { should eq(2) }
       end
     end
+
+    describe "when an instance goes down (droplet.exited)" do
+      before do
+        instance.receive_heartbeat(heartbeat)
+      end
+
+      context "when the instance that went down has the same guid" do
+        it "should mark the instance as down" do
+          instance.mark_as_down_for_guid('fuid')
+          expect(instance).to be_down
+        end
+      end
+
+      context "when the instance that went down has a different guid" do
+        it "should not mark the instance as down" do
+          instance.mark_as_down_for_guid('fluid')
+          expect(instance).to be_running
+        end
+      end
+    end
   end
 end

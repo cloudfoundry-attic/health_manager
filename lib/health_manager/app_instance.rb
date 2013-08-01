@@ -4,6 +4,7 @@ require 'health_manager/stateful_object'
 module HealthManager
   class AppInstance
     include StatefulObject
+    include HealthManager::Common
 
     attr_reader :state, :guid, :index, :pending_restart_receipt, :last_crash_timestamp, :state_timestamp, :crash_count, :version
 
@@ -42,7 +43,7 @@ module HealthManager
         @state = heartbeat.state
         @state_timestamp = heartbeat.state_timestamp
       else
-        @guid_stream.delete(heartbeat.instance_guid)
+        remove_guid_from_guid_stream(heartbeat.instance_guid)
       end
     end
 
@@ -86,14 +87,22 @@ module HealthManager
       interval > 0 && @crash_count > interval
     end
 
+    def mark_as_down_for_guid(affected_guid)
+      return unless guid == affected_guid
+
+      logger.debug("hm.instance.marking-as-down", version: version, index: index, guid: guid)
+      remove_guid_from_guid_stream(guid)
+      down!
+    end
+
     private
+
+    def remove_guid_from_guid_stream(guid)
+      @guid_stream.delete(guid)
+    end
 
     def timestamp_older_than?(timestamp, interval)
       timestamp > 0 && (now - timestamp) > interval
-    end
-
-    def now
-      ::HealthManager::Manager.now
     end
 
     def reset_crash_count

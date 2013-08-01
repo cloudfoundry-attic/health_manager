@@ -179,15 +179,7 @@ module HealthManager
     end
 
     def mark_instance_as_down(version, index, instance_id)
-      instance = get_instance(index, version)
-      if instance.guid == instance_id
-        logger.debug("Marking as down: #{version}, #{index}, #{instance_id}")
-        instance.down!
-      elsif instance.guid
-        logger.warn("instance mismatch. actual: #{instance_id}, desired: #{instance.guid}")
-      else
-        # NOOP for freshly created instance with nil instance_id
-      end
+      get_instance(index, version).mark_as_down_for_guid(instance_id)
     end
 
     def all_starting_or_running_instances

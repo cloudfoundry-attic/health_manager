@@ -52,6 +52,39 @@ describe HealthManager::Droplet do
     end
   end
 
+  describe "when an instance is evacuated, and then a new instance starts" do
+    let(:droplet) { HealthManager::Droplet.new(2) }
+    before do
+      heartbeat_properties = {
+        :droplet => 2,
+        :version => "abc",
+        :index => 0,
+        :state_timestamp => now,
+        :cc_partition => 'default'
+      }
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "alpha", :state => HealthManager::STARTING))
+      )
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "alpha", :state => HealthManager::RUNNING))
+      )
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "alpha", :state => HealthManager::RUNNING))
+      )
+      droplet.mark_instance_as_down("abc",0,"alpha")
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "beta", :state => HealthManager::STARTING))
+      )
+      droplet.process_heartbeat(
+        HealthManager::Heartbeat.new(heartbeat_properties.merge(:instance => "beta", :state => HealthManager::RUNNING))
+      )
+    end
+
+    it "should not report any extra instances" do
+      expect(droplet.extra_instances.keys).to eql([])
+    end
+  end
+
   describe "when three instances with the same index show up" do
     let(:droplet) { HealthManager::Droplet.new(2) }
 
