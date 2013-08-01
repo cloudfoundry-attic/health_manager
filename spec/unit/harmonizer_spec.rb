@@ -16,8 +16,12 @@ module HealthManager
       app.process_heartbeat(HealthManager::Heartbeat.new(heartbeats[:droplets][0]))
       app
     end
+
+    let(:droplets_analyzed_per_iteration) { 40 }
+
     let(:config) do
       {
+        :number_of_droplets_analyzed_per_analysis_iteration => droplets_analyzed_per_iteration,
         :health_manager_component_registry => {:nudger => nudger}
       }
     end
@@ -232,7 +236,7 @@ module HealthManager
       end
 
       it "when called in a row only analyizes the droplets once" do
-        (ITERATIONS_PER_QUANTUM + 1).times do |i|
+        (droplets_analyzed_per_iteration + 1).times do |i|
           subject.should_receive(:analyze_droplet).with(droplet_registry.get(i)).once
         end
 
@@ -249,7 +253,7 @@ module HealthManager
 
       context "when it is already run" do
         before do
-          register_droplets(ITERATIONS_PER_QUANTUM + 1)
+          register_droplets(droplets_analyzed_per_iteration + 1)
           subject.analyze_apps
         end
 
@@ -259,12 +263,12 @@ module HealthManager
         end
 
         it "starts with the next slice" do
-          (ITERATIONS_PER_QUANTUM).times do |i|
+          (droplets_analyzed_per_iteration).times do |i|
             subject.should_not_receive(:analyze_droplet).with(droplet_registry.get(i))
             droplet_registry.get(i).should_not_receive(:update_realtime_varz)
           end
-          subject.should_receive(:analyze_droplet).with(droplet_registry.get(ITERATIONS_PER_QUANTUM))
-          droplet_registry.get(ITERATIONS_PER_QUANTUM).should_receive(:update_realtime_varz)
+          subject.should_receive(:analyze_droplet).with(droplet_registry.get(droplets_analyzed_per_iteration))
+          droplet_registry.get(droplets_analyzed_per_iteration).should_receive(:update_realtime_varz)
           subject.analyze_apps
         end
       end
@@ -282,7 +286,7 @@ module HealthManager
 
         context "when it run before" do
           before do
-            register_droplets(ITERATIONS_PER_QUANTUM + 1)
+            register_droplets(droplets_analyzed_per_iteration + 1)
             subject.analyze_apps
             subject.analyze_apps
           end
