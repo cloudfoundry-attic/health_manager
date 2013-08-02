@@ -77,16 +77,13 @@ module HealthManager
 
     def on_missing_instances(droplet)
       unless actual_state.available?
-        logger.info { "harmonizer: actual state was not available." }
+        logger.warn "harmonizer.actual-state.unavailable"
         return
       end
 
-      if droplet.desired_state_update_required?
-        logger.info { "harmonizer: desired_state_update_required: missing_instances ignored app_id=#{droplet.id} indices=#{missing_indices}" }
-        return
-      end
+      return if droplet.desired_state_update_required?
 
-      logger.debug { "harmonizer: missing_instances"}
+      logger.debug "harmonizer.missing-instances.processing"
       droplet.missing_indices.each do |index|
         instance = droplet.get_instance(index)
         if instance.flapping?
