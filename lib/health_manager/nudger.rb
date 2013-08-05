@@ -26,7 +26,11 @@ module HealthManager
     def publish_request_message(operation, payload)
       logger.info("hm.nudger.request",
                   :operation => operation, :payload => payload)
-
+      if operation == 'start'
+        varz[:health_start_messages_sent]+=1
+      elsif operation == 'stop'
+        varz[:health_stop_messages_sent]+=1
+      end
       publisher.publish("health.#{operation}", payload)
     end
 

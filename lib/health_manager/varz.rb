@@ -42,6 +42,8 @@ module HealthManager
         :healthmanager_status_msgs_received => 0,
         :healthmanager_health_request_msgs_received => 0,
         :healthmanager_droplet_request_msgs_received => 0,
+        :health_start_messages_sent => 0,
+        :health_stop_messages_sent => 0,
         :analysis_loop_duration => 0,
         :bulk_update_loop_duration => 0,
         :varz_publishes => 0,

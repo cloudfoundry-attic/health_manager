@@ -45,6 +45,8 @@ describe HealthManager::Varz do
     its([:bulk_update_loop_duration]) { should eq 0 }
     its([:varz_publishes]) { should eq 0 }
     its([:varz_holds]) { should eq 0 }
+    its([:health_start_messages_sent]) { should eq 0 }
+    its([:health_stop_messages_sent]) { should eq 0 }
 
     its([:droplets]) { should eq({}) } # FIXIT: remove once ready for production
 

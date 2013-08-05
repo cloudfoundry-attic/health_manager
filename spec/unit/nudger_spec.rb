@@ -18,11 +18,13 @@ module HealthManager
     end
     let(:message_bus) { CfMessageBus::MockMessageBus.new }
     let(:nudger) { manager.nudger }
+    let(:varz) { manager.varz }
 
     it 'should be able to start app instance' do
       message_bus.should_receive(:publish).with("health.start", hash_including(indices: [0])).once
       nudger.start_instance(Droplet.new(1), 0, 0)
       nudger.deque_batch_of_requests
+      expect(varz[:health_start_messages_sent]).to eql(1)
     end
 
     it "includes the running count in start requests" do
@@ -54,6 +56,7 @@ module HealthManager
       message_bus.should_receive(:publish).with("health.stop", hash_including(instances: 0)).once
       nudger.stop_instance(Droplet.new(1), 0, 0)
       nudger.deque_batch_of_requests
+      expect(varz[:health_stop_messages_sent]).to eql(1)
     end
 
     it "includes the running count in stop requests" do
