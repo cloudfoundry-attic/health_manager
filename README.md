@@ -186,3 +186,7 @@ Here are the log levels, with examples of what they're being used for:
 * `info` - HM registered a new VCAP component, HM is shutting down
 * `debug2` - HM received a heartbeat from a DEA, HM compares an app's desired and known states
 * `debug` - HM starts/stops an instance
+
+## Contributing
+
+Please read the [contributors' guide](https://github.com/cloudfoundry/health_manager/blob/master/CONTRIBUTING.md)
