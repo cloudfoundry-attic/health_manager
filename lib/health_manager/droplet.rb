@@ -27,7 +27,7 @@ module HealthManager
     end
 
     def set_desired_state(desired_droplet)
-      logger.debug { "bulk: #set_desired_state: actual: #{self.inspect} desired_droplet: #{desired_droplet.inspect}" }
+      logger.debug("bulk: #set_desired_state", { actual: { instances: all_instances_report }, desired_droplet: desired_droplet })
 
       %w[state instances version package_state updated_at].each do |k|
         unless desired_droplet[k]
@@ -139,7 +139,6 @@ module HealthManager
 
       (0...num_instances).find_all do |i|
         instance = get_instance(i)
-        logger.debug1 { "looking at instance #{@id}:#{i}: #{instance.inspect}" }
         instance.missing?
       end
     end
@@ -268,6 +267,13 @@ module HealthManager
 
     def get_version(version = @live_version)
       versions[version] ||= {'instances' => {}}
+    end
+
+    def all_instances_report
+      versions.inject([]) do |memo, (version, _)|
+        get_instances(version).each { |_, instance| memo << {state: instance.state, version: instance.version, guid: instance.guid, index: instance.index, crash_count: instance.crash_count} }
+        memo
+      end
     end
   end
 end
