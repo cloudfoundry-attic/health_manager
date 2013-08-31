@@ -15,6 +15,10 @@ module HealthManager
       @config[:status] ||= {}
     end
 
+    def self.black_box_test_mode?
+      @config[:black_box_test_mode] != nil
+    end
+
     def self.get_param(name, local_config = @config)
       value = local_config[name.to_sym] ||
         HealthManager::DEFAULTS[name.to_sym]

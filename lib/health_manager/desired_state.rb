@@ -1,5 +1,7 @@
 require 'em-http'
 require 'set'
+require 'net/http'
+require 'uri'
 
 module HealthManager
   class DesiredState
@@ -15,7 +17,9 @@ module HealthManager
     end
 
     def update(&block)
+      logger.log(:info, "Fetching desired state") if HealthManager::Config.black_box_test_mode?
       process_next_batch({}, Time.now, &block)
+      logger.log(:info, "Done fetching desired state") if HealthManager::Config.black_box_test_mode?
     end
 
     def update_user_counts
@@ -53,6 +57,7 @@ module HealthManager
       @user = @password = nil #ensure re-acquisition of credentials
     end
 
+
     def process_next_batch(bulk_token, start_time, &block)
       with_credentials do |user, password|
         options = {
@@ -63,60 +68,62 @@ module HealthManager
           },
         }
 
-        http = EM::HttpRequest.new(app_url).get(options)
-        http.callback do
-          @error_count = 0 # reset after a successful request
+        if HealthManager::Config.black_box_test_mode?
+          uri = URI(URI.escape("#{app_url}?batch_size=#{options[:query]['batch_size']}&bulk_token=#{options[:query]['bulk_token']}"))
+          req = Net::HTTP::Get.new(uri.request_uri)
+          req.basic_auth user, password
 
-          if http.response_header.status != 200
-            logger.error("hm.desired-state.error",
-                         response_status: http.response_header.status)
+          res = Net::HTTP.start(uri.hostname, uri.port) {|http|
+            http.request(req)
+          }
+
+          if res.code != '200'
             @connected = false
-            next
+            return
           end
-
           @connected = true
 
-          response = parse_json(http.response)
-          bulk_token = response['bulk_token']
-          batch = response['results']
-
-          if batch.nil? || batch.empty?
-            duration = Time.now - start_time
-
-            varz.publish_desired_stats
-
-            logger.info "hm.desired-state.bulk-update-done", duration: duration
-
-            next
-          end
-
-          logger.debug "hm.desired-state.bulk-update-batch-received", size: batch.size
-
-          batch.each do |app_id, droplet|
-            update_desired_stats_for_droplet(droplet)
-            @droplet_registry.get(app_id).set_desired_state(droplet)
-            block.call(app_id.to_s, droplet) if block
-          end
-
-          process_next_batch(bulk_token, start_time, &block)
-        end
-
-        http.errback do
-          logger.warn ([ "problem talking to bulk API at #{app_url}",
-                        "bulk_token: #{bulk_token}",
-                        "status: #{http.response_header.status}",
-                        "error count: #{@error_count}"
-                      ].join(", "))
-
-          @error_count += 1
-
-          if @error_count < MAX_BULK_ERROR_COUNT
-            logger.info("Retrying bulk request, bulk_token: #{bulk_token}")
+          bulk_token = process_response(res.body, start_time, &block)
+          if bulk_token != nil
             process_next_batch(bulk_token, start_time, &block)
-          else
-            logger.error("Too many consecutive bulk API errors.")
-            @connected = false
-            reset_credentials
+          end
+        else
+          http = EM::HttpRequest.new(app_url).get(options)
+          http.callback do
+            @error_count = 0 # reset after a successful request
+
+            if http.response_header.status != 200
+              logger.error("hm.desired-state.error",
+                           response_status: http.response_header.status)
+              @connected = false
+              next
+            end
+
+            @connected = true
+
+            bulk_token = process_response(http.response, start_time, &block)
+            if bulk_token != nil
+              process_next_batch(bulk_token, start_time, &block)
+            end
+          end
+
+          http.errback do
+            logger.warn ([ "problem talking to bulk API at #{app_url}",
+                          "bulk_token: #{bulk_token}",
+                          "status: #{http.response_header.status}",
+                          "error count: #{@error_count}"
+                        ].join(", "))
+
+            @error_count += 1
+
+            if @error_count < MAX_BULK_ERROR_COUNT
+              logger.info("Retrying bulk request, bulk_token: #{bulk_token}")
+              process_next_batch(bulk_token, start_time, &block)
+            else
+              logger.error("Too many consecutive bulk API errors.")
+              @connected = false
+              reset_credentials
+            end
           end
         end
       end
@@ -167,6 +174,32 @@ module HealthManager
     end
 
     private
+
+    def process_response(raw_response, start_time, &block)
+      response = parse_json(raw_response)
+      bulk_token = response['bulk_token']
+      batch = response['results']
+
+      if batch.nil? || batch.empty?
+        duration = Time.now - start_time
+
+        varz.publish_desired_stats
+
+        logger.info "hm.desired-state.bulk-update-done", duration: duration
+
+        return nil
+      end
+
+      logger.debug "hm.desired-state.bulk-update-batch-received", size: batch.size
+
+      batch.each do |app_id, droplet|
+        update_desired_stats_for_droplet(droplet)
+        @droplet_registry.get(app_id).set_desired_state(droplet)
+        block.call(app_id.to_s, droplet) if block
+      end
+
+      return bulk_token
+    end
 
     def update_desired_stats_for_droplet(droplet_hash)
       varz[:total][:apps] += 1
