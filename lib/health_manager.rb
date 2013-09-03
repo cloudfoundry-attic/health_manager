@@ -24,6 +24,7 @@ require 'health_manager/nudger'
 require 'health_manager/harmonizer'
 require 'health_manager/varz'
 require 'health_manager/reporter'
+require 'health_manager/fake_scheduler'
 
 module HealthManager
   class Manager
@@ -70,7 +71,12 @@ module HealthManager
     end
 
     def setup_components(message_bus)
-      @scheduler = Scheduler.new
+      if HealthManager::Config.black_box_test_mode?
+        @scheduler = FakeScheduler.new(message_bus)
+        @@scheduler = @scheduler
+      else
+        @scheduler = Scheduler.new
+      end
       @droplet_registry = DropletRegistry.new
       @actual_state = ActualState.new(@varz, @droplet_registry, message_bus)
       @desired_state = DesiredState.new(@varz, @droplet_registry, message_bus)
@@ -93,6 +99,10 @@ module HealthManager
 
         register_as_vcap_component(message_bus)
         @scheduler.start #blocking call
+
+        if HealthManager::Config.black_box_test_mode?
+          message_bus.publish("healthmanager.ready_for_black_box_testing", {})
+        end
       end
     end
 
@@ -113,7 +123,11 @@ module HealthManager
     end
 
     def self.now
-      Time.now.to_i
+      if HealthManager::Config.black_box_test_mode?
+        @@scheduler.now
+      else
+        Time.now.to_i
+      end
     end
   end
 end
