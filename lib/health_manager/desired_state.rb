@@ -69,42 +69,14 @@ module HealthManager
         }
 
         if HealthManager::Config.black_box_test_mode?
-          uri = URI(URI.escape("#{app_url}?batch_size=#{options[:query]['batch_size']}&bulk_token=#{options[:query]['bulk_token']}"))
-          req = Net::HTTP::Get.new(uri.request_uri)
-          req.basic_auth user, password
-
-          res = Net::HTTP.start(uri.hostname, uri.port) {|http|
-            http.request(req)
-          }
-
-          if res.code != '200'
-            @connected = false
-            return
-          end
-          @connected = true
-
-          bulk_token = process_response(res.body, start_time, &block)
-          if bulk_token != nil
-            process_next_batch(bulk_token, start_time, &block)
-          end
+          res = make_synchronous_request(options)
+          bulk_token = process_response_and_get_next_bulk_token(res.code.to_i, res.body, start_time, &block)
+          process_next_batch(bulk_token, start_time, &block) unless bulk_token == nil
         else
           http = EM::HttpRequest.new(app_url).get(options)
           http.callback do
-            @error_count = 0 # reset after a successful request
-
-            if http.response_header.status != 200
-              logger.error("hm.desired-state.error",
-                           response_status: http.response_header.status)
-              @connected = false
-              next
-            end
-
-            @connected = true
-
-            bulk_token = process_response(http.response, start_time, &block)
-            if bulk_token != nil
-              process_next_batch(bulk_token, start_time, &block)
-            end
+            bulk_token = process_response_and_get_next_bulk_token(http.response_header.status, http.response, start_time, &block)
+            process_next_batch(bulk_token, start_time, &block) unless bulk_token == nil
           end
 
           http.errback do
@@ -175,7 +147,26 @@ module HealthManager
 
     private
 
-    def process_response(raw_response, start_time, &block)
+    def make_synchronous_request(options)
+      uri = URI(URI.escape("#{app_url}?batch_size=#{options[:query]['batch_size']}&bulk_token=#{options[:query]['bulk_token']}"))
+      req = Net::HTTP::Get.new(uri.request_uri)
+      req.basic_auth options[:head]['authorization'][0], options[:head]['authorization'][1]
+
+      Net::HTTP.start(uri.hostname, uri.port) { |http| http.request(req) }
+    end
+
+    def process_response_and_get_next_bulk_token(status, raw_response, start_time, &block)
+      @error_count = 0 # reset after a successful request
+
+      if status != 200
+        logger.error("hm.desired-state.error",
+                     response_status: status)
+        @connected = false
+        return nil
+      end
+
+      @connected = true
+
       response = parse_json(raw_response)
       bulk_token = response['bulk_token']
       batch = response['results']
@@ -198,7 +189,7 @@ module HealthManager
         block.call(app_id.to_s, droplet) if block
       end
 
-      return bulk_token
+      bulk_token
     end
 
     def update_desired_stats_for_droplet(droplet_hash)
