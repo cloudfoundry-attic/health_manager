@@ -1,11 +1,26 @@
 require 'spec_helper'
+require 'cf_message_bus/mock_message_bus'
 
 describe HealthManager::FakeScheduler do
   before do
     config = {intervals: {an_interval: 7, another_interval: 5}}
     HealthManager::Config.load(config)
 
-    @scheduler = HealthManager::FakeScheduler.new()
+    @message_bus = CfMessageBus::MockMessageBus.new
+    @scheduler = HealthManager::FakeScheduler.new(@message_bus)
+  end
+
+  describe "upon receiving healthmanager.advance_time" do
+    it "should advance time" do
+      calls = []
+      @scheduler.at_interval(:an_interval) do ||
+        calls << true
+      end
+
+      @message_bus.publish("healthmanager.advance_time", {seconds: 15})
+
+      calls.length.should == 2
+    end
   end
 
   describe "at_interval" do
