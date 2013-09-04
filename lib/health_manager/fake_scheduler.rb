@@ -5,7 +5,7 @@ module HealthManager
     attr_reader :now
 
     def initialize(message_bus)
-      @now = 0
+      @now = 1 #time starts at 1 to avoid weird edge conditions with 0
       @single_blocks = []
       @periodic_blocks = []
       @receipt_counter = 0
@@ -14,7 +14,6 @@ module HealthManager
       message_bus.subscribe('healthmanager.advance_time') do |msg, reply_to|
         time = Time.new
         advance_time(msg.fetch(:seconds))
-        logger.log(:info, "Done Advancing time by #{msg.fetch(:seconds)}s.  It took #{Time.new - time} seconds.")
         message_bus.publish(reply_to, {:seconds => msg.fetch(:seconds)})
       end
     end
@@ -23,7 +22,6 @@ module HealthManager
     end
 
     def advance_time(seconds)
-      logger.log(:info, "Advancing time by #{seconds}s")
       seconds.times do |_|
         @now += 1
         check_periodic_blocks

@@ -136,7 +136,6 @@ module HealthManager
                         # possibly add other sanity checks here to ensure valid running state,
                         # e.g. valid version, etc.
                        ].all?
-
       (0...num_instances).find_all do |i|
         instance = get_instance(i)
         instance.missing?

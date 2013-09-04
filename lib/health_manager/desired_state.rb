@@ -17,9 +17,7 @@ module HealthManager
     end
 
     def update(&block)
-      logger.log(:info, "Fetching desired state") if HealthManager::Config.black_box_test_mode?
       process_next_batch({}, Time.now, &block)
-      logger.log(:info, "Done fetching desired state") if HealthManager::Config.black_box_test_mode?
     end
 
     def update_user_counts

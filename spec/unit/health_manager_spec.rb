@@ -67,6 +67,7 @@ describe HealthManager do
     end
 
     before do
+      manager #load up the config!
       app,@desired = make_app
       @hb = make_heartbeat_message([app])
 

@@ -99,10 +99,6 @@ module HealthManager
 
         register_as_vcap_component(message_bus)
         @scheduler.start #blocking call
-
-        if HealthManager::Config.black_box_test_mode?
-          message_bus.publish("healthmanager.ready_for_black_box_testing", {})
-        end
       end
     end
 
