@@ -140,7 +140,7 @@ Handling flapping apps is hard. We'd like to:
   storing it there.
 - avoid IO spikes due to massive simultaneous restarts
 
-In order to accomodate these conflicting requirements, the following
+In order to accommodate these conflicting requirements, the following
 policy for flapping instances (FI) adopted:
 
 - initially the FI is restarted with a delay defined by `min_restart_delay` config value;
